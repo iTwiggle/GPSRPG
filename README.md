@@ -1,8 +1,8 @@
-# GPSRPG
+# GPSRPG — Companion App / Overworld Prototype
 
-A tiny browser-based GPS fantasy RPG prototype.
+A tiny browser-based **companion app / overworld prototype** for GPSRPG. This is **not** the main 3D extraction RPG, a production mobile app, an MMO, or a full standalone game.
 
-## Core loop
+## Core loop (prototype)
 
 GPS position → procedural nearby fantasy POIs → visit/explore POI → roll encounter reward → gain XP/loot → inventory and character state persist in `localStorage`.
 
@@ -23,7 +23,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-For the best experience, use a device with GPS or allow location permission. On desktop, use **Demo mode** and the nudge controls to simulate movement. **Simulate visit** bypasses the 150 m explore radius for testing.
+On a phone, allow location for the overworld map. On desktop without GPS, use **Demo mode** (falls back to a fixed **Demo Location**, not your real position). Use nudge controls to simulate movement. **Simulate visit** bypasses the 150 m explore radius for testing.
 
 ## Scripts
 

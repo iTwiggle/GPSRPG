@@ -50,7 +50,10 @@ export interface GameState {
 
 export const EXPLORE_RADIUS_METERS = 150;
 
+/** Fixed fallback coordinates for desktop testing only — not the player's real location. */
 export const DEMO_POSITION: Position = {
   lat: 37.7749,
   lng: -122.4194,
 };
+
+export const DEMO_LOCATION_LABEL = "Demo Location";

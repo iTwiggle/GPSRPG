@@ -92,12 +92,13 @@ export function useGeolocation(): UseGeolocationResult {
             lat: prev.position.lat + latOffset,
             lng: prev.position.lng + lngOffset,
           },
-          status: isDemo ? "demo" : prev.status,
+          status: "demo",
+          error: null,
         };
       });
       setIsDemo(true);
     },
-    [isDemo]
+    []
   );
 
   return {

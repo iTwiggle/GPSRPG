@@ -1,5 +1,7 @@
 "use client";
 
+import { DEMO_LOCATION_LABEL } from "@/lib/types";
+
 interface DevControlsProps {
   isDemo: boolean;
   gpsStatus: string;
@@ -24,7 +26,7 @@ export default function DevControls({
           <p className="font-semibold">Dev / Desktop tools</p>
           <p className="text-xs text-amber-800">
             Status: {gpsStatus}
-            {isDemo ? " (demo position)" : ""}
+            {isDemo ? ` (${DEMO_LOCATION_LABEL})` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -33,7 +35,7 @@ export default function DevControls({
             onClick={onEnableDemo}
             className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100"
           >
-            Demo mode
+            Use Demo Location
           </button>
           <button
             type="button"
@@ -67,7 +69,7 @@ export default function DevControls({
           onClick={onEnableDemo}
           className="rounded-lg border border-amber-300 bg-white px-2 py-1.5 text-xs font-medium hover:bg-amber-100"
         >
-          Reset pos
+          Reset demo pos
         </button>
         <button
           type="button"
