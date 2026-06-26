@@ -14,16 +14,50 @@ GPS position → procedural nearby fantasy POIs → visit/explore POI → roll e
 - Browser Geolocation API
 - `localStorage` persistence (no backend)
 
-## Run locally
+## Run locally (desktop)
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) on the **same machine** running the dev server. This is the fastest way to iterate on desktop.
 
-On a phone, allow location for the overworld map. On desktop without GPS, use **Demo mode** (falls back to a fixed **Demo Location**, not your real position). Use nudge controls to simulate movement. **Simulate visit** bypasses the 150 m explore radius for testing.
+`localhost` only works on that machine — it is not a practical path for testing real GPS on a phone.
+
+## Demo Mode (desktop / local testing)
+
+Most desktops have no GPS. Use **Demo Mode** to load a fixed **Demo Location** (not your real position):
+
+- Click **Use Demo Location** on the startup screen, or
+- Let the app fall back automatically when location is denied or unavailable.
+
+In Demo Mode, use the nudge controls to simulate movement. **Simulate visit** bypasses the 150 m explore radius for testing.
+
+Demo Mode is for desktop and local development — not for validating real-world GPS on mobile.
+
+## Mobile GPS testing (HTTPS required)
+
+Browsers only expose real GPS on **secure contexts** (HTTPS, or `localhost` on the same device). Testing from a phone against `http://<your-lan-ip>:3000` often **will not** grant real geolocation.
+
+**Recommended:** deploy a Vercel preview (below) and open the HTTPS preview URL on your phone. Allow location when prompted.
+
+## Deploy to Vercel (preview)
+
+No environment variables are required. Vercel auto-detects this Next.js app.
+
+1. Push this repo to GitHub (`iTwiggle/GPSRPG`).
+2. In [Vercel](https://vercel.com), **Add New Project** → import `iTwiggle/GPSRPG`.
+3. Leave framework preset as **Next.js** and build settings at defaults (`npm run build`, output `.next`).
+4. Deploy. Each push to a branch gets an HTTPS preview URL; `main` gets a production URL.
+5. On your phone, open the preview URL, allow location, and walk near POIs to test live GPS.
+
+Optional CLI:
+
+```bash
+npx vercel          # preview deployment
+npx vercel --prod   # production deployment
+```
 
 ## Scripts
 
