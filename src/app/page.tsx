@@ -78,15 +78,15 @@ export default function HomePage() {
         </p>
         <p className="max-w-md text-sm text-slate-600">
           This prototype needs location permission to place you on the overworld
-          map. If you deny access or your browser has no GPS, use demo mode to
-          load a fixed Demo Location instead.
+          map with live GPS. Demo Mode loads a fixed Demo Location instead — for
+          desktop testing only, not real-world GPS validation.
         </p>
         <button
           type="button"
           onClick={geo.enableDemoMode}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+          className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100"
         >
-          Use Demo Location
+          Use Demo Mode (fixed location)
         </button>
       </main>
     );
@@ -112,12 +112,26 @@ export default function HomePage() {
             role="status"
           >
             <p className="font-medium">
-              {DEMO_LOCATION_LABEL} — demo fallback, not your real GPS
+              Demo Mode — {DEMO_LOCATION_LABEL}, not your real GPS
             </p>
             <p className="mt-1 text-xs text-amber-800">
               {geo.error
-                ? `Location unavailable (${geo.error}). Using a fixed demo map position for testing.`
-                : "Using a fixed demo map position for desktop testing. Allow location on a phone for live GPS."}
+                ? `Location unavailable (${geo.error}). Using a fixed demo map position for desktop testing. Reload and allow location on a phone for live GPS.`
+                : "Fixed map position for desktop testing. Use nudge controls or Simulate visit. Reload on a phone with location allowed for live GPS."}
+            </p>
+          </div>
+        )}
+
+        {geo.status === "active" && (
+          <div
+            className="rounded-xl border border-slate-200 bg-white/90 px-4 py-2.5 text-xs text-slate-600"
+            role="note"
+          >
+            <p>
+              <span className="font-medium text-slate-700">Live GPS.</span> POIs
+              refresh as you move. At highway speeds (passenger testing only),
+              markers may pass quickly — stop or walk to explore safely. Do not
+              use the app while driving.
             </p>
           </div>
         )}
