@@ -42,6 +42,10 @@ Browsers only expose real GPS on **secure contexts** (HTTPS, or `localhost` on t
 
 **Recommended:** deploy a Vercel preview (below) and open the HTTPS preview URL on your phone. Allow location when prompted.
 
+## Deployment status
+
+This app is deployed via [Vercel](https://vercel.com) from the `main` branch. Pushes to `main` trigger automatic production deployments.
+
 ## Deploy to Vercel (preview)
 
 No environment variables are required. Vercel auto-detects this Next.js app.
