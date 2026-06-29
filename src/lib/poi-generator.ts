@@ -4,6 +4,7 @@ import {
   pickPoiType,
 } from "./poi-flavor";
 import {
+  getAreaCellCenter,
   getAreaCellKey,
   getContextCategoryCode,
   type OsmContextCategory,
@@ -63,7 +64,9 @@ export function generateNearbyPOIs(
   options: GenerateNearbyPOIsOptions = {}
 ): POI[] {
   const { count = POI_COUNT, areaContext = "generic" } = options;
-  const { cellLat, cellLng } = getAreaCellKey(lat, lng);
+  const cell = getAreaCellKey(lat, lng);
+  const { cellLat, cellLng } = cell;
+  const { lat: anchorLat, lng: anchorLng } = getAreaCellCenter(cell);
   const categoryCode = getContextCategoryCode(areaContext);
   const baseSeed = hashSeed(cellLat, cellLng);
   const rand = seededRandom(baseSeed);
@@ -78,7 +81,7 @@ export function generateNearbyPOIs(
     const distance =
       MIN_RADIUS_METERS + rand() * (MAX_RADIUS_METERS - MIN_RADIUS_METERS);
     const bearing = rand() * Math.PI * 2;
-    const offset = metersToLatLngOffset(lat, distance, bearing);
+    const offset = metersToLatLngOffset(anchorLat, distance, bearing);
 
     const nameRand = seededRandom(
       hashSeed(cellLat, cellLng, i, 1, categoryCode)
@@ -92,8 +95,8 @@ export function generateNearbyPOIs(
       name: buildPoiName(type, nameRand, areaContext),
       type,
       flavor: pickPoiFlavor(type, flavorRand, areaContext),
-      lat: lat + offset.lat,
-      lng: lng + offset.lng,
+      lat: anchorLat + offset.lat,
+      lng: anchorLng + offset.lng,
     });
   }
 
