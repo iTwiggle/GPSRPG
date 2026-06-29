@@ -82,10 +82,28 @@ export interface Codex {
   stats: CodexStats;
 }
 
+export type ActivityEventType =
+  | "poi_explored"
+  | "encounter"
+  | "xp_gained"
+  | "item_found"
+  | "level_up";
+
+export interface ActivityEvent {
+  id: string;
+  timestamp: string;
+  type: ActivityEventType;
+  message: string;
+  rarity?: ItemRarity;
+  itemType?: Item["type"];
+  poiType?: POIType;
+}
+
 export interface GameState {
   player: Player;
   visitedPOIIds: string[];
   codex: Codex;
+  activityLog: ActivityEvent[];
 }
 
 export const EXPLORE_RADIUS_METERS = 150;
