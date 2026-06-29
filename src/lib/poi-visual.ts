@@ -21,3 +21,8 @@ export const POI_TYPE_CHIP_BG: Record<POIType, string> = {
   quarry: "bg-stone-500/20 border-stone-400/40 text-stone-200",
   well: "bg-sky-500/20 border-sky-400/40 text-sky-200",
 };
+
+/** CSS classes for inline/card POI glyphs (reuses map marker styles). */
+export function getPoiGlyphClassName(type: POIType): string {
+  return `poi-card-glyph poi-marker poi-marker--${type}`;
+}

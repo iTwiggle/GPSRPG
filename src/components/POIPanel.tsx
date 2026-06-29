@@ -1,6 +1,6 @@
 import { distanceMeters, formatDistance, isWithinRadius } from "@/lib/distance";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
-import { POI_TYPE_CHIP_BG } from "@/lib/poi-visual";
+import { getPoiGlyphClassName, POI_TYPE_CHIP_BG } from "@/lib/poi-visual";
 import { EXPLORE_RADIUS_METERS, type POI, type Position } from "@/lib/types";
 
 interface POIPanelProps {
@@ -42,21 +42,29 @@ export default function POIPanel({
     <div className="rpg-panel overflow-hidden p-0">
       <div className="border-l-4 border-amber-400/80 bg-slate-900/40 p-4">
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200/80">
-                {visited ? "Discovered site" : "Nearby site"}
-              </p>
-              <span
-                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${typeChip}`}
-              >
-                {getPoiTypeLabel(poi.type)}
-              </span>
+          <div className="flex min-w-0 gap-3">
+            <div
+              className={getPoiGlyphClassName(poi.type)}
+              aria-hidden="true"
+            >
+              <div className="poi-marker-glyph" />
             </div>
-            <h2 className="mt-1 text-lg font-bold text-slate-50">{poi.name}</h2>
-            <p className="mt-2 rounded-lg border border-slate-700/60 bg-slate-950/40 px-3 py-2 text-sm italic leading-relaxed text-slate-400">
-              {poi.flavor}
-            </p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200/80">
+                  {visited ? "Discovered site" : "Nearby site"}
+                </p>
+                <span
+                  className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${typeChip}`}
+                >
+                  {getPoiTypeLabel(poi.type)}
+                </span>
+              </div>
+              <h2 className="mt-1 text-lg font-bold text-slate-50">{poi.name}</h2>
+              <p className="mt-2 rounded-lg border border-slate-700/60 bg-slate-950/40 px-3 py-2 text-sm italic leading-relaxed text-slate-400">
+                {poi.flavor}
+              </p>
+            </div>
           </div>
           {visited && (
             <span className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-1 text-xs font-medium text-emerald-300">

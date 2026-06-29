@@ -164,16 +164,25 @@ export default function HomePage() {
           <div
             className={`relative h-[min(42vh,360px)] min-h-[240px] overflow-hidden sm:h-[min(50vh,440px)] sm:min-h-[280px] lg:h-[min(60vh,520px)] lg:min-h-[320px] ${mapFrameClass}`}
           >
+            <div className="rpg-scanner-overlay" aria-hidden="true">
+              <span className="rpg-scanner-corner rpg-scanner-corner--tl" />
+              <span className="rpg-scanner-corner rpg-scanner-corner--tr" />
+              <span className="rpg-scanner-corner rpg-scanner-corner--bl" />
+              <span className="rpg-scanner-corner rpg-scanner-corner--br" />
+            </div>
             {osmContext.areaFlavorLabel && (
               <div
                 className="pointer-events-none absolute left-3 top-3 z-[500]"
                 role="status"
                 aria-live="polite"
               >
-                <span className="rpg-chip">
-                  <span className="rpg-chip-dot" aria-hidden="true" />
-                  Realm mood · {osmContext.areaFlavorLabel}
-                </span>
+                <div className="rpg-aura-readout">
+                  <span className="rpg-aura-readout__label">Scanner readout</span>
+                  <span className="rpg-chip rpg-aura-chip">
+                    <span className="rpg-chip-dot" aria-hidden="true" />
+                    Local Aura · {osmContext.areaFlavorLabel}
+                  </span>
+                </div>
               </div>
             )}
             <GameMap
