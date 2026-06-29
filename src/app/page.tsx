@@ -1,13 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ActivityLogPanel from "@/components/ActivityLogPanel";
 import CharacterHUD from "@/components/CharacterHUD";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
 import EncounterModal from "@/components/EncounterModal";
 import InventoryPanel from "@/components/InventoryPanel";
+import MobilePanelNav, {
+  type MobilePanelSection,
+} from "@/components/MobilePanelNav";
 import POIPanel from "@/components/POIPanel";
 import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -28,8 +31,16 @@ export default function HomePage() {
   const { gameState, lastEncounter, explorePoi, clearEncounter, reset, isVisited } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
+  const [activeMobileSection, setActiveMobileSection] =
+    useState<MobilePanelSection>("poi");
 
   const playerPosition = geo.position;
+
+  useEffect(() => {
+    if (selectedPoi) {
+      setActiveMobileSection("poi");
+    }
+  }, [selectedPoi]);
 
   const pois = useMemo(() => {
     if (!playerPosition) return [];
@@ -152,23 +163,61 @@ export default function HomePage() {
 
           <div className="flex flex-col gap-4">
             <CharacterHUD player={gameState.player} gpsLabel={gpsLabel} />
-            <POIPanel
-              poi={selectedPoi}
-              playerPosition={playerPosition}
-              visited={selectedPoi ? isVisited(selectedPoi.id) : false}
-              onExplore={handleExplore}
-              onSimulateVisit={handleSimulateVisit}
+
+            <MobilePanelNav
+              activeSection={activeMobileSection}
+              onSectionChange={setActiveMobileSection}
             />
-            <InventoryPanel inventory={gameState.player.inventory} />
-            <CodexPanel codex={gameState.codex} />
-            <ActivityLogPanel events={gameState.activityLog} />
-            <DevControls
-              isDemo={geo.isDemo}
-              gpsStatus={geo.status}
-              onEnableDemo={geo.enableDemoMode}
-              onNudge={geo.nudgePosition}
-              onReset={reset}
-            />
+
+            <div className="flex flex-col gap-4 lg:hidden">
+              {activeMobileSection === "poi" && (
+                <POIPanel
+                  poi={selectedPoi}
+                  playerPosition={playerPosition}
+                  visited={selectedPoi ? isVisited(selectedPoi.id) : false}
+                  onExplore={handleExplore}
+                  onSimulateVisit={handleSimulateVisit}
+                />
+              )}
+              {activeMobileSection === "bag" && (
+                <InventoryPanel inventory={gameState.player.inventory} />
+              )}
+              {activeMobileSection === "codex" && (
+                <CodexPanel codex={gameState.codex} />
+              )}
+              {activeMobileSection === "journey" && (
+                <ActivityLogPanel events={gameState.activityLog} />
+              )}
+              {activeMobileSection === "dev" && (
+                <DevControls
+                  isDemo={geo.isDemo}
+                  gpsStatus={geo.status}
+                  onEnableDemo={geo.enableDemoMode}
+                  onNudge={geo.nudgePosition}
+                  onReset={reset}
+                />
+              )}
+            </div>
+
+            <div className="hidden flex-col gap-4 lg:flex">
+              <POIPanel
+                poi={selectedPoi}
+                playerPosition={playerPosition}
+                visited={selectedPoi ? isVisited(selectedPoi.id) : false}
+                onExplore={handleExplore}
+                onSimulateVisit={handleSimulateVisit}
+              />
+              <InventoryPanel inventory={gameState.player.inventory} />
+              <CodexPanel codex={gameState.codex} />
+              <ActivityLogPanel events={gameState.activityLog} />
+              <DevControls
+                isDemo={geo.isDemo}
+                gpsStatus={geo.status}
+                onEnableDemo={geo.enableDemoMode}
+                onNudge={geo.nudgePosition}
+                onReset={reset}
+              />
+            </div>
           </div>
         </div>
       </div>
