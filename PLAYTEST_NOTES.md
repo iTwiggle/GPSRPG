@@ -38,6 +38,7 @@ Desktop **Demo Mode** (fixed Demo Location, nudge controls) remains the primary 
 
 - **No backend** — game state lives in `localStorage` on this device/browser only.
 - **No combat, cards, multiplayer, AR, or persistence sync** — out of prototype scope.
+- **Procedural POI flavor** — names, descriptors, encounters, and loot themes are generated fantasy only. They are **not** tied to real-world OSM landmarks, map tags, or external location data.
 - **POI grid cells (~400 m)** — POIs are keyed to a meter-based ~400 m grid around your position. Crossing a cell boundary regenerates all 8 nearby POIs with new IDs. At highway speeds this reduces marker churn compared to the old ~111 m cells; walking pace remains the intended experience.
 - **150 m explore radius** — you must be close enough to tap **Explore**; brief drive-by range at speed is expected but not ideal for interaction.
 - **Visited POI IDs are cell-scoped** — revisiting the same real-world spot after a large move may show fresh POIs (new cell, new IDs).

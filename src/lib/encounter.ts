@@ -1,7 +1,6 @@
+import { applyEncounterFlavor, type EncounterKind } from "./poi-flavor";
 import { rollLoot } from "./loot";
 import type { EncounterResult, POI, POIType } from "./types";
-
-type EncounterKind = "goblin" | "chest" | "shrine" | "wanderer" | "empty";
 
 interface EncounterTemplate {
   kind: EncounterKind;
@@ -56,13 +55,14 @@ const BASE_ENCOUNTERS: EncounterTemplate[] = [
 ];
 
 const POI_BONUS: Partial<Record<POIType, { xp: number; lootRolls: number }>> = {
-  ruins: { xp: 5, lootRolls: 1 },
   shrine: { xp: 10, lootRolls: 0 },
-  cave: { xp: 5, lootRolls: 1 },
-  tower: { xp: 8, lootRolls: 0 },
   camp: { xp: 3, lootRolls: 1 },
-  forest: { xp: 4, lootRolls: 0 },
-  lake: { xp: 6, lootRolls: 1 },
+  tower: { xp: 8, lootRolls: 0 },
+  gate: { xp: 5, lootRolls: 1 },
+  grove: { xp: 4, lootRolls: 0 },
+  cache: { xp: 5, lootRolls: 1 },
+  quarry: { xp: 4, lootRolls: 1 },
+  well: { xp: 6, lootRolls: 1 },
 };
 
 function hashSeed(...values: (string | number)[]): number {
@@ -102,19 +102,24 @@ export function rollEncounter(
   poi: POI,
   rollSeed?: number
 ): EncounterResult {
-  const seed = rollSeed ?? hashSeed(poi.id, poi.type);
+  const seed = rollSeed ?? hashSeed(poi.id);
   const rand = seededRandom(seed);
   const template = pickEncounter(rand);
   const bonus = POI_BONUS[poi.type] ?? { xp: 0, lootRolls: 0 };
 
   const loot = Array.from(
     { length: template.lootRolls + bonus.lootRolls },
-    (_, i) => rollLoot(rand, `${poi.id}-${i}`)
+    (_, i) => rollLoot(rand, `${poi.id}-${i}`, poi.type)
   );
 
-  return {
+  const flavored = applyEncounterFlavor(poi.type, template.kind, {
     title: template.title,
     description: template.description,
+  });
+
+  return {
+    title: flavored.title,
+    description: flavored.description,
     xpGained: template.xp + bonus.xp,
     loot,
   };
