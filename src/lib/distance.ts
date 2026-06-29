@@ -53,3 +53,48 @@ export function formatDistance(meters: number): string {
   }
   return `${(meters / 1000).toFixed(1)} km`;
 }
+
+/**
+ * Initial bearing from `from` to `to` in degrees (0 = north, clockwise).
+ */
+export function bearingDegrees(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number }
+): number {
+  const lat1 = toRadians(from.lat);
+  const lat2 = toRadians(to.lat);
+  const dLng = toRadians(to.lng - from.lng);
+
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+
+  const radians = Math.atan2(y, x);
+  const degrees = (radians * 180) / Math.PI;
+  return (degrees + 360) % 360;
+}
+
+const CARDINAL_BEARINGS = [
+  "North",
+  "North-East",
+  "East",
+  "South-East",
+  "South",
+  "South-West",
+  "West",
+  "North-West",
+] as const;
+
+/** Map a bearing in degrees to an eight-point compass label. */
+export function formatCardinalBearing(degrees: number): string {
+  const index = Math.round(degrees / 45) % 8;
+  return CARDINAL_BEARINGS[index];
+}
+
+/** Unicode arrow glyph rotated to point toward the bearing (0 = north). */
+export function bearingArrowGlyph(degrees: number): string {
+  const arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"] as const;
+  const index = Math.round(degrees / 45) % 8;
+  return arrows[index];
+}

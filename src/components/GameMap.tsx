@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
-import { distanceMeters, formatDistance } from "@/lib/distance";
+import { getApproachReadout } from "@/lib/approach";
+import { formatDistance } from "@/lib/distance";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { createPoiMarkerIcon, playerMarkerIcon } from "@/lib/poi-marker-icons";
 import type { POI } from "@/lib/types";
@@ -77,17 +78,23 @@ export default function GameMap({
 
       {pois.map((poi) => {
         const visited = visitedPoiIds.includes(poi.id);
-        const dist = distanceMeters(
+        const readout = getApproachReadout(
           { lat: playerLat, lng: playerLng },
-          { lat: poi.lat, lng: poi.lng }
+          poi,
+          EXPLORE_RADIUS_METERS
         );
         const isSelected = poi.id === selectedPoiId;
+        const inRange = readout.status === "in_range";
 
         return (
           <Marker
             key={poi.id}
             position={[poi.lat, poi.lng]}
-            icon={createPoiMarkerIcon(poi.type, { selected: isSelected, visited })}
+            icon={createPoiMarkerIcon(poi.type, {
+              selected: isSelected,
+              visited,
+              inRange: isSelected && inRange,
+            })}
             eventHandlers={{
               click: () => onSelectPoi(poi),
             }}
@@ -96,7 +103,9 @@ export default function GameMap({
               <div className="text-sm">
                 <p className="font-semibold text-slate-100">{poi.name}</p>
                 <p className="text-violet-300">{getPoiTypeLabel(poi.type)}</p>
-                <p className="text-slate-400">{formatDistance(dist)} away</p>
+                <p className="text-slate-400">
+                  {formatDistance(readout.distanceMeters)} away
+                </p>
                 {visited && (
                   <p className="text-emerald-400">Already explored</p>
                 )}
