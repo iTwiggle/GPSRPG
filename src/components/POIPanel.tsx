@@ -1,7 +1,9 @@
-import { distanceMeters, formatDistance, isWithinRadius } from "@/lib/distance";
+import { formatDistance } from "@/lib/distance";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { getPoiGlyphClassName, POI_TYPE_CHIP_BG } from "@/lib/poi-visual";
+import { getApproachReadout } from "@/lib/approach";
 import { EXPLORE_RADIUS_METERS, type POI, type Position } from "@/lib/types";
+import SiteApproachHUD from "@/components/SiteApproachHUD";
 
 interface POIPanelProps {
   poi: POI | null;
@@ -30,12 +32,8 @@ export default function POIPanel({
     );
   }
 
-  const dist = distanceMeters(playerPosition, poi);
-  const inRange = isWithinRadius(
-    playerPosition,
-    poi,
-    EXPLORE_RADIUS_METERS
-  );
+  const readout = getApproachReadout(playerPosition, poi, EXPLORE_RADIUS_METERS);
+  const inRange = readout.status === "in_range";
   const typeChip = POI_TYPE_CHIP_BG[poi.type];
 
   return (
@@ -52,7 +50,7 @@ export default function POIPanel({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200/80">
-                  {visited ? "Discovered site" : "Nearby site"}
+                  {visited ? "Discovered site" : "Tracking site"}
                 </p>
                 <span
                   className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${typeChip}`}
@@ -73,29 +71,26 @@ export default function POIPanel({
           )}
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
-          <span>
-            <span className="text-slate-500">Distance</span>{" "}
-            <span className="font-semibold text-slate-200">
-              {formatDistance(dist)}
-            </span>
-          </span>
-          <span>
-            <span className="text-slate-500">Explore range</span>{" "}
-            <span className="font-semibold text-slate-200">
-              {EXPLORE_RADIUS_METERS} m
-            </span>
-          </span>
-        </div>
+        <SiteApproachHUD poi={poi} playerPosition={playerPosition} />
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={onExplore}
             disabled={visited || !inRange}
-            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-[0_0_16px_rgba(124,58,237,0.35)] transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 disabled:shadow-none"
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              visited
+                ? "cursor-not-allowed bg-slate-700 text-slate-500"
+                : inRange
+                  ? "bg-violet-600 text-white shadow-[0_0_16px_rgba(124,58,237,0.35)] hover:bg-violet-500"
+                  : "cursor-not-allowed border border-slate-600 bg-slate-800/90 text-slate-400"
+            }`}
           >
-            {visited ? "Already explored" : inRange ? "Explore" : "Too far"}
+            {visited
+              ? "Already explored"
+              : inRange
+                ? "Explore"
+                : `Out of range (${formatDistance(readout.distanceMeters)})`}
           </button>
           <button
             type="button"
@@ -106,6 +101,12 @@ export default function POIPanel({
             Simulate visit
           </button>
         </div>
+        {!visited && !inRange && (
+          <p className="mt-2 text-xs text-slate-500">
+            Move within {EXPLORE_RADIUS_METERS} m to unlock Explore, or use
+            Simulate visit for testing.
+          </p>
+        )}
       </div>
     </div>
   );

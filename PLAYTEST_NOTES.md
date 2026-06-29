@@ -72,6 +72,27 @@ Small, in-scope follow-ups (not committed in this pass):
 4. **Offline / PWA shell** for installed home-screen testing.
 5. **Encounter cooldown or daily cap** if farming Simulate visit becomes too generous in dev builds.
 
+## Site Approach / Navigation HUD v0.1
+
+Test selecting a POI and moving toward it (Demo Mode nudge or live GPS):
+
+| Check | Expected |
+|-------|----------|
+| Approach readout | Sites panel shows **Site approach** block when a POI is selected |
+| Distance | Live distance updates as position changes |
+| Status: Far | Greater than 250 m from selected site |
+| Status: Nearby | Between 150 m (explore range) and 250 m |
+| Status: In range | At or below 150 m explore radius |
+| Progress bar | Fills as you close in; 100% when in range |
+| Bearing | Arrow glyph + cardinal direction (e.g. North-East) |
+| Selected marker | Amber outline pulse; stronger green/gold pulse when in range |
+| Explore button | Disabled with **Out of range (Xm)** when beyond 150 m; helper text below |
+| Simulate visit | Still works without proximity; unchanged dev affordance |
+
+**Demo Mode:** Select a POI, nudge toward it (~40 m per tap), watch status shift Far → Nearby → In range and the Explore button unlock.
+
+**Known limitations (v0.1):** Bearing is a flat compass hint only (no map rotation or turn-by-turn). Progress uses `exploreRadius / distance` — it does not account for GPS accuracy. Only the selected marker gets in-range glow.
+
 ## Commands
 
 ```bash
