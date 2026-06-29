@@ -1,0 +1,306 @@
+import type {
+  EncounterResult,
+  FieldTask,
+  FieldTaskType,
+  POI,
+  POIType,
+} from "./types";
+
+export const FIELD_TASK_SLOT_COUNT = 3;
+
+interface TaskTemplate {
+  type: FieldTaskType;
+  target: number;
+  title: string;
+  description: string;
+  rewardXp: number;
+}
+
+const POI_TYPE_LABELS: Record<POIType, string> = {
+  shrine: "Shrine",
+  camp: "Camp",
+  tower: "Tower",
+  gate: "Gate",
+  grove: "Grove",
+  cache: "Cache",
+  quarry: "Quarry",
+  well: "Well",
+};
+
+const ALL_POI_TYPES: POIType[] = [
+  "shrine",
+  "camp",
+  "tower",
+  "gate",
+  "grove",
+  "cache",
+  "quarry",
+  "well",
+];
+
+const TASK_TEMPLATES: TaskTemplate[] = [
+  {
+    type: "explore_pois",
+    target: 3,
+    title: "Field Contract: Survey 3 sites",
+    description: "Explore three nearby fantasy sites on this outing.",
+    rewardXp: 15,
+  },
+  {
+    type: "explore_poi_types",
+    target: 2,
+    title: "Field Contract: 2 site kinds",
+    description: "Visit two different kinds of sites (e.g. shrine and camp).",
+    rewardXp: 20,
+  },
+  {
+    type: "find_items",
+    target: 2,
+    title: "Field Contract: Recover 2 finds",
+    description: "Loot two items from encounters while exploring.",
+    rewardXp: 15,
+  },
+  {
+    type: "find_uncommon_plus",
+    target: 1,
+    title: "Field Contract: Uncommon+ relic",
+    description: "Find at least one uncommon or rare item.",
+    rewardXp: 25,
+  },
+  {
+    type: "gain_xp",
+    target: 100,
+    title: "Field Contract: Earn 100 XP",
+    description: "Gain 100 XP from encounters on this outing.",
+    rewardXp: 20,
+  },
+  {
+    type: "complete_poi_type",
+    target: 1,
+    title: "Field Contract: Clear 1 site",
+    description: "Complete one site of a specific type.",
+    rewardXp: 20,
+  },
+  {
+    type: "trigger_encounters",
+    target: 3,
+    title: "Field Contract: 3 encounters",
+    description: "Trigger three encounters while exploring sites.",
+    rewardXp: 15,
+  },
+];
+
+function hashSeed(...values: (string | number)[]): number {
+  let hash = 2166136261;
+  for (const value of values) {
+    const str = String(value);
+    for (let i = 0; i < str.length; i += 1) {
+      hash ^= str.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+  }
+  return hash >>> 0;
+}
+
+function seededRandom(seed: number): () => number {
+  let state = seed;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+}
+
+function makeTaskId(seed: number, index: number): string {
+  return `task-${seed}-${index}`;
+}
+
+function buildTaskFromTemplate(
+  template: TaskTemplate,
+  seed: number,
+  index: number,
+  timestamp: string
+): FieldTask {
+  const id = makeTaskId(seed, index);
+
+  if (template.type === "complete_poi_type") {
+    const rand = seededRandom(hashSeed(seed, index, "poi-type"));
+    const poiType = ALL_POI_TYPES[Math.floor(rand() * ALL_POI_TYPES.length)];
+    const label = POI_TYPE_LABELS[poiType];
+    return {
+      id,
+      type: template.type,
+      title: `Field Contract: Clear 1 ${label}`,
+      description: `Complete one ${label.toLowerCase()} site on this outing.`,
+      target: template.target,
+      progress: 0,
+      status: "active",
+      rewardXp: template.rewardXp,
+      poiType,
+      createdAt: timestamp,
+    };
+  }
+
+  return {
+    id,
+    type: template.type,
+    title: template.title,
+    description: template.description,
+    target: template.target,
+    progress: 0,
+    status: "active",
+    rewardXp: template.rewardXp,
+    poiTypesSeen: template.type === "explore_poi_types" ? [] : undefined,
+    createdAt: timestamp,
+  };
+}
+
+function pickDistinctTemplates(rand: () => number, count: number): TaskTemplate[] {
+  const pool = [...TASK_TEMPLATES];
+  const picked: TaskTemplate[] = [];
+
+  for (let i = 0; i < count && pool.length > 0; i += 1) {
+    const idx = Math.floor(rand() * pool.length);
+    picked.push(pool[idx]);
+    pool.splice(idx, 1);
+  }
+
+  return picked;
+}
+
+/** Generate a fresh set of field contracts. */
+export function generateFieldTasks(seed: number = Date.now()): FieldTask[] {
+  const rand = seededRandom(hashSeed(seed, "field-tasks"));
+  const templates = pickDistinctTemplates(rand, FIELD_TASK_SLOT_COUNT);
+  const timestamp = new Date().toISOString();
+
+  return templates.map((template, index) =>
+    buildTaskFromTemplate(template, seed, index, timestamp)
+  );
+}
+
+/** Ensure saves always have exactly three valid task slots. */
+export function normalizeFieldTasks(tasks: unknown): FieldTask[] {
+  if (!Array.isArray(tasks) || tasks.length === 0) {
+    return generateFieldTasks();
+  }
+
+  const normalized = tasks
+    .filter((task): task is FieldTask => {
+      if (!task || typeof task !== "object") return false;
+      const t = task as FieldTask;
+      return (
+        typeof t.id === "string" &&
+        typeof t.type === "string" &&
+        typeof t.title === "string" &&
+        typeof t.target === "number" &&
+        typeof t.progress === "number" &&
+        (t.status === "active" || t.status === "completed")
+      );
+    })
+    .slice(0, FIELD_TASK_SLOT_COUNT);
+
+  if (normalized.length < FIELD_TASK_SLOT_COUNT) {
+    const filler = generateFieldTasks(hashSeed("fill", normalized.length));
+    while (normalized.length < FIELD_TASK_SLOT_COUNT) {
+      normalized.push(filler[normalized.length]);
+    }
+  }
+
+  return normalized;
+}
+
+export function refreshFieldTasks(): FieldTask[] {
+  return generateFieldTasks();
+}
+
+export interface ExploreTaskContext {
+  poi: POI;
+  encounter: EncounterResult;
+}
+
+function countUncommonPlus(loot: EncounterResult["loot"]): number {
+  return loot.filter((item) => item.rarity !== "common").length;
+}
+
+function advanceTask(task: FieldTask, ctx: ExploreTaskContext): FieldTask {
+  if (task.status === "completed") {
+    return task;
+  }
+
+  let progress = task.progress;
+  let poiTypesSeen = task.poiTypesSeen;
+
+  switch (task.type) {
+    case "explore_pois":
+    case "trigger_encounters":
+      progress += 1;
+      break;
+    case "explore_poi_types": {
+      const seen = poiTypesSeen ?? [];
+      if (!seen.includes(ctx.poi.type)) {
+        poiTypesSeen = [...seen, ctx.poi.type];
+      } else {
+        poiTypesSeen = seen;
+      }
+      progress = poiTypesSeen.length;
+      break;
+    }
+    case "find_items":
+      progress += ctx.encounter.loot.length;
+      break;
+    case "find_uncommon_plus":
+      progress += countUncommonPlus(ctx.encounter.loot);
+      break;
+    case "gain_xp":
+      progress += ctx.encounter.xpGained;
+      break;
+    case "complete_poi_type":
+      if (task.poiType && ctx.poi.type === task.poiType) {
+        progress += 1;
+      }
+      break;
+    default:
+      break;
+  }
+
+  progress = Math.min(progress, task.target);
+
+  if (progress >= task.target) {
+    return {
+      ...task,
+      progress,
+      poiTypesSeen,
+      status: "completed",
+      completedAt: new Date().toISOString(),
+    };
+  }
+
+  return {
+    ...task,
+    progress,
+    poiTypesSeen,
+  };
+}
+
+export interface ApplyExploreToTasksResult {
+  tasks: FieldTask[];
+  completions: FieldTask[];
+}
+
+/** Update active field tasks from a successful explore. */
+export function applyExploreToTasks(
+  tasks: FieldTask[],
+  ctx: ExploreTaskContext
+): ApplyExploreToTasksResult {
+  const completions: FieldTask[] = [];
+  const nextTasks = tasks.map((task) => {
+    const wasActive = task.status === "active";
+    const updated = advanceTask(task, ctx);
+    if (wasActive && updated.status === "completed") {
+      completions.push(updated);
+    }
+    return updated;
+  });
+
+  return { tasks: nextTasks, completions };
+}

@@ -1,5 +1,6 @@
 import { createEmptyActivityLog } from "./activity-log";
 import { createEmptyCodex } from "./codex";
+import { generateFieldTasks, normalizeFieldTasks } from "./tasks";
 import { createDefaultPlayer } from "./xp";
 import type { GameState, Item, Player } from "./types";
 
@@ -11,6 +12,7 @@ export function createInitialState(): GameState {
     visitedPOIIds: [],
     codex: createEmptyCodex(),
     activityLog: createEmptyActivityLog(),
+    fieldTasks: generateFieldTasks(),
   };
 }
 
@@ -34,6 +36,7 @@ export function loadGameState(): GameState {
       visitedPOIIds: parsed.visitedPOIIds ?? [],
       codex: parsed.codex ?? createEmptyCodex(),
       activityLog: parsed.activityLog ?? createEmptyActivityLog(),
+      fieldTasks: normalizeFieldTasks(parsed.fieldTasks),
     };
   } catch {
     return createInitialState();

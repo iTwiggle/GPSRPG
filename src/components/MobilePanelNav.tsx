@@ -1,9 +1,16 @@
 "use client";
 
-export type MobilePanelSection = "poi" | "bag" | "codex" | "journey" | "dev";
+export type MobilePanelSection =
+  | "poi"
+  | "tasks"
+  | "bag"
+  | "codex"
+  | "journey"
+  | "dev";
 
 const SECTIONS: { id: MobilePanelSection; label: string }[] = [
   { id: "poi", label: "Sites" },
+  { id: "tasks", label: "Tasks" },
   { id: "bag", label: "Bag" },
   { id: "codex", label: "Codex" },
   { id: "journey", label: "Journey" },

@@ -2,6 +2,7 @@ import type {
   ActivityEvent,
   ActivityEventType,
   EncounterResult,
+  FieldTask,
   Item,
   POI,
 } from "./types";
@@ -114,4 +115,51 @@ interface ItemTemplate {
 /** Helper for tests/devtools: build a single item-found message. */
 export function formatItemFoundMessage(item: ItemTemplate): string {
   return `Found ${capitalize(item.rarity)} ${item.name}`;
+}
+
+function prependEvents(
+  log: ActivityEvent[],
+  batch: ActivityEvent[]
+): ActivityEvent[] {
+  const next = [...batch, ...log];
+  if (next.length > ACTIVITY_LOG_MAX) {
+    next.length = ACTIVITY_LOG_MAX;
+  }
+  return next;
+}
+
+/** Append task-completion events (contract fulfilled + optional level-up). */
+export function appendTaskCompleteEvents(
+  log: ActivityEvent[],
+  completions: FieldTask[],
+  prevLevel: number,
+  newLevel: number,
+  timestamp: string = new Date().toISOString()
+): ActivityEvent[] {
+  if (completions.length === 0) {
+    return log;
+  }
+
+  const events: ActivityEvent[] = [];
+  let index = 0;
+
+  for (const task of completions) {
+    events.push({
+      id: makeId(timestamp, "task_complete", index++),
+      timestamp,
+      type: "task_complete",
+      message: `Contract fulfilled: ${task.title.replace(/^Field Contract: /, "")} (+${task.rewardXp} XP)`,
+    });
+  }
+
+  if (newLevel > prevLevel) {
+    events.push({
+      id: makeId(timestamp, "level_up", index++),
+      timestamp,
+      type: "level_up",
+      message: `Reached Level ${newLevel}`,
+    });
+  }
+
+  return prependEvents(log, events);
 }
