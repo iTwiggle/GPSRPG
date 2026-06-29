@@ -76,6 +76,21 @@ export function cellKeyToString(cell: AreaCellKey): string {
   return `${cell.cellLat.toFixed(6)},${cell.cellLng.toFixed(6)}`;
 }
 
+/** Stable anchor at the center of a ~400 m grid cell (for POI placement). */
+export function getAreaCellCenter(cell: AreaCellKey): {
+  lat: number;
+  lng: number;
+} {
+  const latStep = POI_CELL_SIZE_METERS / 111_320;
+  const lngStep =
+    POI_CELL_SIZE_METERS /
+    (111_320 * Math.cos((cell.cellLat * Math.PI) / 180));
+  return {
+    lat: cell.cellLat + latStep / 2,
+    lng: cell.cellLng + lngStep / 2,
+  };
+}
+
 function cellToBbox(cell: AreaCellKey): {
   south: number;
   west: number;
