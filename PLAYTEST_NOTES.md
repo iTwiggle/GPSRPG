@@ -93,6 +93,27 @@ Test selecting a POI and moving toward it (Demo Mode nudge or live GPS):
 
 **Known limitations (v0.1):** Bearing is a flat compass hint only (no map rotation or turn-by-turn). Progress uses `exploreRadius / distance` — it does not account for GPS accuracy. Only the selected marker gets in-range glow.
 
+## Session Recap / Field Report v0.1
+
+Test exploring several sites, then open the **Journey** tab (mobile) or scroll the sidebar (desktop):
+
+| Check | Expected |
+|-------|----------|
+| Field Report panel | Appears above Activity Log in Journey |
+| Started | Shows today + time when the current report began |
+| Sites explored | Increments on each Explore / Simulate visit |
+| XP gained | Includes encounter XP and contract reward XP |
+| Items found | Counts loot drops this report |
+| Best find | Shows rarest item this report (rarity tie-break by name) |
+| POI types | Comma-separated labels for unique site types visited |
+| Tasks completed | Increments when a Field Contract fulfills during this report |
+| Start New Report | Resets counters; archives prior summary to Activity Log if any progress |
+| Old saves | Missing `fieldReport` defaults to a fresh report on load |
+
+**Demo Mode:** Explore 3–4 sites with Simulate visit, confirm counters update, tap **Start New Report**, verify Activity Log shows archive + new report lines.
+
+**Known limitations (v0.1):** One active report per save — no history list of past reports. Report persists across browser sessions until reset. No GPS trail or path data is stored.
+
 ## Commands
 
 ```bash

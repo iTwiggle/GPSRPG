@@ -7,11 +7,13 @@ import {
 } from "@/lib/activity-log";
 import { recordExplore } from "@/lib/codex";
 import { applyExploreToTasks, refreshFieldTasks as rollFieldTasks } from "@/lib/tasks";
+import { updateFieldReportOnExplore } from "@/lib/field-report";
 import { applyXp } from "@/lib/xp";
 import {
   addLootToPlayer,
   loadGameState,
   markPoiVisited,
+  resetFieldReportInState,
   resetGameState,
   saveGameState,
 } from "@/lib/storage";
@@ -64,14 +66,14 @@ export function useGameState() {
 
       let player = withLoot;
       let activityLog = withActivity;
+      const taskRewardXp = completions.reduce(
+        (sum, task) => sum + task.rewardXp,
+        0
+      );
 
       if (completions.length > 0) {
         const levelBeforeRewards = player.level;
-        const rewardXp = completions.reduce(
-          (sum, task) => sum + task.rewardXp,
-          0
-        );
-        player = applyXp(player, rewardXp);
+        player = applyXp(player, taskRewardXp);
         activityLog = appendTaskCompleteEvents(
           activityLog,
           completions,
@@ -80,6 +82,13 @@ export function useGameState() {
         );
       }
 
+      const withFieldReport = updateFieldReportOnExplore(gameState.fieldReport, {
+        poi,
+        encounter,
+        taskRewardXp,
+        tasksCompleted: completions.length,
+      });
+
       const nextState = markPoiVisited(
         {
           ...gameState,
@@ -87,6 +96,7 @@ export function useGameState() {
           codex: withCodex,
           activityLog,
           fieldTasks: withTasks,
+          fieldReport: withFieldReport,
         },
         poi.id
       );
@@ -110,6 +120,11 @@ export function useGameState() {
     setLastEncounter(null);
   }, []);
 
+  const resetFieldReport = useCallback(() => {
+    if (!gameState) return;
+    persist(resetFieldReportInState(gameState));
+  }, [gameState, persist]);
+
   const reset = useCallback(() => {
     const fresh = resetGameState();
     setGameState(fresh);
@@ -121,6 +136,7 @@ export function useGameState() {
     lastEncounter,
     explorePoi,
     refreshFieldTasks,
+    resetFieldReport,
     clearEncounter,
     reset,
     isVisited: (poiId: string) =>

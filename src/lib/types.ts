@@ -90,7 +90,8 @@ export type ActivityEventType =
   | "xp_gained"
   | "item_found"
   | "level_up"
-  | "task_complete";
+  | "task_complete"
+  | "field_report";
 
 export type FieldTaskType =
   | "explore_pois"
@@ -128,12 +129,28 @@ export interface ActivityEvent {
   poiType?: POIType;
 }
 
+export interface FieldReportBestFind {
+  name: string;
+  rarity: ItemRarity;
+}
+
+export interface FieldReport {
+  startedAt: string;
+  sitesExplored: number;
+  xpGained: number;
+  itemsFound: number;
+  bestFind?: FieldReportBestFind;
+  poiTypesExplored: POIType[];
+  tasksCompleted: number;
+}
+
 export interface GameState {
   player: Player;
   visitedPOIIds: string[];
   codex: Codex;
   activityLog: ActivityEvent[];
   fieldTasks: FieldTask[];
+  fieldReport: FieldReport;
 }
 
 export const EXPLORE_RADIUS_METERS = 150;

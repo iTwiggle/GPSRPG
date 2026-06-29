@@ -17,6 +17,7 @@ const TYPE_ACCENTS: Record<ActivityEventType, string> = {
   item_found: "border-l-amber-400",
   level_up: "border-l-emerald-500",
   task_complete: "border-l-teal-400",
+  field_report: "border-l-cyan-400",
 };
 
 const TYPE_LABELS: Record<ActivityEventType, string> = {
@@ -26,6 +27,7 @@ const TYPE_LABELS: Record<ActivityEventType, string> = {
   item_found: "Loot",
   level_up: "Level",
   task_complete: "Contract",
+  field_report: "Report",
 };
 
 function formatTime(iso: string): string {
@@ -56,6 +58,9 @@ function messageClass(event: ActivityEvent): string {
   }
   if (event.type === "task_complete") {
     return "font-medium text-teal-200";
+  }
+  if (event.type === "field_report") {
+    return "text-cyan-200";
   }
   return "text-slate-200";
 }
