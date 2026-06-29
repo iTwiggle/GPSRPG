@@ -1,8 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { appendExploreEvents } from "@/lib/activity-log";
+import {
+  appendExploreEvents,
+  appendTaskCompleteEvents,
+} from "@/lib/activity-log";
 import { recordExplore } from "@/lib/codex";
+import { applyExploreToTasks, refreshFieldTasks as rollFieldTasks } from "@/lib/tasks";
 import { applyXp } from "@/lib/xp";
 import {
   addLootToPlayer,
@@ -52,12 +56,37 @@ export function useGameState() {
         prevLevel,
         newLevel: withXp.level,
       });
+
+      const { tasks: withTasks, completions } = applyExploreToTasks(
+        gameState.fieldTasks,
+        { poi, encounter }
+      );
+
+      let player = withLoot;
+      let activityLog = withActivity;
+
+      if (completions.length > 0) {
+        const levelBeforeRewards = player.level;
+        const rewardXp = completions.reduce(
+          (sum, task) => sum + task.rewardXp,
+          0
+        );
+        player = applyXp(player, rewardXp);
+        activityLog = appendTaskCompleteEvents(
+          activityLog,
+          completions,
+          levelBeforeRewards,
+          player.level
+        );
+      }
+
       const nextState = markPoiVisited(
         {
           ...gameState,
-          player: withLoot,
+          player,
           codex: withCodex,
-          activityLog: withActivity,
+          activityLog,
+          fieldTasks: withTasks,
         },
         poi.id
       );
@@ -68,6 +97,14 @@ export function useGameState() {
     },
     [gameState, persist]
   );
+
+  const refreshFieldTasks = useCallback(() => {
+    if (!gameState) return;
+    persist({
+      ...gameState,
+      fieldTasks: rollFieldTasks(),
+    });
+  }, [gameState, persist]);
 
   const clearEncounter = useCallback(() => {
     setLastEncounter(null);
@@ -83,6 +120,7 @@ export function useGameState() {
     gameState,
     lastEncounter,
     explorePoi,
+    refreshFieldTasks,
     clearEncounter,
     reset,
     isVisited: (poiId: string) =>

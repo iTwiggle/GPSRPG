@@ -8,6 +8,7 @@ interface DevControlsProps {
   onEnableDemo: () => void;
   onNudge: (north: number, east: number) => void;
   onReset: () => void;
+  onRefreshTasks?: () => void;
 }
 
 const NUDGE_METERS = 40;
@@ -18,6 +19,7 @@ export default function DevControls({
   onEnableDemo,
   onNudge,
   onReset,
+  onRefreshTasks,
 }: DevControlsProps) {
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950">
@@ -44,6 +46,15 @@ export default function DevControls({
           >
             Reset save
           </button>
+          {onRefreshTasks && (
+            <button
+              type="button"
+              onClick={onRefreshTasks}
+              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100"
+            >
+              New Contracts
+            </button>
+          )}
         </div>
       </div>
 

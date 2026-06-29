@@ -7,6 +7,7 @@ import CharacterHUD from "@/components/CharacterHUD";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
 import EncounterModal from "@/components/EncounterModal";
+import FieldTasksPanel from "@/components/FieldTasksPanel";
 import InventoryPanel from "@/components/InventoryPanel";
 import MobilePanelNav, {
   type MobilePanelSection,
@@ -29,7 +30,7 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, lastEncounter, explorePoi, clearEncounter, reset, isVisited } =
+  const { gameState, lastEncounter, explorePoi, refreshFieldTasks, clearEncounter, reset, isVisited } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activeMobileSection, setActiveMobileSection] =
@@ -213,6 +214,12 @@ export default function HomePage() {
                   onSimulateVisit={handleSimulateVisit}
                 />
               )}
+              {activeMobileSection === "tasks" && (
+                <FieldTasksPanel
+                  tasks={gameState.fieldTasks}
+                  onRefresh={refreshFieldTasks}
+                />
+              )}
               {activeMobileSection === "bag" && (
                 <InventoryPanel inventory={gameState.player.inventory} />
               )}
@@ -229,6 +236,7 @@ export default function HomePage() {
                   onEnableDemo={geo.enableDemoMode}
                   onNudge={geo.nudgePosition}
                   onReset={reset}
+                  onRefreshTasks={refreshFieldTasks}
                 />
               )}
             </div>
@@ -241,6 +249,10 @@ export default function HomePage() {
                 onExplore={handleExplore}
                 onSimulateVisit={handleSimulateVisit}
               />
+              <FieldTasksPanel
+                tasks={gameState.fieldTasks}
+                onRefresh={refreshFieldTasks}
+              />
               <InventoryPanel inventory={gameState.player.inventory} />
               <CodexPanel codex={gameState.codex} />
               <ActivityLogPanel events={gameState.activityLog} />
@@ -250,6 +262,7 @@ export default function HomePage() {
                 onEnableDemo={geo.enableDemoMode}
                 onNudge={geo.nudgePosition}
                 onReset={reset}
+                onRefreshTasks={refreshFieldTasks}
               />
             </div>
           </div>

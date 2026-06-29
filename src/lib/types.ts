@@ -89,7 +89,34 @@ export type ActivityEventType =
   | "encounter"
   | "xp_gained"
   | "item_found"
-  | "level_up";
+  | "level_up"
+  | "task_complete";
+
+export type FieldTaskType =
+  | "explore_pois"
+  | "explore_poi_types"
+  | "find_items"
+  | "find_uncommon_plus"
+  | "gain_xp"
+  | "complete_poi_type"
+  | "trigger_encounters";
+
+export type FieldTaskStatus = "active" | "completed";
+
+export interface FieldTask {
+  id: string;
+  type: FieldTaskType;
+  title: string;
+  description: string;
+  target: number;
+  progress: number;
+  status: FieldTaskStatus;
+  rewardXp: number;
+  poiType?: POIType;
+  poiTypesSeen?: POIType[];
+  createdAt: string;
+  completedAt?: string;
+}
 
 export interface ActivityEvent {
   id: string;
@@ -106,6 +133,7 @@ export interface GameState {
   visitedPOIIds: string[];
   codex: Codex;
   activityLog: ActivityEvent[];
+  fieldTasks: FieldTask[];
 }
 
 export const EXPLORE_RADIUS_METERS = 150;
