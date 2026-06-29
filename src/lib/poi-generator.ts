@@ -4,6 +4,22 @@ const POI_COUNT = 8;
 const MIN_RADIUS_METERS = 120;
 const MAX_RADIUS_METERS = 450;
 
+/** POIs regenerate only after crossing into a new ~400 m grid cell. */
+export const POI_CELL_SIZE_METERS = 400;
+
+function getAreaCellKey(
+  lat: number,
+  lng: number
+): { cellLat: number; cellLng: number } {
+  const latStep = POI_CELL_SIZE_METERS / 111_320;
+  const cellLat = Math.floor(lat / latStep) * latStep;
+  const lngStep =
+    POI_CELL_SIZE_METERS /
+    (111_320 * Math.cos((cellLat * Math.PI) / 180));
+  const cellLng = Math.floor(lng / lngStep) * lngStep;
+  return { cellLat, cellLng };
+}
+
 const POI_TYPES: POIType[] = [
   "ruins",
   "shrine",
@@ -80,8 +96,7 @@ export function generateNearbyPOIs(
   lng: number,
   count: number = POI_COUNT
 ): POI[] {
-  const cellLat = Math.floor(lat * 1000) / 1000;
-  const cellLng = Math.floor(lng * 1000) / 1000;
+  const { cellLat, cellLng } = getAreaCellKey(lat, lng);
   const baseSeed = hashSeed(cellLat, cellLng);
   const rand = seededRandom(baseSeed);
 
@@ -95,7 +110,7 @@ export function generateNearbyPOIs(
     const offset = metersToLatLngOffset(lat, distance, bearing);
 
     pois.push({
-      id: `poi-${cellLat}-${cellLng}-${i}`,
+      id: `poi-${cellLat.toFixed(6)}-${cellLng.toFixed(6)}-${i}`,
       name: buildPoiName(type, rand),
       type,
       lat: lat + offset.lat,
