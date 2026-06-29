@@ -38,7 +38,7 @@ export default function EncounterModal({
         aria-labelledby="encounter-title"
       >
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300/90">
-          Encounter resolved
+          Field report
         </p>
         <h2
           id="encounter-title"

@@ -77,6 +77,101 @@ body {
   box-shadow: 0 0 6px rgba(251, 191, 36, 0.8);
 }
 
+/* ── Scanner frame + Local Aura readout ───────────────── */
+
+.rpg-scanner-overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 400;
+  border-radius: 0.75rem;
+  box-shadow: inset 0 0 56px rgba(2, 6, 23, 0.5);
+}
+
+.rpg-scanner-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: rgba(167, 139, 250, 0.55);
+  border-style: solid;
+}
+
+.rpg-scanner-corner--tl {
+  top: 8px;
+  left: 8px;
+  border-width: 2px 0 0 2px;
+  border-radius: 4px 0 0 0;
+}
+
+.rpg-scanner-corner--tr {
+  top: 8px;
+  right: 8px;
+  border-width: 2px 2px 0 0;
+  border-radius: 0 4px 0 0;
+}
+
+.rpg-scanner-corner--bl {
+  bottom: 8px;
+  left: 8px;
+  border-width: 0 0 2px 2px;
+  border-radius: 0 0 0 4px;
+}
+
+.rpg-scanner-corner--br {
+  bottom: 8px;
+  right: 8px;
+  border-width: 0 2px 2px 0;
+  border-radius: 0 0 4px 0;
+}
+
+.rpg-aura-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rpg-aura-readout__label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(167, 139, 250, 0.75);
+}
+
+.rpg-aura-chip {
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #bae6fd;
+}
+
+/* ── Inline POI glyph (location card) ───────────────────── */
+
+.poi-card-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(2, 6, 23, 0.65);
+}
+
+.poi-card-glyph .poi-marker-glyph {
+  margin: 0;
+  transform: scale(0.82);
+  transform-origin: center;
+}
+
+.poi-card-glyph.poi-marker--shrine .poi-marker-glyph {
+  transform: rotate(45deg) scale(0.82);
+}
+
+.poi-card-glyph.poi-marker--grove .poi-marker-glyph {
+  transform: rotate(-35deg) scale(0.82);
+}
+
 /* ── Player marker ─────────────────────────────────────── */
 
 .player-marker {
