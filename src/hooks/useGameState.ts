@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { recordExplore } from "@/lib/codex";
 import { applyXp } from "@/lib/xp";
 import {
   addLootToPlayer,
@@ -42,8 +43,9 @@ export function useGameState() {
 
       const withXp = applyXp(gameState.player, encounter.xpGained);
       const withLoot = addLootToPlayer(withXp, encounter.loot);
+      const withCodex = recordExplore(gameState.codex, poi, encounter);
       const nextState = markPoiVisited(
-        { ...gameState, player: withLoot },
+        { ...gameState, player: withLoot, codex: withCodex },
         poi.id
       );
 
