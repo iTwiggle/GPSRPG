@@ -4,7 +4,7 @@ A tiny browser-based **companion app / overworld prototype** for GPSRPG. This is
 
 ## Core loop (prototype)
 
-GPS position → procedural nearby fantasy POIs → visit/explore POI → roll encounter reward → gain XP/loot → inventory and character state persist in `localStorage`. A **Collection Log / Codex** tracks discovered POIs, loot, and encounters across sessions in the same save.
+GPS position → procedural nearby fantasy POIs → visit/explore POI → roll encounter reward → gain XP/loot → inventory and character state persist in `localStorage`. A **Collection Log / Codex** tracks discovered POIs, loot, and encounters across sessions in the same save. An **Activity Log / Journey Feed** records the latest 50 explore events (POI explored, encounter, XP gained, items found, level-ups) as a chronological timeline, also persisted in `localStorage`.
 
 ## Stack
 

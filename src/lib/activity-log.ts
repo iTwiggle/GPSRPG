@@ -1,0 +1,117 @@
+import type {
+  ActivityEvent,
+  ActivityEventType,
+  EncounterResult,
+  Item,
+  POI,
+} from "./types";
+
+export const ACTIVITY_LOG_MAX = 50;
+
+export function createEmptyActivityLog(): ActivityEvent[] {
+  return [];
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function makeId(timestamp: string, type: ActivityEventType, index: number): string {
+  return `act-${timestamp}-${type}-${index}`;
+}
+
+interface BuildContext {
+  poi: POI;
+  encounter: EncounterResult;
+  prevLevel: number;
+  newLevel: number;
+}
+
+/**
+ * Build the events for a single explore in narrative order:
+ *   1. POI explored
+ *   2. Encounter
+ *   3. XP gained
+ *   4. Items found (one per loot drop)
+ *   5. Level up (if leveled)
+ */
+function buildExploreEvents(
+  { poi, encounter, prevLevel, newLevel }: BuildContext,
+  timestamp: string
+): ActivityEvent[] {
+  const events: ActivityEvent[] = [];
+  let index = 0;
+
+  events.push({
+    id: makeId(timestamp, "poi_explored", index++),
+    timestamp,
+    type: "poi_explored",
+    message: `Explored ${poi.name}`,
+    poiType: poi.type,
+  });
+
+  events.push({
+    id: makeId(timestamp, "encounter", index++),
+    timestamp,
+    type: "encounter",
+    message: `Encountered ${encounter.title}`,
+  });
+
+  if (encounter.xpGained > 0) {
+    events.push({
+      id: makeId(timestamp, "xp_gained", index++),
+      timestamp,
+      type: "xp_gained",
+      message: `Gained ${encounter.xpGained} XP`,
+    });
+  }
+
+  for (const item of encounter.loot) {
+    events.push({
+      id: makeId(timestamp, "item_found", index++),
+      timestamp,
+      type: "item_found",
+      message: `Found ${capitalize(item.rarity)} ${item.name}`,
+      rarity: item.rarity,
+      itemType: item.type,
+    });
+  }
+
+  if (newLevel > prevLevel) {
+    events.push({
+      id: makeId(timestamp, "level_up", index++),
+      timestamp,
+      type: "level_up",
+      message: `Reached Level ${newLevel}`,
+    });
+  }
+
+  return events;
+}
+
+/**
+ * Prepend a single explore's events (in narrative order) to the activity log,
+ * keeping newest explore batches first and capping the log at ACTIVITY_LOG_MAX.
+ */
+export function appendExploreEvents(
+  log: ActivityEvent[],
+  ctx: { poi: POI; encounter: EncounterResult; prevLevel: number; newLevel: number },
+  timestamp: string = new Date().toISOString()
+): ActivityEvent[] {
+  const batch = buildExploreEvents(ctx, timestamp);
+  const next = [...batch, ...log];
+  if (next.length > ACTIVITY_LOG_MAX) {
+    next.length = ACTIVITY_LOG_MAX;
+  }
+  return next;
+}
+
+interface ItemTemplate {
+  rarity: Item["rarity"];
+  name: string;
+}
+
+/** Helper for tests/devtools: build a single item-found message. */
+export function formatItemFoundMessage(item: ItemTemplate): string {
+  return `Found ${capitalize(item.rarity)} ${item.name}`;
+}

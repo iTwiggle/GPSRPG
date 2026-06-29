@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
+import ActivityLogPanel from "@/components/ActivityLogPanel";
 import CharacterHUD from "@/components/CharacterHUD";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
@@ -160,6 +161,7 @@ export default function HomePage() {
             />
             <InventoryPanel inventory={gameState.player.inventory} />
             <CodexPanel codex={gameState.codex} />
+            <ActivityLogPanel events={gameState.activityLog} />
             <DevControls
               isDemo={geo.isDemo}
               gpsStatus={geo.status}

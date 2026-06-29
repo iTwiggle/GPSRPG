@@ -1,3 +1,4 @@
+import { createEmptyActivityLog } from "./activity-log";
 import { createEmptyCodex } from "./codex";
 import { createDefaultPlayer } from "./xp";
 import type { GameState, Item, Player } from "./types";
@@ -9,6 +10,7 @@ export function createInitialState(): GameState {
     player: createDefaultPlayer(),
     visitedPOIIds: [],
     codex: createEmptyCodex(),
+    activityLog: createEmptyActivityLog(),
   };
 }
 
@@ -31,6 +33,7 @@ export function loadGameState(): GameState {
       },
       visitedPOIIds: parsed.visitedPOIIds ?? [],
       codex: parsed.codex ?? createEmptyCodex(),
+      activityLog: parsed.activityLog ?? createEmptyActivityLog(),
     };
   } catch {
     return createInitialState();
