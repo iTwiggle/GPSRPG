@@ -5,13 +5,13 @@ interface ActivityLogPanelProps {
 }
 
 const RARITY_COLORS: Record<ItemRarity, string> = {
-  common: "text-slate-700",
-  uncommon: "text-emerald-700",
-  rare: "text-amber-700",
+  common: "text-slate-300",
+  uncommon: "text-emerald-300",
+  rare: "text-amber-300",
 };
 
 const TYPE_ACCENTS: Record<ActivityEventType, string> = {
-  poi_explored: "border-l-indigo-400",
+  poi_explored: "border-l-violet-400",
   encounter: "border-l-purple-400",
   xp_gained: "border-l-sky-400",
   item_found: "border-l-amber-400",
@@ -50,15 +50,15 @@ function messageClass(event: ActivityEvent): string {
     return RARITY_COLORS[event.rarity];
   }
   if (event.type === "level_up") {
-    return "text-emerald-700 font-medium";
+    return "font-medium text-emerald-300";
   }
-  return "text-slate-800";
+  return "text-slate-200";
 }
 
 export default function ActivityLogPanel({ events }: ActivityLogPanelProps) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur">
-      <h2 className="text-sm font-semibold text-slate-900">Activity Log</h2>
+    <div className="rpg-panel p-4">
+      <h2 className="text-sm font-semibold text-slate-100">Activity Log</h2>
       <p className="mt-0.5 text-xs text-slate-500">
         Recent journey entries — newest first.
       </p>
@@ -70,13 +70,13 @@ export default function ActivityLogPanel({ events }: ActivityLogPanelProps) {
           {events.map((event) => (
             <li
               key={event.id}
-              className={`flex items-start justify-between gap-2 rounded-r-md border-l-2 bg-slate-50 px-2.5 py-1.5 text-sm ${TYPE_ACCENTS[event.type]}`}
+              className={`flex items-start justify-between gap-2 rounded-r-md border-l-2 border-slate-700/40 bg-slate-900/50 px-2.5 py-1.5 text-sm ${TYPE_ACCENTS[event.type]}`}
             >
               <div className="min-w-0">
                 <p className={`truncate ${messageClass(event)}`}>
                   {event.message}
                 </p>
-                <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">
                   {TYPE_LABELS[event.type]}
                 </p>
               </div>

@@ -3,7 +3,7 @@
 export type MobilePanelSection = "poi" | "bag" | "codex" | "journey" | "dev";
 
 const SECTIONS: { id: MobilePanelSection; label: string }[] = [
-  { id: "poi", label: "POI" },
+  { id: "poi", label: "Sites" },
   { id: "bag", label: "Bag" },
   { id: "codex", label: "Codex" },
   { id: "journey", label: "Journey" },
@@ -21,7 +21,7 @@ export default function MobilePanelNav({
 }: MobilePanelNavProps) {
   return (
     <nav
-      className="sticky top-0 z-10 -mx-1 rounded-xl border border-slate-200 bg-white/95 px-2 py-2 shadow-sm backdrop-blur lg:hidden"
+      className="rpg-panel sticky top-0 z-10 -mx-1 px-2 py-2 lg:hidden"
       aria-label="Panel sections"
     >
       <div className="flex flex-wrap gap-1.5">
@@ -33,10 +33,10 @@ export default function MobilePanelNav({
               type="button"
               onClick={() => onSectionChange(id)}
               aria-current={isActive ? "true" : undefined}
-              className={`min-h-11 rounded-full px-3.5 py-2 text-xs font-medium transition ${
+              className={`min-h-11 rounded-full px-3.5 py-2 text-xs font-semibold tracking-wide transition ${
                 isActive
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-violet-600 text-white shadow-[0_0_14px_rgba(124,58,237,0.45)]"
+                  : "border border-slate-600/60 bg-slate-800/80 text-slate-300 hover:border-slate-500 hover:bg-slate-800"
               }`}
             >
               {label}

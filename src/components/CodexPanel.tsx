@@ -5,9 +5,9 @@ interface CodexPanelProps {
 }
 
 const RARITY_COLORS: Record<ItemRarity, string> = {
-  common: "text-slate-600",
-  uncommon: "text-emerald-600",
-  rare: "text-amber-600",
+  common: "text-slate-300",
+  uncommon: "text-emerald-300",
+  rare: "text-amber-300",
 };
 
 function formatDate(iso: string): string {
@@ -38,8 +38,8 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
     encounters.length === 0;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur">
-      <h2 className="text-sm font-semibold text-slate-900">Collection Log</h2>
+    <div className="rpg-panel p-4">
+      <h2 className="text-sm font-semibold text-slate-100">Collection Log</h2>
       <p className="mt-0.5 text-xs text-slate-500">
         Your discovery history — POIs, loot, and encounters.
       </p>
@@ -55,12 +55,12 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
             <StatChip
               label="Rare"
               value={stats.rarityCounts.rare}
-              className="text-amber-700"
+              className="text-amber-300"
             />
             <StatChip
               label="Uncommon"
               value={stats.rarityCounts.uncommon}
-              className="text-emerald-700"
+              className="text-emerald-300"
             />
           </div>
 
@@ -72,10 +72,10 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                 {items.map((item) => (
                   <li
                     key={`${item.name}|${item.type}`}
-                    className="flex items-start justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm"
+                    className="flex items-start justify-between gap-2 rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-800">
+                      <p className="truncate font-medium text-slate-200">
                         {item.name}
                         {item.countFound > 1 && (
                           <span className="ml-1 text-slate-500">
@@ -106,10 +106,10 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                 {pois.map((poi) => (
                   <li
                     key={poi.poiId}
-                    className="flex items-start justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm"
+                    className="flex items-start justify-between gap-2 rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-800">
+                      <p className="truncate font-medium text-slate-200">
                         {poi.name}
                         {poi.visitCount > 1 && (
                           <span className="ml-1 text-slate-500">
@@ -121,7 +121,7 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                         First {formatDate(poi.firstVisitedAt)}
                       </p>
                     </div>
-                    <span className="shrink-0 capitalize text-slate-600">
+                    <span className="shrink-0 capitalize text-slate-400">
                       {poi.type}
                     </span>
                   </li>
@@ -138,10 +138,10 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                 {encounters.map((entry) => (
                   <li
                     key={entry.title}
-                    className="flex items-start justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm"
+                    className="flex items-start justify-between gap-2 rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-800">
+                      <p className="truncate font-medium text-slate-200">
                         {entry.title}
                         {entry.count > 1 && (
                           <span className="ml-1 text-slate-500">
@@ -167,14 +167,14 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
 function StatChip({
   label,
   value,
-  className = "text-slate-700",
+  className = "text-slate-200",
 }: {
   label: string;
   value: number;
   className?: string;
 }) {
   return (
-    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium">
+    <span className="rounded-full border border-slate-700/50 bg-slate-900/60 px-2.5 py-1 text-xs font-medium">
       <span className="text-slate-500">{label}</span>{" "}
       <span className={className}>{value}</span>
     </span>

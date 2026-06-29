@@ -1,5 +1,6 @@
 import { distanceMeters, formatDistance, isWithinRadius } from "@/lib/distance";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
+import { POI_TYPE_CHIP_BG } from "@/lib/poi-visual";
 import { EXPLORE_RADIUS_METERS, type POI, type Position } from "@/lib/types";
 
 interface POIPanelProps {
@@ -19,10 +20,11 @@ export default function POIPanel({
 }: POIPanelProps) {
   if (!poi) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white/90 p-4 text-sm text-slate-500">
-        <p>Tap a map marker to inspect a nearby point of interest.</p>
-        <p className="mt-2 text-xs text-slate-400">
-          Nearby POIs stay stable within ~400 m of your path.
+      <div className="rpg-panel border-dashed border-slate-600/50 p-4 text-sm text-slate-400">
+        <p className="text-slate-300">Scan the overworld map for nearby sites.</p>
+        <p className="mt-2 text-xs text-slate-500">
+          Tap a marker to inspect a point of interest. Sites stay stable within
+          ~400 m of your path.
         </p>
       </div>
     );
@@ -34,48 +36,68 @@ export default function POIPanel({
     poi,
     EXPLORE_RADIUS_METERS
   );
+  const typeChip = POI_TYPE_CHIP_BG[poi.type];
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Point of Interest
-          </p>
-          <h2 className="text-lg font-bold text-slate-900">{poi.name}</h2>
-          <p className="text-sm text-slate-600">{getPoiTypeLabel(poi.type)}</p>
-          <p className="mt-1 text-sm italic text-slate-500">{poi.flavor}</p>
+    <div className="rpg-panel overflow-hidden p-0">
+      <div className="border-l-4 border-amber-400/80 bg-slate-900/40 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200/80">
+                {visited ? "Discovered site" : "Nearby site"}
+              </p>
+              <span
+                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${typeChip}`}
+              >
+                {getPoiTypeLabel(poi.type)}
+              </span>
+            </div>
+            <h2 className="mt-1 text-lg font-bold text-slate-50">{poi.name}</h2>
+            <p className="mt-2 rounded-lg border border-slate-700/60 bg-slate-950/40 px-3 py-2 text-sm italic leading-relaxed text-slate-400">
+              {poi.flavor}
+            </p>
+          </div>
+          {visited && (
+            <span className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-1 text-xs font-medium text-emerald-300">
+              Visited
+            </span>
+          )}
         </div>
-        {visited && (
-          <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-            Visited
+
+        <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
+          <span>
+            <span className="text-slate-500">Distance</span>{" "}
+            <span className="font-semibold text-slate-200">
+              {formatDistance(dist)}
+            </span>
           </span>
-        )}
-      </div>
+          <span>
+            <span className="text-slate-500">Explore range</span>{" "}
+            <span className="font-semibold text-slate-200">
+              {EXPLORE_RADIUS_METERS} m
+            </span>
+          </span>
+        </div>
 
-      <p className="mt-3 text-sm text-slate-600">
-        Distance: <span className="font-medium">{formatDistance(dist)}</span>
-        {" · "}
-        Explore radius: {EXPLORE_RADIUS_METERS} m
-      </p>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onExplore}
-          disabled={visited || !inRange}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          {visited ? "Already explored" : inRange ? "Explore" : "Too far"}
-        </button>
-        <button
-          type="button"
-          onClick={onSimulateVisit}
-          disabled={visited}
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Simulate visit
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onExplore}
+            disabled={visited || !inRange}
+            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-[0_0_16px_rgba(124,58,237,0.35)] transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 disabled:shadow-none"
+          >
+            {visited ? "Already explored" : inRange ? "Explore" : "Too far"}
+          </button>
+          <button
+            type="button"
+            onClick={onSimulateVisit}
+            disabled={visited}
+            className="rounded-lg border border-slate-600 bg-slate-800/80 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Simulate visit
+          </button>
+        </div>
       </div>
     </div>
   );
