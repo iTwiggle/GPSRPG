@@ -1,11 +1,13 @@
-import type { Item, ItemRarity } from "./types";
+import type { Item, ItemRarity, POIType } from "./types";
 
-const LOOT_TABLE: Array<{
+type LootTemplate = {
   name: string;
   type: Item["type"];
   rarity: ItemRarity;
   weight: number;
-}> = [
+};
+
+const LOOT_TABLE: LootTemplate[] = [
   { name: "Rusty Dagger", type: "weapon", rarity: "common", weight: 20 },
   { name: "Traveler's Cloak", type: "armor", rarity: "common", weight: 18 },
   { name: "Healing Draught", type: "consumable", rarity: "common", weight: 22 },
@@ -15,6 +17,41 @@ const LOOT_TABLE: Array<{
   { name: "Phoenix Feather", type: "consumable", rarity: "rare", weight: 4 },
   { name: "Dragon Scale", type: "treasure", rarity: "rare", weight: 3 },
 ];
+
+const TYPE_LOOT: Partial<Record<POIType, LootTemplate[]>> = {
+  shrine: [
+    { name: "Offering Bowl", type: "treasure", rarity: "common", weight: 2 },
+    { name: "Spirit Charm", type: "consumable", rarity: "uncommon", weight: 2 },
+  ],
+  camp: [
+    { name: "Scout's Knife", type: "weapon", rarity: "common", weight: 2 },
+    { name: "Bandit Satchel", type: "treasure", rarity: "common", weight: 2 },
+  ],
+  tower: [
+    { name: "Signal Flare", type: "consumable", rarity: "common", weight: 2 },
+    { name: "Lookout Lens", type: "treasure", rarity: "uncommon", weight: 2 },
+  ],
+  gate: [
+    { name: "Rusty Gate Key", type: "treasure", rarity: "common", weight: 2 },
+    { name: "Patrol Badge", type: "armor", rarity: "common", weight: 2 },
+  ],
+  grove: [
+    { name: "Herb Bundle", type: "consumable", rarity: "common", weight: 2 },
+    { name: "Beast Fang", type: "weapon", rarity: "common", weight: 2 },
+  ],
+  cache: [
+    { name: "Smuggler's Pouch", type: "treasure", rarity: "common", weight: 2 },
+    { name: "Road Runner Blade", type: "weapon", rarity: "uncommon", weight: 2 },
+  ],
+  quarry: [
+    { name: "Stone Chisel", type: "weapon", rarity: "common", weight: 2 },
+    { name: "Miner's Token", type: "treasure", rarity: "common", weight: 2 },
+  ],
+  well: [
+    { name: "Well Coin", type: "treasure", rarity: "common", weight: 2 },
+    { name: "Drowned Locket", type: "treasure", rarity: "uncommon", weight: 2 },
+  ],
+};
 
 function pickWeighted<T extends { weight: number }>(
   table: T[],
@@ -31,10 +68,7 @@ function pickWeighted<T extends { weight: number }>(
   return table[table.length - 1];
 }
 
-function createItem(
-  template: (typeof LOOT_TABLE)[number],
-  suffix: string
-): Item {
+function createItem(template: LootTemplate, suffix: string): Item {
   return {
     id: `item-${template.name.toLowerCase().replace(/\s+/g, "-")}-${suffix}`,
     name: template.name,
@@ -43,8 +77,19 @@ function createItem(
   };
 }
 
-export function rollLoot(rand: () => number, suffix: string): Item {
-  const template = pickWeighted(LOOT_TABLE, rand);
+function getLootTable(poiType?: POIType): LootTemplate[] {
+  if (!poiType) return LOOT_TABLE;
+  const themed = TYPE_LOOT[poiType];
+  if (!themed) return LOOT_TABLE;
+  return [...LOOT_TABLE, ...themed];
+}
+
+export function rollLoot(
+  rand: () => number,
+  suffix: string,
+  poiType?: POIType
+): Item {
+  const template = pickWeighted(getLootTable(poiType), rand);
   return createItem(template, suffix);
 }
 

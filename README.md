@@ -74,4 +74,4 @@ npm run lint   # ESLint
 
 ## Scope (prototype)
 
-No backend, auth, database, blockchain, BLE/NFC, React Native, multiplayer, 3D, AR, or real-money rewards.
+No backend, auth, database, blockchain, BLE/NFC, React Native, multiplayer, 3D, AR, or real-money rewards. Nearby POI names and flavor are **procedural fantasy only** — not real-world OSM landmark theming.

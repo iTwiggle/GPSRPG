@@ -1,4 +1,9 @@
-import type { POI, POIType } from "./types";
+import {
+  buildPoiName,
+  pickPoiFlavor,
+  POI_TYPES,
+} from "./poi-flavor";
+import type { POI } from "./types";
 
 const POI_COUNT = 8;
 const MIN_RADIUS_METERS = 120;
@@ -19,36 +24,6 @@ function getAreaCellKey(
   const cellLng = Math.floor(lng / lngStep) * lngStep;
   return { cellLat, cellLng };
 }
-
-const POI_TYPES: POIType[] = [
-  "ruins",
-  "shrine",
-  "cave",
-  "tower",
-  "camp",
-  "forest",
-  "lake",
-];
-
-const NAME_PARTS: Record<POIType, string[]> = {
-  ruins: ["Forgotten", "Crumbling", "Ancient", "Lost"],
-  shrine: ["Moonlit", "Whispering", "Sacred", "Hidden"],
-  cave: ["Gloomy", "Echoing", "Crystal", "Shadow"],
-  tower: ["Broken", "Ivory", "Warded", "Lonely"],
-  camp: ["Bandit", "Nomad", "Abandoned", "Forsaken"],
-  forest: ["Thorn", "Misty", "Enchanted", "Dark"],
-  lake: ["Still", "Mirror", "Haunted", "Sunken"],
-};
-
-const NAME_SUFFIXES: Record<POIType, string[]> = {
-  ruins: ["Ruins", "Keep", "Hall", "Vestige"],
-  shrine: ["Shrine", "Altar", "Grove", "Sanctum"],
-  cave: ["Cavern", "Grotto", "Den", "Hollow"],
-  tower: ["Spire", "Watchtower", "Bastion", "Pinnacle"],
-  camp: ["Camp", "Outpost", "Hideout", "Bivouac"],
-  forest: ["Thicket", "Woods", "Glade", "Copse"],
-  lake: ["Pool", "Lagoon", "Bend", "Shore"],
-};
 
 function hashSeed(...values: number[]): number {
   let hash = 2166136261;
@@ -82,14 +57,6 @@ function metersToLatLngOffset(
   return { lat: latOffset, lng: lngOffset };
 }
 
-function buildPoiName(type: POIType, rand: () => number): string {
-  const parts = NAME_PARTS[type];
-  const suffixes = NAME_SUFFIXES[type];
-  const prefix = parts[Math.floor(rand() * parts.length)];
-  const suffix = suffixes[Math.floor(rand() * suffixes.length)];
-  return `${prefix} ${suffix}`;
-}
-
 /** Generate deterministic fantasy POIs near a GPS coordinate. */
 export function generateNearbyPOIs(
   lat: number,
@@ -109,10 +76,14 @@ export function generateNearbyPOIs(
     const bearing = rand() * Math.PI * 2;
     const offset = metersToLatLngOffset(lat, distance, bearing);
 
+    const nameRand = seededRandom(hashSeed(cellLat, cellLng, i, 1));
+    const flavorRand = seededRandom(hashSeed(cellLat, cellLng, i, 2));
+
     pois.push({
       id: `poi-${cellLat.toFixed(6)}-${cellLng.toFixed(6)}-${i}`,
-      name: buildPoiName(type, rand),
+      name: buildPoiName(type, nameRand),
       type,
+      flavor: pickPoiFlavor(type, flavorRand),
       lat: lat + offset.lat,
       lng: lng + offset.lng,
     });

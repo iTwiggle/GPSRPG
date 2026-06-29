@@ -1,4 +1,5 @@
 import { distanceMeters, formatDistance, isWithinRadius } from "@/lib/distance";
+import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { EXPLORE_RADIUS_METERS, type POI, type Position } from "@/lib/types";
 
 interface POIPanelProps {
@@ -42,7 +43,8 @@ export default function POIPanel({
             Point of Interest
           </p>
           <h2 className="text-lg font-bold text-slate-900">{poi.name}</h2>
-          <p className="capitalize text-sm text-slate-600">{poi.type}</p>
+          <p className="text-sm text-slate-600">{getPoiTypeLabel(poi.type)}</p>
+          <p className="mt-1 text-sm italic text-slate-500">{poi.flavor}</p>
         </div>
         {visited && (
           <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">

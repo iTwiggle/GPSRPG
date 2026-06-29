@@ -15,18 +15,20 @@ export interface Player {
 }
 
 export type POIType =
-  | "ruins"
   | "shrine"
-  | "cave"
-  | "tower"
   | "camp"
-  | "forest"
-  | "lake";
+  | "tower"
+  | "gate"
+  | "grove"
+  | "cache"
+  | "quarry"
+  | "well";
 
 export interface POI {
   id: string;
   name: string;
   type: POIType;
+  flavor: string;
   lat: number;
   lng: number;
 }
