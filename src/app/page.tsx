@@ -7,6 +7,7 @@ import CharacterHUD from "@/components/CharacterHUD";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
 import EncounterModal from "@/components/EncounterModal";
+import FieldReportPanel from "@/components/FieldReportPanel";
 import FieldTasksPanel from "@/components/FieldTasksPanel";
 import InventoryPanel from "@/components/InventoryPanel";
 import MobilePanelNav, {
@@ -30,7 +31,7 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, lastEncounter, explorePoi, refreshFieldTasks, clearEncounter, reset, isVisited } =
+  const { gameState, lastEncounter, explorePoi, refreshFieldTasks, resetFieldReport, clearEncounter, reset, isVisited } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activeMobileSection, setActiveMobileSection] =
@@ -227,7 +228,13 @@ export default function HomePage() {
                 <CodexPanel codex={gameState.codex} />
               )}
               {activeMobileSection === "journey" && (
-                <ActivityLogPanel events={gameState.activityLog} />
+                <>
+                  <FieldReportPanel
+                    report={gameState.fieldReport}
+                    onReset={resetFieldReport}
+                  />
+                  <ActivityLogPanel events={gameState.activityLog} />
+                </>
               )}
               {activeMobileSection === "dev" && (
                 <DevControls
@@ -255,6 +262,10 @@ export default function HomePage() {
               />
               <InventoryPanel inventory={gameState.player.inventory} />
               <CodexPanel codex={gameState.codex} />
+              <FieldReportPanel
+                report={gameState.fieldReport}
+                onReset={resetFieldReport}
+              />
               <ActivityLogPanel events={gameState.activityLog} />
               <DevControls
                 isDemo={geo.isDemo}

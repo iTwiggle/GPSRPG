@@ -2,10 +2,12 @@ import type {
   ActivityEvent,
   ActivityEventType,
   EncounterResult,
+  FieldReport,
   FieldTask,
   Item,
   POI,
 } from "./types";
+import { hasFieldReportActivity, summarizeFieldReport } from "./field-report";
 
 export const ACTIVITY_LOG_MAX = 50;
 
@@ -160,6 +162,34 @@ export function appendTaskCompleteEvents(
       message: `Reached Level ${newLevel}`,
     });
   }
+
+  return prependEvents(log, events);
+}
+
+/** Log field report archive + new outing start when the player resets their report. */
+export function appendFieldReportEvents(
+  log: ActivityEvent[],
+  previousReport: FieldReport,
+  timestamp: string = new Date().toISOString()
+): ActivityEvent[] {
+  const events: ActivityEvent[] = [];
+  let index = 0;
+
+  if (hasFieldReportActivity(previousReport)) {
+    events.push({
+      id: makeId(timestamp, "field_report", index++),
+      timestamp,
+      type: "field_report",
+      message: `Field report filed: ${summarizeFieldReport(previousReport)}`,
+    });
+  }
+
+  events.push({
+    id: makeId(timestamp, "field_report", index++),
+    timestamp,
+    type: "field_report",
+    message: "Started new field report",
+  });
 
   return prependEvents(log, events);
 }

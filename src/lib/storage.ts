@@ -1,5 +1,9 @@
-import { createEmptyActivityLog } from "./activity-log";
+import { createEmptyActivityLog, appendFieldReportEvents } from "./activity-log";
 import { createEmptyCodex } from "./codex";
+import {
+  createEmptyFieldReport,
+  normalizeFieldReport,
+} from "./field-report";
 import { generateFieldTasks, normalizeFieldTasks } from "./tasks";
 import { createDefaultPlayer } from "./xp";
 import type { GameState, Item, Player } from "./types";
@@ -13,6 +17,7 @@ export function createInitialState(): GameState {
     codex: createEmptyCodex(),
     activityLog: createEmptyActivityLog(),
     fieldTasks: generateFieldTasks(),
+    fieldReport: createEmptyFieldReport(),
   };
 }
 
@@ -37,6 +42,7 @@ export function loadGameState(): GameState {
       codex: parsed.codex ?? createEmptyCodex(),
       activityLog: parsed.activityLog ?? createEmptyActivityLog(),
       fieldTasks: normalizeFieldTasks(parsed.fieldTasks),
+      fieldReport: normalizeFieldReport(parsed.fieldReport),
     };
   } catch {
     return createInitialState();
@@ -62,6 +68,20 @@ export function addLootToPlayer(player: Player, loot: Item[]): Player {
   return {
     ...player,
     inventory: [...player.inventory, ...loot],
+  };
+}
+
+export function resetFieldReportInState(
+  state: GameState,
+  timestamp: string = new Date().toISOString()
+): GameState {
+  const previousReport = state.fieldReport;
+  const nextReport = createEmptyFieldReport(timestamp);
+
+  return {
+    ...state,
+    fieldReport: nextReport,
+    activityLog: appendFieldReportEvents(state.activityLog, previousReport, timestamp),
   };
 }
 
