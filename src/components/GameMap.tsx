@@ -50,7 +50,7 @@ export default function GameMap({
     <MapContainer
       center={center}
       zoom={16}
-      className="h-full w-full rounded-xl"
+      className="fantasy-map-surface h-full w-full rounded-xl"
       scrollWheelZoom
     >
       <TileLayer
