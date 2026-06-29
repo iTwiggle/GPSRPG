@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import CharacterHUD from "@/components/CharacterHUD";
+import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
 import EncounterModal from "@/components/EncounterModal";
 import InventoryPanel from "@/components/InventoryPanel";
@@ -158,6 +159,7 @@ export default function HomePage() {
               onSimulateVisit={handleSimulateVisit}
             />
             <InventoryPanel inventory={gameState.player.inventory} />
+            <CodexPanel codex={gameState.codex} />
             <DevControls
               isDemo={geo.isDemo}
               gpsStatus={geo.status}

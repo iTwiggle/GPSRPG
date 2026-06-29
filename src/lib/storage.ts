@@ -1,3 +1,4 @@
+import { createEmptyCodex } from "./codex";
 import { createDefaultPlayer } from "./xp";
 import type { GameState, Item, Player } from "./types";
 
@@ -7,6 +8,7 @@ export function createInitialState(): GameState {
   return {
     player: createDefaultPlayer(),
     visitedPOIIds: [],
+    codex: createEmptyCodex(),
   };
 }
 
@@ -28,6 +30,7 @@ export function loadGameState(): GameState {
         inventory: parsed.player?.inventory ?? [],
       },
       visitedPOIIds: parsed.visitedPOIIds ?? [],
+      codex: parsed.codex ?? createEmptyCodex(),
     };
   } catch {
     return createInitialState();

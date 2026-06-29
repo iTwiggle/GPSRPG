@@ -43,9 +43,49 @@ export interface EncounterResult {
   loot: Item[];
 }
 
+export interface CodexItemEntry {
+  name: string;
+  rarity: ItemRarity;
+  type: Item["type"];
+  countFound: number;
+  firstFoundAt: string;
+  lastFoundAt: string;
+}
+
+export interface CodexPoiEntry {
+  poiId: string;
+  name: string;
+  type: POIType;
+  visitCount: number;
+  firstVisitedAt: string;
+  lastVisitedAt: string;
+}
+
+export interface CodexEncounterEntry {
+  title: string;
+  count: number;
+  firstAt: string;
+  lastAt: string;
+}
+
+export interface CodexStats {
+  totalExplores: number;
+  totalVisitedPois: number;
+  totalItemsFound: number;
+  rarityCounts: Record<ItemRarity, number>;
+}
+
+export interface Codex {
+  items: Record<string, CodexItemEntry>;
+  pois: Record<string, CodexPoiEntry>;
+  encounters: Record<string, CodexEncounterEntry>;
+  stats: CodexStats;
+}
+
 export interface GameState {
   player: Player;
   visitedPOIIds: string[];
+  codex: Codex;
 }
 
 export const EXPLORE_RADIUS_METERS = 150;
