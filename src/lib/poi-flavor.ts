@@ -1,3 +1,4 @@
+import type { OsmContextCategory } from "./osm-context";
 import type { POIType } from "./types";
 
 export type EncounterKind =
@@ -257,18 +258,205 @@ export const ENCOUNTER_FLAVOR: Partial<
   },
 };
 
+const BASE_TYPE_WEIGHT = 1;
+
+const CONTEXT_TYPE_WEIGHTS: Record<
+  OsmContextCategory,
+  Partial<Record<POIType, number>>
+> = {
+  cemetery: {
+    shrine: 3,
+    gate: 2.5,
+    well: 2,
+    tower: 1,
+    grove: 0.5,
+    camp: 0.5,
+    cache: 0.5,
+    quarry: 0.25,
+  },
+  park_or_woods: {
+    grove: 3.5,
+    camp: 2,
+    cache: 1.5,
+    shrine: 1,
+    well: 1,
+    gate: 0.75,
+    tower: 0.5,
+    quarry: 0.25,
+  },
+  water: {
+    well: 3.5,
+    shrine: 2,
+    gate: 1.5,
+    grove: 1,
+    cache: 1,
+    camp: 0.75,
+    tower: 0.5,
+    quarry: 0.25,
+  },
+  industrial: {
+    quarry: 3.5,
+    camp: 2,
+    tower: 1.5,
+    cache: 1,
+    gate: 1,
+    shrine: 0.5,
+    grove: 0.25,
+    well: 0.25,
+  },
+  education: {
+    cache: 2.5,
+    tower: 2.5,
+    shrine: 2,
+    gate: 1.5,
+    camp: 1,
+    grove: 0.75,
+    well: 0.75,
+    quarry: 0.5,
+  },
+  worship: {
+    shrine: 3.5,
+    gate: 2,
+    tower: 1.5,
+    well: 1,
+    grove: 0.75,
+    cache: 0.75,
+    camp: 0.5,
+    quarry: 0.25,
+  },
+  transit: {
+    gate: 3,
+    camp: 2.5,
+    tower: 2,
+    cache: 1.5,
+    shrine: 1,
+    grove: 0.5,
+    well: 0.5,
+    quarry: 0.5,
+  },
+  commercial: {
+    cache: 1.25,
+    camp: 1.1,
+    gate: 1.1,
+    shrine: 1,
+    tower: 1,
+    grove: 1,
+    well: 1,
+    quarry: 1,
+  },
+  generic: {},
+};
+
+const CONTEXT_NAME_SUFFIXES: Partial<
+  Record<OsmContextCategory, string[]>
+> = {
+  cemetery: ["Crypt", "Spirit Gate", "Memorial Altar", "Bone Shrine"],
+  park_or_woods: [
+    "Druid Circle",
+    "Beast Trail",
+    "Herb Patch",
+    "Verdant Hollow",
+  ],
+  water: ["Drowned Altar", "River Shrine", "Old Dock", "Moonwell"],
+  industrial: ["Forge", "Goblin Works", "Rust Yard", "Stone Pit"],
+  education: ["Archive", "Academy", "Old Study", "Lore Cache"],
+  worship: ["Chapel", "Relic Site", "Blessing Shrine", "Sanctuary"],
+  transit: ["Waygate", "Crossroads", "Caravan Stop", "Signal Arch"],
+  commercial: ["Trader's Nook", "Roadside Stall", "Coin Post"],
+};
+
+const CONTEXT_DESCRIPTORS: Partial<Record<OsmContextCategory, string[]>> = {
+  cemetery: [
+    "Grave dust clings to the stones like old ash.",
+    "A cold hush gathers where memorial paths cross.",
+    "Spirit marks fade beside cracked headstone rubble.",
+  ],
+  park_or_woods: [
+    "Beast tracks weave through herbs and fallen leaves.",
+    "Druid chalk circles a patch of strange, bright growth.",
+    "The canopy muffles the road until the trail feels older.",
+  ],
+  water: [
+    "Damp stone glistens where the water once ran close.",
+    "Old mooring rings rust beside a forgotten crossing.",
+    "The air tastes of river mist and drowned echoes.",
+  ],
+  industrial: [
+    "Soot-stained scrap and half-forged iron litter the ground.",
+    "Goblin work-chalk marks a path through rusted debris.",
+    "Stone chips and forge ash suggest labor long abandoned.",
+  ],
+  education: [
+    "Faded lecture chalk and stacked lore-slates gather dust.",
+    "Archive seals crumble on shelves of forgotten study.",
+    "Scholar marks hint at secrets once catalogued here.",
+  ],
+  worship: [
+    "Blessing wax and relic-scorch marks ring a quiet altar.",
+    "A chapel hush lingers though no choir answers.",
+    "Offerings rustle beneath a cracked sanctum lintel.",
+  ],
+  transit: [
+    "Worn crossroad stones still bear caravan chalk.",
+    "A waygate arch leans where old routes once met.",
+    "Signal posts and rope hooks mark a forgotten stop.",
+  ],
+  commercial: [
+    "Merchant chalk and coin-scrape marks edge the stones.",
+    "A roadside nook still smells faintly of trade and dust.",
+    "Old stall pegs and crate scrap suggest hurried commerce.",
+  ],
+};
+
 function pickFrom<T>(items: T[], rand: () => number): T {
   return items[Math.floor(rand() * items.length)];
+}
+
+function weightedPick<T extends string>(
+  weights: Record<T, number>,
+  rand: () => number
+): T {
+  const entries = Object.entries(weights) as [T, number][];
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  let roll = rand() * total;
+  for (const [value, weight] of entries) {
+    roll -= weight;
+    if (roll <= 0) return value;
+  }
+  return entries[entries.length - 1][0];
+}
+
+export function pickPoiType(
+  context: OsmContextCategory,
+  rand: () => number
+): POIType {
+  const contextWeights = CONTEXT_TYPE_WEIGHTS[context];
+  const weights = {} as Record<POIType, number>;
+
+  for (const type of POI_TYPES) {
+    weights[type] = contextWeights[type] ?? BASE_TYPE_WEIGHT;
+  }
+
+  return weightedPick(weights, rand);
 }
 
 export function getPoiTypeLabel(type: POIType): string {
   return POI_TYPE_FLAVOR[type].label;
 }
 
-export function buildPoiName(type: POIType, rand: () => number): string {
+export function buildPoiName(
+  type: POIType,
+  rand: () => number,
+  context: OsmContextCategory = "generic"
+): string {
   const flavor = POI_TYPE_FLAVOR[type];
   const prefix = pickFrom(flavor.namePrefixes, rand);
-  const suffix = pickFrom(flavor.nameSuffixes, rand);
+  const contextSuffixes = CONTEXT_NAME_SUFFIXES[context];
+  const suffixPool =
+    contextSuffixes && context !== "generic" && rand() < 0.45
+      ? [...flavor.nameSuffixes, ...contextSuffixes]
+      : flavor.nameSuffixes;
+  const suffix = pickFrom(suffixPool, rand);
   if (flavor.epithets.length > 0 && rand() < 0.3) {
     const epithet = pickFrom(flavor.epithets, rand);
     return `${prefix} ${epithet} ${suffix}`;
@@ -276,8 +464,17 @@ export function buildPoiName(type: POIType, rand: () => number): string {
   return `${prefix} ${suffix}`;
 }
 
-export function pickPoiFlavor(type: POIType, rand: () => number): string {
-  return pickFrom(POI_TYPE_FLAVOR[type].descriptors, rand);
+export function pickPoiFlavor(
+  type: POIType,
+  rand: () => number,
+  context: OsmContextCategory = "generic"
+): string {
+  const contextDescriptors = CONTEXT_DESCRIPTORS[context];
+  const descriptorPool =
+    contextDescriptors && context !== "generic" && rand() < 0.4
+      ? [...POI_TYPE_FLAVOR[type].descriptors, ...contextDescriptors]
+      : POI_TYPE_FLAVOR[type].descriptors;
+  return pickFrom(descriptorPool, rand);
 }
 
 export function applyEncounterFlavor(

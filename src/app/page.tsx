@@ -14,6 +14,7 @@ import MobilePanelNav, {
 import POIPanel from "@/components/POIPanel";
 import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useOsmContext } from "@/hooks/useOsmContext";
 import { generateNearbyPOIs } from "@/lib/poi-generator";
 import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
 
@@ -35,6 +36,10 @@ export default function HomePage() {
     useState<MobilePanelSection>("poi");
 
   const playerPosition = geo.position;
+  const osmContext = useOsmContext(playerPosition?.lat, playerPosition?.lng);
+
+  const areaContext =
+    osmContext.status === "ready" ? osmContext.category : "generic";
 
   useEffect(() => {
     if (selectedPoi) {
@@ -44,8 +49,10 @@ export default function HomePage() {
 
   const pois = useMemo(() => {
     if (!playerPosition) return [];
-    return generateNearbyPOIs(playerPosition.lat, playerPosition.lng);
-  }, [playerPosition]);
+    return generateNearbyPOIs(playerPosition.lat, playerPosition.lng, {
+      areaContext,
+    });
+  }, [playerPosition, areaContext]);
 
   const gpsLabel = useMemo(() => {
     switch (geo.status) {
@@ -146,6 +153,21 @@ export default function HomePage() {
               markers may pass quickly — stop or walk to explore safely. Do not
               use the app while driving.
             </p>
+          </div>
+        )}
+
+        {osmContext.areaFlavorLabel && (
+          <div
+            className="flex flex-wrap items-center gap-2"
+            role="status"
+            aria-live="polite"
+          >
+            <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-800">
+              Area flavor: {osmContext.areaFlavorLabel}
+            </span>
+            <span className="text-xs text-slate-500">
+              Nearby POI names lean on approximate local map context.
+            </span>
           </div>
         )}
 

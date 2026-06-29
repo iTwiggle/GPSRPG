@@ -38,8 +38,9 @@ Desktop **Demo Mode** (fixed Demo Location, nudge controls) remains the primary 
 
 - **No backend** — game state lives in `localStorage` on this device/browser only.
 - **No combat, cards, multiplayer, AR, or persistence sync** — out of prototype scope.
-- **Procedural POI flavor** — names, descriptors, encounters, and loot themes are generated fantasy only. They are **not** tied to real-world OSM landmarks, map tags, or external location data.
-- **POI grid cells (~400 m)** — POIs are keyed to a meter-based ~400 m grid around your position. Crossing a cell boundary regenerates all 8 nearby POIs with new IDs. At highway speeds this reduces marker churn compared to the old ~111 m cells; walking pace remains the intended experience.
+- **Procedural POI flavor** — names, descriptors, encounters, and loot themes are generated fantasy. They may be **lightly biased** by approximate nearby OpenStreetMap context (experimental v0.1), but they are **not** tied to specific real-world landmarks or exact map features.
+- **OSM-aware theming (experimental)** — the client may query the public Overpass API with an approximate ~400 m cell bounding box to infer a coarse area mood (e.g. Grove, Water, Cemetery). This is approximate, optional, and not required for gameplay. Queries may fail, time out, or rate-limit; the app falls back to generic procedural flavor. Only the coarse category is cached locally — not raw OSM data.
+- **POI grid cells (~400 m)** — POIs are keyed to a meter-based ~400 m grid around your position. Crossing a cell boundary regenerates all 8 nearby POIs with new IDs. At highway speeds this reduces marker churn compared to the old ~111 m cells; walking pace remains the intended experience. OSM context is also fetched at most once per cell (cached ~7 days on success, ~15 minutes on failure).
 - **150 m explore radius** — you must be close enough to tap **Explore**; brief drive-by range at speed is expected but not ideal for interaction.
 - **Visited POI IDs are cell-scoped** — revisiting the same real-world spot after a large move may show fresh POIs (new cell, new IDs).
 - **Simulate visit** is a dev/playtest affordance — it does not require proximity and can be used on already-visited POIs only once per POI id (re-explore blocked after first real explore).
@@ -53,6 +54,12 @@ Desktop **Demo Mode** (fixed Demo Location, nudge controls) remains the primary 
 | Position source | Browser Geolocation API | Fixed Demo Location or nudge offsets |
 | Best for | Mobile field testing | Desktop / denied-permission fallback |
 | Movement | You move in the real world | Nudge buttons (~40 m per tap) |
+
+## OSM context privacy (experimental)
+
+- The app sends an **approximate map-cell bounding box** (~400 m) to the public [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API) when entering a new cell. It does **not** upload a GPS trail or store raw map features.
+- Only a **coarse category** (e.g. Grove, Water, Cemetery) is cached in `localStorage` under `gpsrpg-osm-context-v1`.
+- If Overpass is unavailable, POIs remain fully playable with generic procedural flavor.
 
 ## Next candidate improvements
 
