@@ -21,8 +21,8 @@ import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
 const GameMap = dynamic(() => import("@/components/GameMap"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-500">
-      Loading map…
+    <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl bg-slate-900 text-sm text-slate-400">
+      Loading overworld map…
     </div>
   ),
 });
@@ -81,7 +81,7 @@ export default function HomePage() {
 
   if (!gameState) {
     return (
-      <main className="flex min-h-screen items-center justify-center text-slate-600">
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
         Loading saved game…
       </main>
     );
@@ -89,14 +89,14 @@ export default function HomePage() {
 
   if (!playerPosition) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-6 text-center">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-300/80">
           Companion App / Overworld Prototype
         </p>
-        <p className="text-lg font-medium text-slate-800">
+        <p className="text-lg font-medium text-slate-100">
           Waiting for your location…
         </p>
-        <p className="max-w-md text-sm text-slate-600">
+        <p className="max-w-md text-sm text-slate-400">
           This prototype needs location permission to place you on the overworld
           map with live GPS. Demo Mode loads a fixed Demo Location instead — for
           desktop testing only, not real-world GPS validation.
@@ -104,7 +104,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={geo.enableDemoMode}
-          className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/15 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-500/25"
         >
           Use Demo Mode (fixed location)
         </button>
@@ -112,29 +112,33 @@ export default function HomePage() {
     );
   }
 
+  const mapFrameClass = selectedPoi
+    ? "rpg-map-frame rpg-map-frame--focused"
+    : "rpg-map-frame";
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 p-4 md:p-6">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6">
       <div className="mx-auto flex max-w-6xl flex-col gap-4">
         <header className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-indigo-600">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-300/80">
             Companion App / Overworld Prototype
           </p>
-          <h1 className="text-2xl font-bold text-slate-900">GPSRPG</h1>
-          <p className="text-sm text-slate-600">
-            Overworld companion prototype — explore nearby fantasy POIs from your
+          <h1 className="text-2xl font-bold text-slate-50">GPSRPG</h1>
+          <p className="text-sm text-slate-400">
+            Overworld companion — explore nearby fantasy sites from your
             real-world position, roll encounters, and track loot locally.
           </p>
         </header>
 
         {geo.isDemo && (
           <div
-            className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+            className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
             role="status"
           >
             <p className="font-medium">
               Demo Mode — {DEMO_LOCATION_LABEL}, not your real GPS
             </p>
-            <p className="mt-1 text-xs text-amber-800">
+            <p className="mt-1 text-xs text-amber-200/80">
               {geo.error
                 ? `Location unavailable (${geo.error}). Using a fixed demo map position for desktop testing. Reload and allow location on a phone for live GPS.`
                 : "Fixed map position for desktop testing. Use nudge controls or Simulate visit. Reload on a phone with location allowed for live GPS."}
@@ -144,11 +148,11 @@ export default function HomePage() {
 
         {geo.status === "active" && (
           <div
-            className="rounded-xl border border-slate-200 bg-white/90 px-4 py-2.5 text-xs text-slate-600"
+            className="rpg-panel px-4 py-2.5 text-xs text-slate-400"
             role="note"
           >
             <p>
-              <span className="font-medium text-slate-700">Live GPS.</span> POIs
+              <span className="font-medium text-slate-200">Live GPS.</span> Sites
               refresh as you move. At highway speeds (passenger testing only),
               markers may pass quickly — stop or walk to explore safely. Do not
               use the app while driving.
@@ -156,23 +160,22 @@ export default function HomePage() {
           </div>
         )}
 
-        {osmContext.areaFlavorLabel && (
-          <div
-            className="flex flex-wrap items-center gap-2"
-            role="status"
-            aria-live="polite"
-          >
-            <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-800">
-              Area flavor: {osmContext.areaFlavorLabel}
-            </span>
-            <span className="text-xs text-slate-500">
-              Nearby POI names lean on approximate local map context.
-            </span>
-          </div>
-        )}
-
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <div className="h-[min(42vh,360px)] min-h-[240px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:h-[min(50vh,440px)] sm:min-h-[280px] lg:h-[min(60vh,520px)] lg:min-h-[320px]">
+          <div
+            className={`relative h-[min(42vh,360px)] min-h-[240px] overflow-hidden sm:h-[min(50vh,440px)] sm:min-h-[280px] lg:h-[min(60vh,520px)] lg:min-h-[320px] ${mapFrameClass}`}
+          >
+            {osmContext.areaFlavorLabel && (
+              <div
+                className="pointer-events-none absolute left-3 top-3 z-[500]"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="rpg-chip">
+                  <span className="rpg-chip-dot" aria-hidden="true" />
+                  Realm mood · {osmContext.areaFlavorLabel}
+                </span>
+              </div>
+            )}
             <GameMap
               playerLat={playerPosition.lat}
               playerLng={playerPosition.lng}

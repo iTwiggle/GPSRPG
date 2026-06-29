@@ -2,8 +2,14 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --rpg-bg-deep: #0b1220;
+  --rpg-panel: rgba(15, 23, 42, 0.92);
+  --rpg-panel-border: rgba(148, 163, 184, 0.22);
+  --rpg-accent: #a78bfa;
+  --rpg-gold: #fbbf24;
+  --rpg-map-frame: rgba(2, 6, 23, 0.55);
 }
 
 body {
@@ -15,33 +21,310 @@ body {
 .leaflet-container {
   font-family: inherit;
   z-index: 0;
+  background: #1e293b;
 }
 
-.player-marker,
+/* ── Shared RPG panel shell ─────────────────────────────── */
+
+.rpg-panel {
+  border-radius: 0.75rem;
+  border: 1px solid var(--rpg-panel-border);
+  background: var(--rpg-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
+}
+
+.rpg-map-frame {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  background: var(--rpg-map-frame);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.rpg-map-frame--focused {
+  border-color: rgba(251, 191, 36, 0.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 191, 36, 0.12),
+    0 0 0 1px rgba(251, 191, 36, 0.2),
+    0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.rpg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: rgba(15, 23, 42, 0.88);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #e9d5ff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.rpg-chip-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: var(--rpg-gold);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.8);
+}
+
+/* ── Player marker ─────────────────────────────────────── */
+
+.player-marker {
+  background: transparent;
+  border: none;
+}
+
+.player-marker-glyph {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, #c4b5fd, #4f46e5 55%, #312e81);
+  border: 2px solid #fef3c7;
+  box-shadow:
+    0 0 0 2px rgba(79, 70, 229, 0.55),
+    0 0 12px rgba(167, 139, 250, 0.65);
+}
+
+/* ── POI markers (base) ────────────────────────────────── */
+
 .poi-marker {
   background: transparent;
   border: none;
 }
 
-.player-marker-dot {
-  width: 20px;
+.poi-marker-glyph {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  margin: 3px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.poi-marker--selected .poi-marker-glyph {
+  animation: poi-selected-pulse 1.6s ease-in-out infinite;
+  outline: 2px solid rgba(251, 191, 36, 0.9);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.poi-marker--visited .poi-marker-glyph {
+  opacity: 0.72;
+  filter: grayscale(0.35) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+}
+
+.poi-marker--visited:not(.poi-marker--quarry) .poi-marker-glyph::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #34d399;
+  border: 1.5px solid #064e3b;
+}
+
+@keyframes poi-selected-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* Shrine — glowing sigil */
+.poi-marker--shrine .poi-marker-glyph {
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  transform: rotate(45deg);
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.75);
+}
+
+/* Camp — banner + fire */
+.poi-marker--camp .poi-marker-glyph {
+  background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  margin-top: 10px;
+  margin-left: 9px;
+  box-shadow: 0 0 8px rgba(251, 146, 60, 0.7);
+}
+
+.poi-marker--camp .poi-marker-glyph::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 2px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 12px solid #dc2626;
+}
+
+/* Tower — spire */
+.poi-marker--tower .poi-marker-glyph {
+  width: 12px;
   height: 20px;
-  border-radius: 9999px;
-  background: #4f46e5;
-  border: 3px solid white;
-  box-shadow: 0 0 0 2px #4f46e5;
+  margin-left: 8px;
+  background: linear-gradient(180deg, #e2e8f0, #64748b);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
 }
 
-.poi-marker-dot {
-  width: 16px;
+/* Gate — arch */
+.poi-marker--gate .poi-marker-glyph {
+  width: 18px;
   height: 16px;
-  border-radius: 9999px;
-  background: #f59e0b;
-  border: 2px solid white;
-  box-shadow: 0 0 0 1px #d97706;
+  margin-left: 5px;
+  border: 3px solid #f59e0b;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  background: transparent;
+  box-shadow: inset 0 -6px 0 rgba(245, 158, 11, 0.25);
 }
 
-.poi-marker-dot.visited {
-  background: #10b981;
-  box-shadow: 0 0 0 1px #059669;
+/* Grove — leaf pair */
+.poi-marker--grove .poi-marker-glyph {
+  background: #22c55e;
+  width: 12px;
+  height: 12px;
+  border-radius: 0 70% 0 70%;
+  transform: rotate(-35deg);
+  margin-left: 4px;
+}
+
+.poi-marker--grove .poi-marker-glyph::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 10px;
+  width: 12px;
+  height: 12px;
+  background: #16a34a;
+  border-radius: 0 70% 0 70%;
+  transform: rotate(55deg);
+}
+
+/* Cache — chest */
+.poi-marker--cache .poi-marker-glyph {
+  width: 18px;
+  height: 12px;
+  margin-top: 6px;
+  margin-left: 5px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #ca8a04, #854d0e);
+  border: 1px solid #fde68a;
+}
+
+.poi-marker--cache .poi-marker-glyph::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 1px;
+  width: 16px;
+  height: 5px;
+  border-radius: 2px 2px 0 0;
+  background: #a16207;
+  border: 1px solid #fde68a;
+  border-bottom: none;
+}
+
+/* Quarry — pick + stone */
+.poi-marker--quarry .poi-marker-glyph {
+  width: 14px;
+  height: 10px;
+  margin-top: 10px;
+  margin-left: 7px;
+  border-radius: 2px;
+  background: #78716c;
+  border: 1px solid #a8a29e;
+}
+
+.poi-marker--quarry .poi-marker-glyph::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 4px;
+  width: 3px;
+  height: 14px;
+  background: #d6d3d1;
+  transform: rotate(-35deg);
+  border-radius: 1px;
+}
+
+.poi-marker--quarry .poi-marker-glyph::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10px;
+  width: 3px;
+  height: 10px;
+  background: #a8a29e;
+  transform: rotate(25deg);
+  border-radius: 1px;
+}
+
+.poi-marker--quarry.poi-marker--visited .poi-marker-glyph::after {
+  top: auto;
+  left: auto;
+  right: -2px;
+  bottom: -2px;
+  width: 8px;
+  height: 8px;
+  transform: none;
+  background: #34d399;
+  border: 1.5px solid #064e3b;
+}
+
+/* Well — water drop */
+.poi-marker--well .poi-marker-glyph {
+  width: 14px;
+  height: 18px;
+  margin-left: 7px;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  background: radial-gradient(circle at 35% 30%, #7dd3fc, #0284c7);
+  border: 1px solid #bae6fd;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
+}
+
+/* Leaflet popup fantasy tint */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.95);
+  color: #e2e8f0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+/* Encounter modal animation */
+@keyframes rpg-reward-flash {
+  0% {
+    opacity: 0.4;
+    transform: scaleX(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.rpg-xp-flash {
+  animation: rpg-reward-flash 0.5s ease-out;
 }

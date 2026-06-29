@@ -2,31 +2,11 @@
 
 import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
-import L from "leaflet";
+import { distanceMeters, formatDistance } from "@/lib/distance";
+import { getPoiTypeLabel } from "@/lib/poi-flavor";
+import { createPoiMarkerIcon, playerMarkerIcon } from "@/lib/poi-marker-icons";
 import type { POI } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
-import { distanceMeters, formatDistance } from "@/lib/distance";
-
-const playerIcon = L.divIcon({
-  className: "player-marker",
-  html: '<div class="player-marker-dot"></div>',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
-
-const poiIcon = L.divIcon({
-  className: "poi-marker",
-  html: '<div class="poi-marker-dot"></div>',
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
-
-const visitedPoiIcon = L.divIcon({
-  className: "poi-marker visited",
-  html: '<div class="poi-marker-dot visited"></div>',
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
 
 function RecenterMap({
   lat,
@@ -79,7 +59,7 @@ export default function GameMap({
       />
       <RecenterMap lat={playerLat} lng={playerLng} />
 
-      <Marker position={center} icon={playerIcon}>
+      <Marker position={center} icon={playerMarkerIcon}>
         <Popup>You are here</Popup>
       </Marker>
 
@@ -87,10 +67,11 @@ export default function GameMap({
         center={center}
         radius={EXPLORE_RADIUS_METERS}
         pathOptions={{
-          color: "#6366f1",
-          fillColor: "#6366f1",
-          fillOpacity: 0.08,
-          weight: 1,
+          color: "#a78bfa",
+          fillColor: "#7c3aed",
+          fillOpacity: 0.1,
+          weight: 1.5,
+          dashArray: "4 6",
         }}
       />
 
@@ -106,18 +87,19 @@ export default function GameMap({
           <Marker
             key={poi.id}
             position={[poi.lat, poi.lng]}
-            icon={visited ? visitedPoiIcon : poiIcon}
+            icon={createPoiMarkerIcon(poi.type, { selected: isSelected, visited })}
             eventHandlers={{
               click: () => onSelectPoi(poi),
             }}
           >
             <Popup>
               <div className="text-sm">
-                <p className="font-semibold">{poi.name}</p>
-                <p className="capitalize text-slate-600">{poi.type}</p>
-                <p>{formatDistance(dist)} away</p>
-                {visited && <p className="text-emerald-600">Visited</p>}
-                {isSelected && <p className="text-indigo-600">Selected</p>}
+                <p className="font-semibold text-slate-100">{poi.name}</p>
+                <p className="text-violet-300">{getPoiTypeLabel(poi.type)}</p>
+                <p className="text-slate-400">{formatDistance(dist)} away</p>
+                {visited && (
+                  <p className="text-emerald-400">Already explored</p>
+                )}
               </div>
             </Popup>
           </Marker>
