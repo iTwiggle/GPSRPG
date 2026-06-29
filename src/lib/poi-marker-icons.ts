@@ -4,6 +4,7 @@ import type { POIType } from "./types";
 interface PoiMarkerOptions {
   selected?: boolean;
   visited?: boolean;
+  inRange?: boolean;
 }
 
 const MARKER_SIZE = 28;
@@ -13,12 +14,13 @@ export function createPoiMarkerIcon(
   type: POIType,
   options: PoiMarkerOptions = {}
 ): L.DivIcon {
-  const { selected = false, visited = false } = options;
+  const { selected = false, visited = false, inRange = false } = options;
   const classes = [
     "poi-marker",
     `poi-marker--${type}`,
     selected ? "poi-marker--selected" : "",
     visited ? "poi-marker--visited" : "",
+    inRange ? "poi-marker--in-range" : "",
   ]
     .filter(Boolean)
     .join(" ");

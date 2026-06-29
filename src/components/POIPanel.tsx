@@ -2,6 +2,7 @@ import { distanceMeters, formatDistance, isWithinRadius } from "@/lib/distance";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { getPoiGlyphClassName, POI_TYPE_CHIP_BG } from "@/lib/poi-visual";
 import { EXPLORE_RADIUS_METERS, type POI, type Position } from "@/lib/types";
+import ApproachReadout from "@/components/ApproachReadout";
 
 interface POIPanelProps {
   poi: POI | null;
@@ -73,29 +74,20 @@ export default function POIPanel({
           )}
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
-          <span>
-            <span className="text-slate-500">Distance</span>{" "}
-            <span className="font-semibold text-slate-200">
-              {formatDistance(dist)}
-            </span>
-          </span>
-          <span>
-            <span className="text-slate-500">Explore range</span>{" "}
-            <span className="font-semibold text-slate-200">
-              {EXPLORE_RADIUS_METERS} m
-            </span>
-          </span>
-        </div>
+        <ApproachReadout poi={poi} playerPosition={playerPosition} />
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={onExplore}
             disabled={visited || !inRange}
-            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-[0_0_16px_rgba(124,58,237,0.35)] transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 disabled:shadow-none"
+            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-[0_0_16px_rgba(124,58,237,0.35)] transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:border disabled:border-slate-600 disabled:bg-slate-800/90 disabled:text-slate-400 disabled:shadow-none"
           >
-            {visited ? "Already explored" : inRange ? "Explore" : "Too far"}
+            {visited
+              ? "Already explored"
+              : inRange
+                ? "Explore"
+                : `Move closer — ${formatDistance(dist)} away`}
           </button>
           <button
             type="button"

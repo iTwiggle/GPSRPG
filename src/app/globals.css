@@ -212,6 +212,14 @@ body {
   border-radius: 4px;
 }
 
+.poi-marker--selected.poi-marker--in-range .poi-marker-glyph {
+  animation: poi-in-range-pulse 1.1s ease-in-out infinite;
+  outline: 2px solid rgba(52, 211, 153, 0.95);
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.35),
+    0 0 14px rgba(52, 211, 153, 0.55);
+}
+
 .poi-marker--visited .poi-marker-glyph {
   opacity: 0.72;
   filter: grayscale(0.35) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
@@ -236,6 +244,20 @@ body {
   }
   50% {
     transform: scale(1.08);
+  }
+}
+
+@keyframes poi-in-range-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45))
+      drop-shadow(0 0 6px rgba(52, 211, 153, 0.4));
+  }
+  50% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45))
+      drop-shadow(0 0 12px rgba(52, 211, 153, 0.75));
   }
 }
 

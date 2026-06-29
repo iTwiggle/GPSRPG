@@ -53,3 +53,38 @@ export function formatDistance(meters: number): string {
   }
   return `${(meters / 1000).toFixed(1)} km`;
 }
+
+/** Initial bearing from `from` to `to` in degrees (0 = north, clockwise). */
+export function bearingDegrees(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number }
+): number {
+  const lat1 = toRadians(from.lat);
+  const lat2 = toRadians(to.lat);
+  const dLng = toRadians(to.lng - from.lng);
+
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+
+  const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+  return (bearing + 360) % 360;
+}
+
+const COMPASS_8 = [
+  "north",
+  "north-east",
+  "east",
+  "south-east",
+  "south",
+  "south-west",
+  "west",
+  "north-west",
+] as const;
+
+/** Eight-point compass label for a bearing in degrees. */
+export function bearingToCompass(degrees: number): (typeof COMPASS_8)[number] {
+  const index = Math.round(degrees / 45) % 8;
+  return COMPASS_8[index];
+}

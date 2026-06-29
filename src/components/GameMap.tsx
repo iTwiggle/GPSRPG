@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
-import { distanceMeters, formatDistance } from "@/lib/distance";
+import { distanceMeters, formatDistance, isWithinRadius } from "@/lib/distance";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { createPoiMarkerIcon, playerMarkerIcon } from "@/lib/poi-marker-icons";
 import type { POI } from "@/lib/types";
@@ -82,12 +82,21 @@ export default function GameMap({
           { lat: poi.lat, lng: poi.lng }
         );
         const isSelected = poi.id === selectedPoiId;
+        const inRange = isWithinRadius(
+          { lat: playerLat, lng: playerLng },
+          { lat: poi.lat, lng: poi.lng },
+          EXPLORE_RADIUS_METERS
+        );
 
         return (
           <Marker
             key={poi.id}
             position={[poi.lat, poi.lng]}
-            icon={createPoiMarkerIcon(poi.type, { selected: isSelected, visited })}
+            icon={createPoiMarkerIcon(poi.type, {
+              selected: isSelected,
+              visited,
+              inRange: isSelected && inRange && !visited,
+            })}
             eventHandlers={{
               click: () => onSelectPoi(poi),
             }}

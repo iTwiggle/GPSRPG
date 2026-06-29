@@ -11,6 +11,7 @@ Tested on the deployed Vercel HTTPS build from a phone (passenger, highway speed
 | Real GPS tracking | Accurate; player marker follows live position |
 | POI appearance while moving | POIs generate and appear on the map as position updates |
 | Explore | Works when within 150 m explore radius |
+| Site approach HUD | Distance, bearing, range status, and scanner progress update as you move toward a selected site |
 | Simulate visit | Bypasses distance check for desktop/demo testing |
 | Loot drops | Items roll and appear in inventory |
 | Rarity colors | Common / uncommon / rare styling works in inventory |
@@ -43,6 +44,7 @@ Desktop **Demo Mode** (fixed Demo Location, nudge controls) remains the primary 
 - **POI grid cells (~400 m)** — POIs are keyed to a meter-based ~400 m grid around your position. Crossing a cell boundary regenerates all 8 nearby POIs with new IDs. At highway speeds this reduces marker churn compared to the old ~111 m cells; walking pace remains the intended experience. OSM context is also fetched at most once per cell (cached ~7 days on success, ~15 minutes on failure).
 - **POI anchoring** — POI coordinates are anchored to the stable **cell center** (same grid seed as IDs), not your live GPS position. Moving within a cell does not drag markers; returning to a previous cell reproduces the same POIs at the same world coordinates.
 - **150 m explore radius** — you must be close enough to tap **Explore**; brief drive-by range at speed is expected but not ideal for interaction.
+- **Site approach HUD** — selecting a site shows distance, compass bearing, range status (Out of range / Nearby / In range), and a scanner progress bar toward the 150 m explore radius. The selected marker glows emerald when in range. Explore stays disabled outside 150 m with a “Move closer” label; **Simulate visit** is unchanged.
 - **Visited POI IDs are cell-scoped** — revisiting the same real-world spot after a large move may show fresh POIs (new cell, new IDs).
 - **Simulate visit** is a dev/playtest affordance — it does not require proximity and can be used on already-visited POIs only once per POI id (re-explore blocked after first real explore).
 - **Demo Mode vs live GPS** — Demo Location uses fixed coordinates and nudge controls; it must not be mistaken for real-world validation.
@@ -71,6 +73,16 @@ Small, in-scope follow-ups (not committed in this pass):
 3. **“Nearest POI” hint** when no marker is selected — helps at walking pace.
 4. **Offline / PWA shell** for installed home-screen testing.
 5. **Encounter cooldown or daily cap** if farming Simulate visit becomes too generous in dev builds.
+
+## Testing site approach (Demo Mode)
+
+1. Open the app in **Demo Mode** and tap a map marker to select a site.
+2. In the **Sites** panel, confirm the **Approach** readout shows distance, bearing (e.g. “Site lies north-east”), status chip, and scanner progress.
+3. Use **Dev → nudge** controls (~40 m per tap) to move toward the site. Distance should decrease and progress should increase.
+4. Watch status transitions: **Out of range** (>250 m) → **Nearby** (151–250 m) → **In range** (≤150 m).
+5. At **In range**, the selected marker should pulse with a stronger emerald glow and **Explore** should enable.
+6. While still out of range, confirm **Explore** is disabled with “Move closer — Xm away” and **Simulate visit** still works.
+7. On a phone with live GPS, walk toward a selected site and confirm the readout updates as your position changes.
 
 ## Commands
 
