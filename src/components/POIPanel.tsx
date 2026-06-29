@@ -19,7 +19,10 @@ export default function POIPanel({
   if (!poi) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white/90 p-4 text-sm text-slate-500">
-        Tap a map marker to inspect a nearby point of interest.
+        <p>Tap a map marker to inspect a nearby point of interest.</p>
+        <p className="mt-2 text-xs text-slate-400">
+          Nearby POIs stay stable within ~400 m of your path.
+        </p>
       </div>
     );
   }

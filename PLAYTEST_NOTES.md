@@ -38,7 +38,7 @@ Desktop **Demo Mode** (fixed Demo Location, nudge controls) remains the primary 
 
 - **No backend** — game state lives in `localStorage` on this device/browser only.
 - **No combat, cards, multiplayer, AR, or persistence sync** — out of prototype scope.
-- **POI grid cells (~111 m)** — POIs are keyed to `floor(lat/lng × 1000) / 1000`. Crossing a cell boundary regenerates all 8 nearby POIs with new IDs. At highway speeds this can make markers refresh every few seconds; walking pace is the intended experience.
+- **POI grid cells (~400 m)** — POIs are keyed to a meter-based ~400 m grid around your position. Crossing a cell boundary regenerates all 8 nearby POIs with new IDs. At highway speeds this reduces marker churn compared to the old ~111 m cells; walking pace remains the intended experience.
 - **150 m explore radius** — you must be close enough to tap **Explore**; brief drive-by range at speed is expected but not ideal for interaction.
 - **Visited POI IDs are cell-scoped** — revisiting the same real-world spot after a large move may show fresh POIs (new cell, new IDs).
 - **Simulate visit** is a dev/playtest affordance — it does not require proximity and can be used on already-visited POIs only once per POI id (re-explore blocked after first real explore).
@@ -57,12 +57,11 @@ Desktop **Demo Mode** (fixed Demo Location, nudge controls) remains the primary 
 
 Small, in-scope follow-ups (not committed in this pass):
 
-1. **Larger POI grid cells** (e.g. ~300–500 m) to reduce marker churn at vehicle speeds without affecting walking play much.
-2. **Sticky POI anchor** — regenerate only after moving N meters from the anchor, not on every cell edge.
-3. **GPS accuracy display** in the HUD when `accuracy` is available.
-4. **“Nearest POI” hint** when no marker is selected — helps at walking pace.
-5. **Offline / PWA shell** for installed home-screen testing.
-6. **Encounter cooldown or daily cap** if farming Simulate visit becomes too generous in dev builds.
+1. **Sticky POI anchor** — regenerate only after moving N meters from the anchor, not on every cell edge.
+2. **GPS accuracy display** in the HUD when `accuracy` is available.
+3. **“Nearest POI” hint** when no marker is selected — helps at walking pace.
+4. **Offline / PWA shell** for installed home-screen testing.
+5. **Encounter cooldown or daily cap** if farming Simulate visit becomes too generous in dev builds.
 
 ## Commands
 
