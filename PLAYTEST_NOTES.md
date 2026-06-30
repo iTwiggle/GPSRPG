@@ -114,6 +114,29 @@ Test exploring several sites, then open the **Journey** tab (mobile) or scroll t
 
 **Known limitations (v0.1):** One active report per save — no history list of past reports. Report persists across browser sessions until reset. No GPS trail or path data is stored.
 
+## Fantasy Cartography Disguise Pass v0.1
+
+Visual/readability check after strengthening the map disguise layer:
+
+| Check | Expected |
+|-------|----------|
+| First impression | Map reads as a dark fantasy scanner surface, not a default street-map app |
+| Street/label readability | Roads, water, parks, and place names remain legible at zoom 15–17 |
+| Tile treatment | OSM tiles are darkened, desaturated, and lightly hue-shifted via CSS filters |
+| Tile-only overlays | Scanner grid, arcane survey diagonals, and radial haze apply to tiles only (not markers) |
+| Frame treatment | Map frame shows vignette edge glow and scanner corner brackets |
+| Player marker | Purple/gold glyph remains clearly visible above the disguised surface |
+| POI markers | Fantasy glyphs stay dominant; selected (amber) and in-range (green/gold) pulses unchanged |
+| Interaction | Zoom, pan, POI tap, and popups work normally |
+| Attribution | OpenStreetMap attribution remains visible in bottom-right |
+| Mobile | No noticeable scroll/zoom jank; overlay layers are CSS-only (no animations) |
+
+**Demo Mode:** Open the app on desktop, enable Demo Mode, zoom in/out and select POIs — confirm the map feels stylized but still navigable.
+
+**Readability guardrail:** If local testing shows place names or water features becoming too faint, reduce `--fantasy-map-brightness` / `--fantasy-map-saturate` in `globals.css` slightly.
+
+**Known rendering limitations:** CSS `filter` on tile images is applied per-tile by the browser; very old mobile browsers may ignore filters or show a brief flash on tile load. Overlays do not rotate with the map (fixed to the viewport frame) — acceptable for a scanner HUD metaphor.
+
 ## Commands
 
 ```bash
