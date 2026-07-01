@@ -18,6 +18,10 @@ import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useOsmContext } from "@/hooks/useOsmContext";
 import { generateNearbyPOIs } from "@/lib/poi-generator";
+import {
+  FANTASY_GRID_SESSION_KEY,
+  STREET_REF_SESSION_KEY,
+} from "@/lib/fantasy-grid-surface";
 import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
 
 const GameMap = dynamic(() => import("@/components/GameMap"), {
@@ -36,6 +40,8 @@ export default function HomePage() {
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activeMobileSection, setActiveMobileSection] =
     useState<MobilePanelSection>("poi");
+  const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
+  const [streetReferenceMode, setStreetReferenceMode] = useState(false);
 
   const playerPosition = geo.position;
   const osmContext = useOsmContext(playerPosition?.lat, playerPosition?.lng);
@@ -48,6 +54,31 @@ export default function HomePage() {
       setActiveMobileSection("poi");
     }
   }, [selectedPoi]);
+
+  useEffect(() => {
+    const gridStored = sessionStorage.getItem(FANTASY_GRID_SESSION_KEY);
+    const streetStored = sessionStorage.getItem(STREET_REF_SESSION_KEY);
+    if (gridStored !== null) {
+      setFantasyGridEnabled(gridStored !== "0");
+    }
+    if (streetStored !== null) {
+      setStreetReferenceMode(streetStored === "1");
+    }
+  }, []);
+
+  const handleToggleFantasyGrid = useCallback((enabled: boolean) => {
+    setFantasyGridEnabled(enabled);
+    sessionStorage.setItem(FANTASY_GRID_SESSION_KEY, enabled ? "1" : "0");
+    if (!enabled) {
+      setStreetReferenceMode(false);
+      sessionStorage.setItem(STREET_REF_SESSION_KEY, "0");
+    }
+  }, []);
+
+  const handleToggleStreetReference = useCallback((enabled: boolean) => {
+    setStreetReferenceMode(enabled);
+    sessionStorage.setItem(STREET_REF_SESSION_KEY, enabled ? "1" : "0");
+  }, []);
 
   const pois = useMemo(() => {
     if (!playerPosition) return [];
@@ -193,6 +224,9 @@ export default function HomePage() {
               pois={pois}
               selectedPoiId={selectedPoi?.id ?? null}
               visitedPoiIds={gameState.visitedPOIIds}
+              areaContext={areaContext}
+              fantasyGridEnabled={fantasyGridEnabled}
+              streetReferenceMode={streetReferenceMode}
               onSelectPoi={setSelectedPoi}
             />
           </div>
@@ -240,6 +274,10 @@ export default function HomePage() {
                 <DevControls
                   isDemo={geo.isDemo}
                   gpsStatus={geo.status}
+                  fantasyGridEnabled={fantasyGridEnabled}
+                  streetReferenceMode={streetReferenceMode}
+                  onToggleFantasyGrid={handleToggleFantasyGrid}
+                  onToggleStreetReference={handleToggleStreetReference}
                   onEnableDemo={geo.enableDemoMode}
                   onNudge={geo.nudgePosition}
                   onReset={reset}
@@ -270,6 +308,10 @@ export default function HomePage() {
               <DevControls
                 isDemo={geo.isDemo}
                 gpsStatus={geo.status}
+                fantasyGridEnabled={fantasyGridEnabled}
+                streetReferenceMode={streetReferenceMode}
+                onToggleFantasyGrid={handleToggleFantasyGrid}
+                onToggleStreetReference={handleToggleStreetReference}
                 onEnableDemo={geo.enableDemoMode}
                 onNudge={geo.nudgePosition}
                 onReset={reset}
