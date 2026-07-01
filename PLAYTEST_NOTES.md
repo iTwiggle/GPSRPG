@@ -129,12 +129,13 @@ Test the biome-driven fantasy tile surface over the existing Leaflet map:
 | Dev: Fantasy grid off | Dev panel toggle hides grid; street map returns to default fantasy CSS filters |
 | Dev: Street reference | With grid on, fades overlay (~38% opacity) and brightens OSM for debug comparison |
 | Session prefs | Toggle state stored in `sessionStorage` only (not game save) |
+| Zoom out | Fantasy grid remains visible (screen-space tile fallback); OSM stays secondary, not bare street map |
 
-**Demo Mode:** Enable Demo Mode, confirm grid tiles render and pan/zoom with the map. Toggle **Street reference** to compare against underlying roads.
+**Demo Mode:** Enable Demo Mode, confirm grid tiles render and pan/zoom with the map. Zoom out several levels — grid should stay as biome-colored tiles, not revert to plain OSM. Toggle **Street reference** to compare against underlying roads.
 
 **Performance notes:** Canvas redraws on pan/zoom via `requestAnimationFrame`; capped at 2× DPR. No image assets or external APIs.
 
-**Known limitations (v0.1):** Visual-only 40 m tile grid — not tied to POI cells or authored terrain. Biome comes from coarse OSM category for the current ~400 m cell; loading/generic falls back to wilds. No Tiled/Zest import, no per-city maps, no GPS trail. Tile skew is cosmetic top-down/isometric hint only.
+**Known limitations (v0.1):** Visual-only 40 m tile grid — not tied to POI cells or authored terrain. Biome comes from coarse OSM category for the current ~400 m cell; loading/generic falls back to wilds. No Tiled/Zest import, no per-city maps, no GPS trail. Tile skew is cosmetic top-down/isometric hint only. At low zoom (world tiles smaller than ~8 px on screen), overlay switches to fixed screen-space tiles so the fantasy surface stays visible when zoomed out.
 
 ## Commands
 
