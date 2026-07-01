@@ -58,6 +58,34 @@ body {
   color: #c4b5fd;
 }
 
+/* Fantasy grid overlay — dim OSM when grid is active */
+.fantasy-map-surface--grid-active .leaflet-tile-pane img {
+  filter: brightness(0.42)
+    saturate(0.32)
+    contrast(1.1)
+    hue-rotate(var(--fantasy-map-hue));
+}
+
+.fantasy-map-surface--grid-active.fantasy-map-surface--street-ref .leaflet-tile-pane img {
+  filter: brightness(0.68)
+    saturate(0.52)
+    contrast(1.06)
+    hue-rotate(var(--fantasy-map-hue));
+}
+
+.fantasy-grid-canvas {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.fantasy-map-surface--grid-active .leaflet-marker-pane,
+.fantasy-map-surface--grid-active .leaflet-shadow-pane,
+.fantasy-map-surface--grid-active .leaflet-overlay-pane svg,
+.fantasy-map-surface--grid-active .leaflet-overlay-pane path {
+  filter: none;
+}
+
 /* ── Shared RPG panel shell ─────────────────────────────── */
 
 .rpg-panel {

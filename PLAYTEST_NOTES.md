@@ -114,6 +114,29 @@ Test exploring several sites, then open the **Journey** tab (mobile) or scroll t
 
 **Known limitations (v0.1):** One active report per save — no history list of past reports. Report persists across browser sessions until reset. No GPS trail or path data is stored.
 
+## Fantasy Grid Overlay v0.1
+
+Test the biome-driven fantasy tile surface over the existing Leaflet map:
+
+| Check | Expected |
+|-------|----------|
+| Default surface | Fantasy grid visible on load; OSM streets visually secondary beneath tiles |
+| Biome mood | Local Aura category maps to grid palette (Grove → green, Water → blue rune tiles, Industrial → stone/ruins, Market/Crossroads/Academy → cobble, Cemetery/Chapel → shrine, generic → wilds) |
+| Player marker | Purple/gold glyph remains above grid and readable |
+| POI markers | Fantasy glyphs clickable; selected (amber) and in-range (green/gold) pulses unchanged |
+| Interaction | Pan, zoom, scroll-wheel, and POI tap/popup work — grid does not block input |
+| Attribution | OpenStreetMap attribution remains visible when OSM tiles are loaded |
+| Dev: Fantasy grid off | Dev panel toggle hides grid; street map returns to default fantasy CSS filters |
+| Dev: Street reference | With grid on, fades overlay (~38% opacity) and brightens OSM for debug comparison |
+| Session prefs | Toggle state stored in `sessionStorage` only (not game save) |
+| Zoom out | Fantasy grid remains visible (screen-space tile fallback); OSM stays secondary, not bare street map |
+
+**Demo Mode:** Enable Demo Mode, confirm grid tiles render and pan/zoom with the map. Zoom out several levels — grid should stay as biome-colored tiles, not revert to plain OSM. Toggle **Street reference** to compare against underlying roads.
+
+**Performance notes:** Canvas redraws on pan/zoom via `requestAnimationFrame`; capped at 2× DPR. No image assets or external APIs.
+
+**Known limitations (v0.1):** Visual-only 40 m tile grid — not tied to POI cells or authored terrain. Biome comes from coarse OSM category for the current ~400 m cell; loading/generic falls back to wilds. No Tiled/Zest import, no per-city maps, no GPS trail. Tile skew is cosmetic top-down/isometric hint only. At low zoom (world tiles smaller than ~8 px on screen), overlay switches to fixed screen-space tiles so the fantasy surface stays visible when zoomed out.
+
 ## Commands
 
 ```bash

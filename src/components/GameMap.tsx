@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import FantasyGridOverlay from "@/components/FantasyGridOverlay";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
+import { mapCategoryToBiome } from "@/lib/fantasy-grid-surface";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { createPoiMarkerIcon, playerMarkerIcon } from "@/lib/poi-marker-icons";
+import type { OsmContextCategory } from "@/lib/osm-context";
 import type { POI } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
 
@@ -31,6 +34,9 @@ interface GameMapProps {
   pois: POI[];
   selectedPoiId: string | null;
   visitedPoiIds: string[];
+  areaContext: OsmContextCategory;
+  fantasyGridEnabled: boolean;
+  streetReferenceMode: boolean;
   onSelectPoi: (poi: POI) => void;
 }
 
@@ -40,6 +46,9 @@ export default function GameMap({
   pois,
   selectedPoiId,
   visitedPoiIds,
+  areaContext,
+  fantasyGridEnabled,
+  streetReferenceMode,
   onSelectPoi,
 }: GameMapProps) {
   const center = useMemo(
@@ -47,16 +56,34 @@ export default function GameMap({
     [playerLat, playerLng]
   );
 
+  const surfaceBiome = useMemo(
+    () => mapCategoryToBiome(areaContext),
+    [areaContext]
+  );
+
+  const mapClassName = [
+    "fantasy-map-surface h-full w-full rounded-xl",
+    fantasyGridEnabled && "fantasy-map-surface--grid-active",
+    streetReferenceMode && "fantasy-map-surface--street-ref",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <MapContainer
       center={center}
       zoom={16}
-      className="fantasy-map-surface h-full w-full rounded-xl"
+      className={mapClassName}
       scrollWheelZoom
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <FantasyGridOverlay
+        biome={surfaceBiome}
+        enabled={fantasyGridEnabled}
+        streetReference={streetReferenceMode}
       />
       <RecenterMap lat={playerLat} lng={playerLng} />
 
