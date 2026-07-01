@@ -280,7 +280,11 @@ export default function HomePage() {
         </div>
       </div>
 
-      <EncounterModal encounter={lastEncounter} onClose={clearEncounter} />
+      <EncounterModal
+        encounter={lastEncounter}
+        codex={gameState.codex}
+        onClose={clearEncounter}
+      />
     </main>
   );
 }
