@@ -131,6 +131,19 @@ Test encounter loot feedback after Explore / Simulate visit:
 
 **Known limitations (v0.1):** CSS-only particles (no sound). Reveal timing is deterministic, not random slot-machine rolls. Loot tables and drop rates unchanged.
 
+## Player Adventurer Sprite v0.1
+
+Test the map player marker after enabling Demo Mode:
+
+| Check | Expected |
+|-------|----------|
+| Player marker | 0.5D adventurer billboard (hood, cloak, body) replaces blue dot |
+| Visibility | Readable above fantasy grid and POI markers |
+| Explore radius | Purple dashed circle still centered on player |
+| Interaction | Pan/zoom unchanged; player marker follows GPS/demo nudge |
+
+**Known limitations (v0.1):** Static CSS billboard — no facing variants or walk animation yet.
+
 ## Commands
 
 ```bash

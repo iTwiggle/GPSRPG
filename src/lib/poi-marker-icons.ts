@@ -35,7 +35,13 @@ export function createPoiMarkerIcon(
 
 export const playerMarkerIcon = L.divIcon({
   className: "player-marker",
-  html: '<div class="player-marker-glyph" aria-hidden="true"></div>',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  html: `<div class="player-marker-glyph" aria-hidden="true">
+    <span class="player-sprite__shadow"></span>
+    <span class="player-sprite__cloak"></span>
+    <span class="player-sprite__body"></span>
+    <span class="player-sprite__head"></span>
+    <span class="player-sprite__hood"></span>
+  </div>`,
+  iconSize: [28, 32],
+  iconAnchor: [14, 18],
 });

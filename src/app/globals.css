@@ -230,7 +230,7 @@ body {
   transform: rotate(-35deg) scale(0.82);
 }
 
-/* ── Player marker ─────────────────────────────────────── */
+/* ── Player marker (0.5D adventurer billboard) ─────────── */
 
 .player-marker {
   background: transparent;
@@ -238,14 +238,73 @@ body {
 }
 
 .player-marker-glyph {
-  width: 22px;
-  height: 22px;
+  position: relative;
+  width: 28px;
+  height: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 8px rgba(167, 139, 250, 0.35));
+}
+
+.player-sprite__shadow {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  width: 14px;
+  height: 5px;
+  margin-left: -7px;
   border-radius: 9999px;
-  background: radial-gradient(circle at 35% 35%, #c4b5fd, #4f46e5 55%, #312e81);
-  border: 2px solid #fef3c7;
-  box-shadow:
-    0 0 0 2px rgba(79, 70, 229, 0.55),
-    0 0 12px rgba(167, 139, 250, 0.65);
+  background: rgba(2, 6, 23, 0.45);
+  transform: scaleX(1.1);
+}
+
+.player-sprite__cloak {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 18px;
+  height: 14px;
+  margin-left: -9px;
+  border-radius: 40% 40% 30% 30%;
+  background: linear-gradient(180deg, #5b21b6 0%, #312e81 55%, #1e1b4b 100%);
+  border: 1px solid rgba(196, 181, 253, 0.45);
+  transform: skewX(-6deg);
+}
+
+.player-sprite__body {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 2px 2px 4px 4px;
+  background: linear-gradient(180deg, #64748b, #475569);
+  border: 1px solid rgba(226, 232, 240, 0.35);
+}
+
+.player-sprite__head {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #fde68a, #d97706);
+  border: 1px solid rgba(254, 243, 199, 0.7);
+}
+
+.player-sprite__hood {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  width: 13px;
+  height: 8px;
+  margin-left: -6.5px;
+  border-radius: 8px 8px 2px 2px;
+  background: linear-gradient(180deg, #7c3aed, #4c1d95);
+  border: 1px solid rgba(196, 181, 253, 0.5);
+  box-shadow: 0 0 6px rgba(167, 139, 250, 0.45);
 }
 
 /* ── POI markers (base) ────────────────────────────────── */
