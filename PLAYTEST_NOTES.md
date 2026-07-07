@@ -176,6 +176,23 @@ Test persistence safety before public MVP testing:
 
 **Known limitations (v0.1):** Save recovery is local-device only. Corrupt backups are retained in browser storage and are not uploaded anywhere. If browser storage is completely unavailable, backup may fail but the app should remain usable for the current tab.
 
+## Error Boundaries / GPS Recovery v0.1
+
+Test public MVP recovery paths:
+
+| Check | Expected |
+|-------|----------|
+| GPS timeout | Timeout maps to **GPS timeout** internally instead of generic unavailable |
+| Demo fallback | Demo Mode still loads a fixed position when GPS fails |
+| Retry live GPS | Demo banner shows **Retry live GPS**; tapping it re-requests browser geolocation without a page reload |
+| Permission denied | Denied permission falls back to Demo Mode with retry copy, not a stuck loading state |
+| Route error | `src/app/error.tsx` shows a fantasy scanner malfunction page with **Restore scanner** |
+| Global error | `src/app/global-error.tsx` shows critical scanner fault recovery with restore/reload actions |
+
+**Manual checks:** Deny location permission, confirm Demo Mode plus **Retry live GPS** appears. Change browser/site permission back to Allow and tap retry. For error pages, temporarily throw inside a client component during local testing only, confirm recovery UI, then remove the throw before committing.
+
+**Known limitations (v0.1):** Retry cannot override a browser-level permanent denial until the player changes site permission. Demo Mode remains available as a fallback for desktop and failed GPS sessions.
+
 ## Commands
 
 ```bash

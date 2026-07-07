@@ -5,6 +5,7 @@ export type GeolocationStatus =
   | "requesting"
   | "active"
   | "denied"
+  | "timeout"
   | "unavailable"
   | "demo";
 
@@ -59,8 +60,13 @@ export function watchPlayerPosition(
       });
     },
     (err) => {
-      const status: GeolocationStatus =
-        err.code === err.PERMISSION_DENIED ? "denied" : "unavailable";
+      let status: GeolocationStatus = "unavailable";
+      if (err.code === err.PERMISSION_DENIED) {
+        status = "denied";
+      } else if (err.code === err.TIMEOUT) {
+        status = "timeout";
+      }
+
       onUpdate({
         position: null,
         accuracy: null,
