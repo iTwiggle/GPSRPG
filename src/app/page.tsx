@@ -35,7 +35,7 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, lastEncounter, explorePoi, refreshFieldTasks, resetFieldReport, clearEncounter, reset, isVisited } =
+  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activeMobileSection, setActiveMobileSection] =
@@ -190,6 +190,29 @@ export default function HomePage() {
               markers may pass quickly — stop or walk to explore safely. Do not
               use the app while driving.
             </p>
+          </div>
+        )}
+
+        {saveWarning && (
+          <div
+            className="rounded-xl border border-rose-400/45 bg-rose-950/55 px-4 py-3 text-sm text-rose-100 shadow-[0_0_22px_rgba(244,63,94,0.14)]"
+            role="alert"
+          >
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="font-semibold">Save warning</p>
+                <p className="mt-1 text-xs leading-relaxed text-rose-100/80">
+                  {saveWarning}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={clearSaveWarning}
+                className="rounded-lg border border-rose-300/40 px-3 py-1.5 text-xs font-medium text-rose-50 hover:bg-rose-400/15"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 
