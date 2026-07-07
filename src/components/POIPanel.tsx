@@ -10,7 +10,7 @@ interface POIPanelProps {
   playerPosition: Position;
   visited: boolean;
   onExplore: () => void;
-  onSimulateVisit: () => void;
+  onSimulateVisit?: () => void;
 }
 
 export default function POIPanel({
@@ -35,6 +35,7 @@ export default function POIPanel({
   const readout = getApproachReadout(playerPosition, poi, EXPLORE_RADIUS_METERS);
   const inRange = readout.status === "in_range";
   const typeChip = POI_TYPE_CHIP_BG[poi.type];
+  const canSimulateVisit = Boolean(onSimulateVisit);
 
   return (
     <div className="rpg-panel overflow-hidden p-0">
@@ -92,19 +93,21 @@ export default function POIPanel({
                 ? "Explore"
                 : `Out of range (${formatDistance(readout.distanceMeters)})`}
           </button>
-          <button
-            type="button"
-            onClick={onSimulateVisit}
-            disabled={visited}
-            className="rounded-lg border border-slate-600 bg-slate-800/80 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Simulate visit
-          </button>
+          {canSimulateVisit && (
+            <button
+              type="button"
+              onClick={onSimulateVisit}
+              disabled={visited}
+              className="rounded-lg border border-slate-600 bg-slate-800/80 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Simulate visit
+            </button>
+          )}
         </div>
         {!visited && !inRange && (
           <p className="mt-2 text-xs text-slate-500">
-            Move within {EXPLORE_RADIUS_METERS} m to unlock Explore, or use
-            Simulate visit for testing.
+            Move within {EXPLORE_RADIUS_METERS} m to unlock Explore
+            {canSimulateVisit ? ", or use Simulate visit for testing." : "."}
           </p>
         )}
       </div>

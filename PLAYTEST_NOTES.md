@@ -193,6 +193,22 @@ Test public MVP recovery paths:
 
 **Known limitations (v0.1):** Retry cannot override a browser-level permanent denial until the player changes site permission. Demo Mode remains available as a fallback for desktop and failed GPS sessions.
 
+## Dev / Public Mode Gate v0.1
+
+Test production-facing builds do not expose test-only controls:
+
+| Check | Expected |
+|-------|----------|
+| Local dev (`npm run dev`) | Dev tab, DevControls, Simulate visit, New Contracts reroll remain visible |
+| Production build | Dev tab hidden; DevControls hidden; Simulate visit hidden; New Contracts reroll hidden |
+| Flagged preview | `NEXT_PUBLIC_DEV_TOOLS=1 npm run build` keeps those tools visible for a preview/test deployment |
+| Demo Mode | Still available as a GPS fallback in public builds |
+| Core loop | Real Explore still works only when in range; inventory/Codex/tasks persist unchanged |
+
+**Manual checks:** Run a normal production build/start and inspect mobile + desktop layouts. Then build with `NEXT_PUBLIC_DEV_TOOLS=1` to confirm preview builds can still expose testing controls intentionally.
+
+**Known limitations (v0.1):** This is a UI gate for public MVP safety. It does not add server-side authority or prevent a developer from calling client functions manually in DevTools.
+
 ## Commands
 
 ```bash
