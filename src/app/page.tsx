@@ -97,6 +97,8 @@ export default function HomePage() {
         return "Locating…";
       case "denied":
         return "Location denied";
+      case "timeout":
+        return "GPS timeout";
       default:
         return "GPS unavailable";
     }
@@ -134,13 +136,27 @@ export default function HomePage() {
           map with live GPS. Demo Mode loads a fixed Demo Location instead — for
           desktop testing only, not real-world GPS validation.
         </p>
-        <button
-          type="button"
-          onClick={geo.enableDemoMode}
-          className="rounded-lg border border-amber-500/40 bg-amber-500/15 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-500/25"
-        >
-          Use Demo Mode (fixed location)
-        </button>
+        {geo.error && (
+          <p className="max-w-md text-xs text-rose-200/80" role="alert">
+            Location issue: {geo.error}
+          </p>
+        )}
+        <div className="flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={geo.retryLiveGps}
+            className="rounded-lg border border-sky-400/45 bg-sky-500/15 px-4 py-2 text-sm font-medium text-sky-100 hover:bg-sky-500/25"
+          >
+            Retry live GPS
+          </button>
+          <button
+            type="button"
+            onClick={geo.enableDemoMode}
+            className="rounded-lg border border-amber-500/40 bg-amber-500/15 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-500/25"
+          >
+            Use Demo Mode (fixed location)
+          </button>
+        </div>
       </main>
     );
   }
@@ -173,9 +189,16 @@ export default function HomePage() {
             </p>
             <p className="mt-1 text-xs text-amber-200/80">
               {geo.error
-                ? `Location unavailable (${geo.error}). Using a fixed demo map position for desktop testing. Reload and allow location on a phone for live GPS.`
+                ? `Location unavailable (${geo.error}). Using a fixed demo map position for desktop testing. You can retry live GPS after changing browser or device location settings.`
                 : "Fixed map position for desktop testing. Use nudge controls or Simulate visit. Reload on a phone with location allowed for live GPS."}
             </p>
+            <button
+              type="button"
+              onClick={geo.retryLiveGps}
+              className="mt-2 rounded-lg border border-amber-300/45 px-3 py-1.5 text-xs font-medium text-amber-50 hover:bg-amber-400/15"
+            >
+              Retry live GPS
+            </button>
           </div>
         )}
 

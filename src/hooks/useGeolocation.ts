@@ -10,6 +10,7 @@ import { DEMO_POSITION, type Position } from "@/lib/types";
 interface UseGeolocationResult extends GeolocationSnapshot {
   isDemo: boolean;
   enableDemoMode: () => void;
+  retryLiveGps: () => void;
   setSimulatedPosition: (position: Position) => void;
   nudgePosition: (northMeters: number, eastMeters: number) => void;
 }
@@ -22,13 +23,18 @@ export function useGeolocation(): UseGeolocationResult {
     error: null,
   });
   const [isDemo, setIsDemo] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     if (isDemo) return undefined;
 
     const stop = watchPlayerPosition((next) => {
       setSnapshot(next);
-      if (next.status === "denied" || next.status === "unavailable") {
+      if (
+        next.status === "denied" ||
+        next.status === "timeout" ||
+        next.status === "unavailable"
+      ) {
         setIsDemo(true);
         setSnapshot({
           position: DEMO_POSITION,
@@ -40,7 +46,7 @@ export function useGeolocation(): UseGeolocationResult {
     });
 
     return stop;
-  }, [isDemo]);
+  }, [isDemo, retryNonce]);
 
   const enableDemoMode = useCallback(() => {
     setIsDemo(true);
@@ -50,6 +56,17 @@ export function useGeolocation(): UseGeolocationResult {
       status: "demo",
       error: null,
     });
+  }, []);
+
+  const retryLiveGps = useCallback(() => {
+    setIsDemo(false);
+    setSnapshot({
+      position: null,
+      accuracy: null,
+      status: "requesting",
+      error: null,
+    });
+    setRetryNonce((value) => value + 1);
   }, []);
 
   const setSimulatedPosition = useCallback((position: Position) => {
@@ -105,6 +122,7 @@ export function useGeolocation(): UseGeolocationResult {
     ...snapshot,
     isDemo,
     enableDemoMode,
+    retryLiveGps,
     setSimulatedPosition,
     nudgePosition,
   };
