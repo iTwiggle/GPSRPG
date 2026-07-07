@@ -334,7 +334,7 @@ body {
   transform: rotate(-35deg) scale(0.82);
 }
 
-/* ── Player marker ─────────────────────────────────────── */
+/* ── Player marker (0.5D adventurer billboard) ─────────── */
 
 .player-marker {
   background: transparent;
@@ -342,14 +342,73 @@ body {
 }
 
 .player-marker-glyph {
-  width: 22px;
-  height: 22px;
+  position: relative;
+  width: 28px;
+  height: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 8px rgba(167, 139, 250, 0.35));
+}
+
+.player-sprite__shadow {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  width: 14px;
+  height: 5px;
+  margin-left: -7px;
   border-radius: 9999px;
-  background: radial-gradient(circle at 35% 35%, #c4b5fd, #4f46e5 55%, #312e81);
-  border: 2px solid #fef3c7;
-  box-shadow:
-    0 0 0 2px rgba(79, 70, 229, 0.55),
-    0 0 12px rgba(167, 139, 250, 0.65);
+  background: rgba(2, 6, 23, 0.45);
+  transform: scaleX(1.1);
+}
+
+.player-sprite__cloak {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 18px;
+  height: 14px;
+  margin-left: -9px;
+  border-radius: 40% 40% 30% 30%;
+  background: linear-gradient(180deg, #5b21b6 0%, #312e81 55%, #1e1b4b 100%);
+  border: 1px solid rgba(196, 181, 253, 0.45);
+  transform: skewX(-6deg);
+}
+
+.player-sprite__body {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 2px 2px 4px 4px;
+  background: linear-gradient(180deg, #64748b, #475569);
+  border: 1px solid rgba(226, 232, 240, 0.35);
+}
+
+.player-sprite__head {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #fde68a, #d97706);
+  border: 1px solid rgba(254, 243, 199, 0.7);
+}
+
+.player-sprite__hood {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  width: 13px;
+  height: 8px;
+  margin-left: -6.5px;
+  border-radius: 8px 8px 2px 2px;
+  background: linear-gradient(180deg, #7c3aed, #4c1d95);
+  border: 1px solid rgba(196, 181, 253, 0.5);
+  box-shadow: 0 0 6px rgba(167, 139, 250, 0.45);
 }
 
 /* ── POI markers (base) ────────────────────────────────── */
@@ -611,4 +670,213 @@ body {
 
 .rpg-xp-flash {
   animation: rpg-reward-flash 0.5s ease-out;
+}
+
+/* ── Loot reward juice (EncounterModal) ─────────────────── */
+
+.encounter-modal--peak-uncommon {
+  border-color: rgba(52, 211, 153, 0.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 211, 153, 0.12),
+    0 0 24px rgba(16, 185, 129, 0.18);
+}
+
+.encounter-modal--peak-rare {
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 191, 36, 0.2),
+    0 0 36px rgba(251, 191, 36, 0.28),
+    0 0 64px rgba(124, 58, 237, 0.15);
+}
+
+.encounter-modal__edge-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(251, 191, 36, 0.14) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(167, 139, 250, 0.12) 100%
+  );
+  animation: loot-rare-edge-sweep 1.2s ease-out forwards;
+}
+
+.loot-reveal-row {
+  overflow: hidden;
+  border-radius: 0.5rem;
+  opacity: 0;
+}
+
+.loot-reveal--common {
+  animation: loot-reveal-common 0.35s ease-out forwards;
+}
+
+.loot-reveal--uncommon {
+  animation: loot-reveal-uncommon 0.55s ease-out forwards;
+}
+
+.loot-reveal--rare {
+  animation: loot-reveal-rare 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.loot-new-chip {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.85), rgba(79, 70, 229, 0.85));
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.45);
+  animation: loot-new-pop 0.4s ease-out forwards;
+}
+
+.loot-sparkle-burst {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.loot-sparkle-burst__particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  opacity: 0;
+}
+
+.loot-sparkle-burst--uncommon .loot-sparkle-burst__particle {
+  background: rgba(134, 239, 172, 0.95);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+  animation: loot-sparkle-pop 0.65s ease-out forwards;
+}
+
+.loot-sparkle-burst--rare .loot-sparkle-burst__particle {
+  background: rgba(253, 224, 71, 0.98);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.95);
+  animation: loot-sparkle-pop 0.9s ease-out forwards;
+}
+
+.loot-sparkle-burst__particle--1 {
+  top: 50%;
+  left: 18%;
+  animation-delay: 0.15s;
+}
+
+.loot-sparkle-burst__particle--2 {
+  top: 28%;
+  left: 72%;
+  animation-delay: 0.22s;
+}
+
+.loot-sparkle-burst__particle--3 {
+  top: 68%;
+  left: 58%;
+  animation-delay: 0.18s;
+}
+
+.loot-sparkle-burst__particle--4 {
+  top: 42%;
+  left: 42%;
+  animation-delay: 0.28s;
+}
+
+.loot-sparkle-burst__particle--5 {
+  top: 22%;
+  left: 38%;
+  animation-delay: 0.12s;
+}
+
+.loot-sparkle-burst__particle--6 {
+  top: 74%;
+  left: 28%;
+  animation-delay: 0.25s;
+}
+
+@keyframes loot-reveal-common {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loot-reveal-uncommon {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+    filter: brightness(0.7);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.04);
+    filter: brightness(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes loot-reveal-rare {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.88);
+    filter: brightness(0.55) saturate(0.6);
+  }
+  35% {
+    opacity: 0.85;
+    transform: translateY(-4px) scale(1.08);
+    filter: brightness(1.35) saturate(1.2);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(1px) scale(0.98);
+    filter: brightness(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes loot-rare-edge-sweep {
+  from {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+
+@keyframes loot-sparkle-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) translateY(0);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.4) translateY(-8px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6) translateY(-18px);
+  }
+}
+
+@keyframes loot-new-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

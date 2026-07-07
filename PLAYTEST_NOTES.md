@@ -160,6 +160,36 @@ Visual/readability check after strengthening the map disguise layer:
 
 **Known rendering limitations:** CSS `filter` on tile images is applied per-tile by the browser; very old mobile browsers may ignore filters or show a brief flash on tile load. Overlays do not rotate with the map (fixed to the viewport frame) — acceptable for a scanner HUD metaphor.
 
+## Loot Reward Juice v0.1
+
+Test encounter loot feedback after Explore / Simulate visit:
+
+| Check | Expected |
+|-------|----------|
+| Common drop | Quick fade-in; no sparkle burst; no long delay |
+| Uncommon drop | Green shimmer pulse + sparkle burst; modal border may tint green |
+| Rare drop | Gold staggered reveal (~480ms+), edge glow, stronger sparkle; modal gold border/glow |
+| New item | **New** chip on first Codex discovery for that item name+type |
+| No loot | “Your pack is unchanged” — unchanged |
+| Continue | Modal dismisses; inventory/Codex/Activity Log still persist correctly |
+
+**Demo Mode:** Use **Simulate visit** on several cache/shrine sites until uncommon and rare loot appear. Compare common vs rare reveal timing — rare should feel unmistakably more exciting.
+
+**Known limitations (v0.1):** CSS-only particles (no sound). Reveal timing is deterministic, not random slot-machine rolls. Loot tables and drop rates unchanged.
+
+## Player Adventurer Sprite v0.1
+
+Test the map player marker after enabling Demo Mode:
+
+| Check | Expected |
+|-------|----------|
+| Player marker | 0.5D adventurer billboard (hood, cloak, body) replaces blue dot |
+| Visibility | Readable above fantasy grid and POI markers |
+| Explore radius | Purple dashed circle still centered on player |
+| Interaction | Pan/zoom unchanged; player marker follows GPS/demo nudge |
+
+**Known limitations (v0.1):** Static CSS billboard — no facing variants or walk animation yet.
+
 ## Commands
 
 ```bash
