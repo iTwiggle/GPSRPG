@@ -10,10 +10,10 @@
   --rpg-accent: #a78bfa;
   --rpg-gold: #fbbf24;
   --rpg-map-frame: rgba(2, 6, 23, 0.55);
-  --fantasy-map-brightness: 0.78;
-  --fantasy-map-saturate: 0.7;
-  --fantasy-map-contrast: 1.08;
-  --fantasy-map-hue: 6deg;
+  --fantasy-map-brightness: 0.64;
+  --fantasy-map-saturate: 0.48;
+  --fantasy-map-contrast: 1.12;
+  --fantasy-map-hue: 10deg;
 }
 
 body {
@@ -28,14 +28,15 @@ body {
   background: #1e293b;
 }
 
-/* ── Fantasy map surface (tiles only) ─────────────────── */
+/* ── Fantasy cartography disguise (tiles only) ─────────── */
 
 .fantasy-map-surface {
-  background: #0f172a;
+  background: #0a0f1a;
 }
 
 .fantasy-map-surface .leaflet-tile-pane {
-  background: #0f172a;
+  position: relative;
+  background: #0a0f1a;
 }
 
 .fantasy-map-surface .leaflet-tile-pane img {
@@ -43,6 +44,54 @@ body {
     saturate(var(--fantasy-map-saturate))
     contrast(var(--fantasy-map-contrast))
     hue-rotate(var(--fantasy-map-hue));
+}
+
+/* Cartography overlays sit on tiles only — markers stay crisp above */
+.fantasy-map-surface .leaflet-tile-pane::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 45%,
+      rgba(124, 58, 237, 0.07) 0%,
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 90% 80% at 50% 50%,
+      transparent 35%,
+      rgba(2, 6, 23, 0.28) 100%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 63px,
+      rgba(167, 139, 250, 0.022) 63px,
+      rgba(167, 139, 250, 0.022) 64px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 89px,
+      rgba(56, 189, 248, 0.018) 89px,
+      rgba(56, 189, 248, 0.018) 90px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(167, 139, 250, 0.028) 39px,
+      rgba(167, 139, 250, 0.028) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(167, 139, 250, 0.028) 39px,
+      rgba(167, 139, 250, 0.028) 40px
+    );
 }
 
 .fantasy-map-surface .leaflet-control-attribution {
@@ -58,6 +107,34 @@ body {
   color: #c4b5fd;
 }
 
+/* Fantasy grid overlay — dim OSM when grid is active */
+.fantasy-map-surface--grid-active .leaflet-tile-pane img {
+  filter: brightness(0.42)
+    saturate(0.32)
+    contrast(1.1)
+    hue-rotate(var(--fantasy-map-hue));
+}
+
+.fantasy-map-surface--grid-active.fantasy-map-surface--street-ref .leaflet-tile-pane img {
+  filter: brightness(0.68)
+    saturate(0.52)
+    contrast(1.06)
+    hue-rotate(var(--fantasy-map-hue));
+}
+
+.fantasy-grid-canvas {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.fantasy-map-surface--grid-active .leaflet-marker-pane,
+.fantasy-map-surface--grid-active .leaflet-shadow-pane,
+.fantasy-map-surface--grid-active .leaflet-overlay-pane svg,
+.fantasy-map-surface--grid-active .leaflet-overlay-pane path {
+  filter: none;
+}
+
 /* ── Shared RPG panel shell ─────────────────────────────── */
 
 .rpg-panel {
@@ -71,14 +148,41 @@ body {
 }
 
 .rpg-map-frame {
+  position: relative;
   border-radius: 0.75rem;
-  border: 1px solid rgba(167, 139, 250, 0.32);
+  border: 1px solid rgba(167, 139, 250, 0.38);
   background: var(--rpg-map-frame);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 0 24px rgba(79, 70, 229, 0.08),
-    0 0 20px rgba(124, 58, 237, 0.12),
-    0 12px 32px rgba(0, 0, 0, 0.4);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 32px rgba(79, 70, 229, 0.12),
+    0 0 28px rgba(124, 58, 237, 0.16),
+    0 0 1px rgba(167, 139, 250, 0.45),
+    0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.rpg-map-frame::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 48px rgba(2, 6, 23, 0.55),
+    inset 0 0 0 1px rgba(167, 139, 250, 0.12);
+  background:
+    radial-gradient(
+      ellipse 85% 75% at 50% 50%,
+      transparent 40%,
+      rgba(15, 23, 42, 0.35) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(124, 58, 237, 0.06) 0%,
+      transparent 18%,
+      transparent 82%,
+      rgba(56, 189, 248, 0.05) 100%
+    );
 }
 
 .rpg-map-frame--focused {
@@ -122,27 +226,27 @@ body {
   z-index: 400;
   border-radius: 0.75rem;
   box-shadow:
-    inset 0 0 72px rgba(2, 6, 23, 0.62),
-    inset 0 0 120px rgba(15, 23, 42, 0.35);
+    inset 0 0 88px rgba(2, 6, 23, 0.72),
+    inset 0 0 140px rgba(15, 23, 42, 0.42);
   background:
     radial-gradient(
-      ellipse 55% 45% at 50% 48%,
-      rgba(56, 189, 248, 0.04) 0%,
-      transparent 70%
+      ellipse 50% 42% at 50% 48%,
+      rgba(56, 189, 248, 0.05) 0%,
+      transparent 68%
     ),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 47px,
-      rgba(167, 139, 250, 0.035) 47px,
-      rgba(167, 139, 250, 0.035) 48px
+      rgba(167, 139, 250, 0.04) 47px,
+      rgba(167, 139, 250, 0.04) 48px
     ),
     repeating-linear-gradient(
       90deg,
       transparent,
       transparent 47px,
-      rgba(167, 139, 250, 0.035) 47px,
-      rgba(167, 139, 250, 0.035) 48px
+      rgba(167, 139, 250, 0.04) 47px,
+      rgba(167, 139, 250, 0.04) 48px
     );
 }
 

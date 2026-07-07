@@ -114,6 +114,52 @@ Test exploring several sites, then open the **Journey** tab (mobile) or scroll t
 
 **Known limitations (v0.1):** One active report per save — no history list of past reports. Report persists across browser sessions until reset. No GPS trail or path data is stored.
 
+## Fantasy Grid Overlay v0.1
+
+Test the biome-driven fantasy tile surface over the existing Leaflet map:
+
+| Check | Expected |
+|-------|----------|
+| Default surface | Fantasy grid visible on load; OSM streets visually secondary beneath tiles |
+| Biome mood | Local Aura category maps to grid palette (Grove → green, Water → blue rune tiles, Industrial → stone/ruins, Market/Crossroads/Academy → cobble, Cemetery/Chapel → shrine, generic → wilds) |
+| Player marker | Purple/gold glyph remains above grid and readable |
+| POI markers | Fantasy glyphs clickable; selected (amber) and in-range (green/gold) pulses unchanged |
+| Interaction | Pan, zoom, scroll-wheel, and POI tap/popup work — grid does not block input |
+| Attribution | OpenStreetMap attribution remains visible when OSM tiles are loaded |
+| Dev: Fantasy grid off | Dev panel toggle hides grid; street map returns to default fantasy CSS filters |
+| Dev: Street reference | With grid on, fades overlay (~38% opacity) and brightens OSM for debug comparison |
+| Session prefs | Toggle state stored in `sessionStorage` only (not game save) |
+| Zoom out | Fantasy grid remains visible (screen-space tile fallback); OSM stays secondary, not bare street map |
+
+**Demo Mode:** Enable Demo Mode, confirm grid tiles render and pan/zoom with the map. Zoom out several levels — grid should stay as biome-colored tiles, not revert to plain OSM. Toggle **Street reference** to compare against underlying roads.
+
+**Performance notes:** Canvas redraws on pan/zoom via `requestAnimationFrame`; capped at 2× DPR. No image assets or external APIs.
+
+**Known limitations (v0.1):** Visual-only 40 m tile grid — not tied to POI cells or authored terrain. Biome comes from coarse OSM category for the current ~400 m cell; loading/generic falls back to wilds. No Tiled/Zest import, no per-city maps, no GPS trail. Tile skew is cosmetic top-down/isometric hint only. At low zoom (world tiles smaller than ~8 px on screen), overlay switches to fixed screen-space tiles so the fantasy surface stays visible when zoomed out.
+
+## Fantasy Cartography Disguise Pass v0.1
+
+Visual/readability check after strengthening the map disguise layer:
+
+| Check | Expected |
+|-------|----------|
+| First impression | Map reads as a dark fantasy scanner surface, not a default street-map app |
+| Street/label readability | Roads, water, parks, and place names remain legible at zoom 15–17 |
+| Tile treatment | OSM tiles are darkened, desaturated, and lightly hue-shifted via CSS filters |
+| Tile-only overlays | Scanner grid, arcane survey diagonals, and radial haze apply to tiles only (not markers) |
+| Frame treatment | Map frame shows vignette edge glow and scanner corner brackets |
+| Player marker | Purple/gold glyph remains clearly visible above the disguised surface |
+| POI markers | Fantasy glyphs stay dominant; selected (amber) and in-range (green/gold) pulses unchanged |
+| Interaction | Zoom, pan, POI tap, and popups work normally |
+| Attribution | OpenStreetMap attribution remains visible in bottom-right |
+| Mobile | No noticeable scroll/zoom jank; overlay layers are CSS-only (no animations) |
+
+**Demo Mode:** Open the app on desktop, enable Demo Mode, zoom in/out and select POIs — confirm the map feels stylized but still navigable.
+
+**Readability guardrail:** If local testing shows place names or water features becoming too faint, reduce `--fantasy-map-brightness` / `--fantasy-map-saturate` in `globals.css` slightly.
+
+**Known rendering limitations:** CSS `filter` on tile images is applied per-tile by the browser; very old mobile browsers may ignore filters or show a brief flash on tile load. Overlays do not rotate with the map (fixed to the viewport frame) — acceptable for a scanner HUD metaphor.
+
 ## Loot Reward Juice v0.1
 
 Test encounter loot feedback after Explore / Simulate visit:

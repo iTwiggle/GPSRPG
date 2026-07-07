@@ -5,6 +5,10 @@ import { DEMO_LOCATION_LABEL } from "@/lib/types";
 interface DevControlsProps {
   isDemo: boolean;
   gpsStatus: string;
+  fantasyGridEnabled: boolean;
+  streetReferenceMode: boolean;
+  onToggleFantasyGrid: (enabled: boolean) => void;
+  onToggleStreetReference: (enabled: boolean) => void;
   onEnableDemo: () => void;
   onNudge: (north: number, east: number) => void;
   onReset: () => void;
@@ -16,6 +20,10 @@ const NUDGE_METERS = 40;
 export default function DevControls({
   isDemo,
   gpsStatus,
+  fantasyGridEnabled,
+  streetReferenceMode,
+  onToggleFantasyGrid,
+  onToggleStreetReference,
   onEnableDemo,
   onNudge,
   onReset,
@@ -56,6 +64,40 @@ export default function DevControls({
             </button>
           )}
         </div>
+      </div>
+
+      <div className="mt-3 rounded-lg border border-amber-200/80 bg-white/60 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+          Map surface (session)
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onToggleFantasyGrid(!fantasyGridEnabled)}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+              fantasyGridEnabled
+                ? "border-violet-400 bg-violet-100 text-violet-900"
+                : "border-amber-300 bg-white text-amber-950 hover:bg-amber-100"
+            }`}
+          >
+            Fantasy grid: {fantasyGridEnabled ? "On" : "Off"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleStreetReference(!streetReferenceMode)}
+            disabled={!fantasyGridEnabled}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-45 ${
+              streetReferenceMode
+                ? "border-sky-400 bg-sky-100 text-sky-900"
+                : "border-amber-300 bg-white text-amber-950 hover:bg-amber-100"
+            }`}
+          >
+            Street reference: {streetReferenceMode ? "On" : "Off"}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-amber-800">
+          Fantasy grid draws biome tiles over OSM. Street reference fades the grid so roads remain visible for debug.
+        </p>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2 max-w-xs">
