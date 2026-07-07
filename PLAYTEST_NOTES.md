@@ -137,6 +137,22 @@ Visual/readability check after strengthening the map disguise layer:
 
 **Known rendering limitations:** CSS `filter` on tile images is applied per-tile by the browser; very old mobile browsers may ignore filters or show a brief flash on tile load. Overlays do not rotate with the map (fixed to the viewport frame) — acceptable for a scanner HUD metaphor.
 
+## Save Hardening v0.1
+
+Test persistence safety before public MVP testing:
+
+| Check | Expected |
+|-------|----------|
+| Existing saves | Older saves without `schemaVersion` load and normalize to the current shape |
+| Corrupt save JSON | App starts fresh, shows **Save warning**, and backs up raw corrupt data under a `gpsrpg-game-state-v1-corrupt-*` key when possible |
+| Save write failure | App stays playable in-memory, shows **Save warning**, and does not crash after Explore / Simulate visit |
+| Successful save after warning | Warning clears on the next successful save or with **Dismiss** |
+| Reset save | Returns to a fresh schema-versioned save without crashing if storage is blocked |
+
+**Manual checks:** In DevTools, set `localStorage["gpsrpg-game-state-v1"] = "{bad json"` and reload. For write failure, temporarily monkeypatch `Storage.prototype.setItem = () => { throw new Error("test quota"); }`, then Simulate visit.
+
+**Known limitations (v0.1):** Save recovery is local-device only. Corrupt backups are retained in browser storage and are not uploaded anywhere. If browser storage is completely unavailable, backup may fail but the app should remain usable for the current tab.
+
 ## Commands
 
 ```bash

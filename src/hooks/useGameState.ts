@@ -22,17 +22,21 @@ import { rollEncounter } from "@/lib/encounter";
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [lastEncounter, setLastEncounter] = useState<EncounterResult | null>(
     null
   );
 
   useEffect(() => {
-    setGameState(loadGameState());
+    const result = loadGameState();
+    setGameState(result.state);
+    setSaveWarning(result.warning);
   }, []);
 
   const persist = useCallback((next: GameState) => {
     setGameState(next);
-    saveGameState(next);
+    const result = saveGameState(next);
+    setSaveWarning(result.warning);
   }, []);
 
   const explorePoi = useCallback(
@@ -129,15 +133,22 @@ export function useGameState() {
     const fresh = resetGameState();
     setGameState(fresh);
     setLastEncounter(null);
+    setSaveWarning(null);
+  }, []);
+
+  const clearSaveWarning = useCallback(() => {
+    setSaveWarning(null);
   }, []);
 
   return {
     gameState,
+    saveWarning,
     lastEncounter,
     explorePoi,
     refreshFieldTasks,
     resetFieldReport,
     clearEncounter,
+    clearSaveWarning,
     reset,
     isVisited: (poiId: string) =>
       gameState?.visitedPOIIds.includes(poiId) ?? false,

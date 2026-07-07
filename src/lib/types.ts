@@ -145,6 +145,7 @@ export interface FieldReport {
 }
 
 export interface GameState {
+  schemaVersion: number;
   player: Player;
   visitedPOIIds: string[];
   codex: Codex;
