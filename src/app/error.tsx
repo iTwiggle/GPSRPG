@@ -13,7 +13,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-6 text-center text-slate-100">
+    <main className="app-page--centered flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-6 text-center text-slate-100">
       <section className="rpg-panel max-w-lg border-rose-400/30 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-300">
           Scanner malfunction

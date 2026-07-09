@@ -30,7 +30,7 @@ export default function EncounterModal({
   if (!encounter) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 p-4">
+    <div className="app-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-black/60">
       <div
         className="rpg-panel w-full max-w-md border-amber-500/25 p-6"
         role="dialog"
