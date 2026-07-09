@@ -313,7 +313,12 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <CharacterHUD player={gameState.player} gpsLabel={gpsLabel} />
+            <CharacterHUD
+              player={gameState.player}
+              gpsLabel={gpsLabel}
+              gpsAccuracyMeters={geo.accuracy}
+              showGpsAccuracy={geo.status === "active"}
+            />
 
             <MobilePanelNav
               activeSection={activeMobileSection}
@@ -325,9 +330,11 @@ export default function HomePage() {
               {activeMobileSection === "poi" && (
                 <POIPanel
                   poi={selectedPoi}
+                  pois={pois}
                   playerPosition={playerPosition}
                   visited={selectedPoi ? isVisited(selectedPoi.id) : false}
                   onExplore={handleExplore}
+                  onSelectPoi={setSelectedPoi}
                   onSimulateVisit={
                     devToolsEnabled ? handleSimulateVisit : undefined
                   }
@@ -373,9 +380,11 @@ export default function HomePage() {
             <div className="hidden flex-col gap-4 lg:flex">
               <POIPanel
                 poi={selectedPoi}
+                pois={pois}
                 playerPosition={playerPosition}
                 visited={selectedPoi ? isVisited(selectedPoi.id) : false}
                 onExplore={handleExplore}
+                onSelectPoi={setSelectedPoi}
                 onSimulateVisit={
                   devToolsEnabled ? handleSimulateVisit : undefined
                 }
