@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ActivityLogPanel from "@/components/ActivityLogPanel";
@@ -14,6 +15,7 @@ import MobilePanelNav, {
   type MobilePanelSection,
 } from "@/components/MobilePanelNav";
 import POIPanel from "@/components/POIPanel";
+import SiteFooter from "@/components/SiteFooter";
 import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useOsmContext } from "@/hooks/useOsmContext";
@@ -131,18 +133,25 @@ export default function HomePage() {
   }
 
   if (!playerPosition) {
+    const awaitingConsent = !geo.hasLocationConsent;
+    const isRequesting = geo.status === "requesting";
+
     return (
       <main className="app-page--centered flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-6 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-300/80">
           Companion App / Overworld Prototype
         </p>
         <p className="text-lg font-medium text-slate-100">
-          Waiting for your location…
+          {awaitingConsent
+            ? "Choose how to explore"
+            : isRequesting
+              ? "Waiting for your location…"
+              : "Location unavailable"}
         </p>
         <p className="max-w-md text-sm text-slate-400">
-          This prototype needs location permission to place you on the overworld
-          map with live GPS. Demo Mode loads a fixed Demo Location instead — for
-          desktop testing only, not real-world GPS validation.
+          {awaitingConsent
+            ? "Live GPS places you on the overworld map from your real-world position. Demo Mode uses a fixed demo location for desktop testing — not real-world GPS validation."
+            : "This prototype needs location permission to place you on the overworld map with live GPS. Demo Mode loads a fixed Demo Location instead."}
         </p>
         {geo.error && (
           <p className="max-w-md text-xs text-rose-200/80" role="alert">
@@ -150,13 +159,23 @@ export default function HomePage() {
           </p>
         )}
         <div className="flex flex-wrap justify-center gap-2">
-          <button
-            type="button"
-            onClick={geo.retryLiveGps}
-            className="rounded-lg border border-sky-400/45 bg-sky-500/15 px-4 py-2 text-sm font-medium text-sky-100 hover:bg-sky-500/25"
-          >
-            Retry live GPS
-          </button>
+          {awaitingConsent ? (
+            <button
+              type="button"
+              onClick={geo.startLiveGps}
+              className="rounded-lg border border-sky-400/45 bg-sky-500/15 px-4 py-2 text-sm font-medium text-sky-100 hover:bg-sky-500/25"
+            >
+              Use Live GPS
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={geo.retryLiveGps}
+              className="rounded-lg border border-sky-400/45 bg-sky-500/15 px-4 py-2 text-sm font-medium text-sky-100 hover:bg-sky-500/25"
+            >
+              Retry live GPS
+            </button>
+          )}
           <button
             type="button"
             onClick={geo.enableDemoMode}
@@ -165,6 +184,14 @@ export default function HomePage() {
             Use Demo Mode (fixed location)
           </button>
         </div>
+        <p className="max-w-md text-xs text-slate-500">
+          <Link
+            href="/about"
+            className="text-violet-300 underline decoration-violet-500/40 underline-offset-2 hover:text-violet-200"
+          >
+            About, privacy &amp; limitations
+          </Link>
+        </p>
       </main>
     );
   }
@@ -381,6 +408,8 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        <SiteFooter />
       </div>
 
       <EncounterModal encounter={lastEncounter} onClose={clearEncounter} />
