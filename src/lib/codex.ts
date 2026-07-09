@@ -29,6 +29,8 @@ function itemKey(item: Pick<Item, "name" | "type">): string {
   return `${item.name}|${item.type}`;
 }
 
+export { itemKey as codexItemKey };
+
 function recordItem(
   codex: Codex,
   item: Item,

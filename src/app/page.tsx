@@ -14,6 +14,7 @@ import InventoryPanel from "@/components/InventoryPanel";
 import MobilePanelNav, {
   type MobilePanelSection,
 } from "@/components/MobilePanelNav";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import POIPanel from "@/components/POIPanel";
 import SiteFooter from "@/components/SiteFooter";
 import { useGameState } from "@/hooks/useGameState";
@@ -113,6 +114,11 @@ export default function HomePage() {
         return "GPS unavailable";
     }
   }, [geo.status]);
+
+  const inventoryCount = gameState?.player.inventory.length ?? 0;
+  const codexUniqueItems = gameState
+    ? Object.keys(gameState.codex.items).length
+    : 0;
 
   const handleExplore = useCallback(() => {
     if (!selectedPoi) return;
@@ -214,6 +220,8 @@ export default function HomePage() {
           </p>
         </header>
 
+        <PwaInstallPrompt />
+
         {geo.isDemo && (
           <div
             className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
@@ -313,11 +321,18 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <CharacterHUD player={gameState.player} gpsLabel={gpsLabel} />
+            <CharacterHUD
+              player={gameState.player}
+              gpsLabel={gpsLabel}
+              gpsAccuracyMeters={geo.accuracy}
+              showGpsAccuracy={geo.status === "active"}
+            />
 
             <MobilePanelNav
               activeSection={activeMobileSection}
               devToolsEnabled={devToolsEnabled}
+              inventoryCount={inventoryCount}
+              codexUniqueItems={codexUniqueItems}
               onSectionChange={setActiveMobileSection}
             />
 
@@ -325,9 +340,11 @@ export default function HomePage() {
               {activeMobileSection === "poi" && (
                 <POIPanel
                   poi={selectedPoi}
+                  pois={pois}
                   playerPosition={playerPosition}
                   visited={selectedPoi ? isVisited(selectedPoi.id) : false}
                   onExplore={handleExplore}
+                  onSelectPoi={setSelectedPoi}
                   onSimulateVisit={
                     devToolsEnabled ? handleSimulateVisit : undefined
                   }
@@ -373,9 +390,11 @@ export default function HomePage() {
             <div className="hidden flex-col gap-4 lg:flex">
               <POIPanel
                 poi={selectedPoi}
+                pois={pois}
                 playerPosition={playerPosition}
                 visited={selectedPoi ? isVisited(selectedPoi.id) : false}
                 onExplore={handleExplore}
+                onSelectPoi={setSelectedPoi}
                 onSimulateVisit={
                   devToolsEnabled ? handleSimulateVisit : undefined
                 }

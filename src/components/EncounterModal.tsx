@@ -1,33 +1,23 @@
-import type { EncounterResult, ItemRarity } from "@/lib/types";
+import {
+  ITEM_TYPE_LABEL,
+  RARITY_CHIP,
+  RARITY_LABEL,
+  itemCatalogKey,
+} from "@/lib/item-visual";
+import type { EncounterResult } from "@/lib/types";
 
 interface EncounterModalProps {
   encounter: EncounterResult | null;
   onClose: () => void;
 }
 
-const RARITY_STYLES: Record<
-  ItemRarity,
-  { chip: string; label: string }
-> = {
-  common: {
-    chip: "border-slate-500/40 bg-slate-700/50 text-slate-200",
-    label: "Common",
-  },
-  uncommon: {
-    chip: "border-emerald-500/40 bg-emerald-900/40 text-emerald-200",
-    label: "Uncommon",
-  },
-  rare: {
-    chip: "border-amber-500/50 bg-amber-900/40 text-amber-200",
-    label: "Rare",
-  },
-};
-
 export default function EncounterModal({
   encounter,
   onClose,
 }: EncounterModalProps) {
   if (!encounter) return null;
+
+  const newKeys = new Set(encounter.newCodexItemKeys ?? []);
 
   return (
     <div className="app-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-black/60">
@@ -63,16 +53,30 @@ export default function EncounterModal({
           {encounter.loot.length > 0 ? (
             <ul className="mt-3 space-y-2">
               {encounter.loot.map((item) => {
-                const style = RARITY_STYLES[item.rarity];
+                const isNew = newKeys.has(itemCatalogKey(item));
                 return (
                   <li
                     key={item.id}
-                    className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${style.chip}`}
+                    className={`rounded-lg border px-3 py-2 text-sm ${RARITY_CHIP[item.rarity]}`}
                   >
-                    <span className="font-medium">{item.name}</span>
-                    <span className="text-xs uppercase tracking-wide">
-                      {style.label}
-                    </span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-[11px] uppercase tracking-wide opacity-75">
+                          {ITEM_TYPE_LABEL[item.type]}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        {isNew && (
+                          <span className="rounded-full border border-sky-400/40 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-100">
+                            New
+                          </span>
+                        )}
+                        <span className="text-xs uppercase tracking-wide">
+                          {RARITY_LABEL[item.rarity]}
+                        </span>
+                      </div>
+                    </div>
                   </li>
                 );
               })}

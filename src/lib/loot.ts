@@ -96,3 +96,21 @@ export function rollLoot(
 export function getLootTableSize(): number {
   return LOOT_TABLE.length;
 }
+
+/** Count of unique item templates across base and POI-themed loot tables. */
+export function getUniqueLootCatalogSize(): number {
+  const keys = new Set<string>();
+
+  for (const template of LOOT_TABLE) {
+    keys.add(`${template.name}|${template.type}`);
+  }
+
+  for (const themed of Object.values(TYPE_LOOT)) {
+    if (!themed) continue;
+    for (const template of themed) {
+      keys.add(`${template.name}|${template.type}`);
+    }
+  }
+
+  return keys.size;
+}

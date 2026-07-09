@@ -5,7 +5,7 @@ import {
   appendExploreEvents,
   appendTaskCompleteEvents,
 } from "@/lib/activity-log";
-import { recordExplore } from "@/lib/codex";
+import { recordExplore, codexItemKey } from "@/lib/codex";
 import { applyExploreToTasks, refreshFieldTasks as rollFieldTasks } from "@/lib/tasks";
 import { updateFieldReportOnExplore } from "@/lib/field-report";
 import { applyXp } from "@/lib/xp";
@@ -52,20 +52,32 @@ export function useGameState() {
         options?.simulate ? Date.now() : undefined
       );
 
+      const newCodexItemKeys = encounter.loot
+        .filter((item) => !gameState.codex.items[codexItemKey(item)])
+        .map((item) => codexItemKey(item));
+      const encounterWithDiscoveries: EncounterResult = {
+        ...encounter,
+        newCodexItemKeys,
+      };
+
       const prevLevel = gameState.player.level;
-      const withXp = applyXp(gameState.player, encounter.xpGained);
-      const withLoot = addLootToPlayer(withXp, encounter.loot);
-      const withCodex = recordExplore(gameState.codex, poi, encounter);
+      const withXp = applyXp(gameState.player, encounterWithDiscoveries.xpGained);
+      const withLoot = addLootToPlayer(withXp, encounterWithDiscoveries.loot);
+      const withCodex = recordExplore(
+        gameState.codex,
+        poi,
+        encounterWithDiscoveries
+      );
       const withActivity = appendExploreEvents(gameState.activityLog, {
         poi,
-        encounter,
+        encounter: encounterWithDiscoveries,
         prevLevel,
         newLevel: withXp.level,
       });
 
       const { tasks: withTasks, completions } = applyExploreToTasks(
         gameState.fieldTasks,
-        { poi, encounter }
+        { poi, encounter: encounterWithDiscoveries }
       );
 
       let player = withLoot;
@@ -88,7 +100,7 @@ export function useGameState() {
 
       const withFieldReport = updateFieldReportOnExplore(gameState.fieldReport, {
         poi,
-        encounter,
+        encounter: encounterWithDiscoveries,
         taskRewardXp,
         tasksCompleted: completions.length,
       });
@@ -106,8 +118,8 @@ export function useGameState() {
       );
 
       persist(nextState);
-      setLastEncounter(encounter);
-      return encounter;
+      setLastEncounter(encounterWithDiscoveries);
+      return encounterWithDiscoveries;
     },
     [gameState, persist]
   );
