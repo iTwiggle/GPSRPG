@@ -1,5 +1,5 @@
 import { distanceMeters } from "./distance";
-import { EXPLORE_RADIUS_METERS } from "./types";
+import { EXPLORE_RADIUS_METERS, type POI, type Position } from "./types";
 
 /** Distance at which a selected site is considered "Nearby" (above explore range). */
 export const APPROACH_NEARBY_THRESHOLD_METERS = 250;
@@ -54,3 +54,23 @@ export const APPROACH_STATUS_LABEL: Record<ApproachStatus, string> = {
   nearby: "Nearby",
   in_range: "In range",
 };
+
+export function findNearestPoi(
+  player: Position,
+  pois: POI[]
+): POI | null {
+  if (pois.length === 0) return null;
+
+  let nearest: POI | null = null;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  for (const poi of pois) {
+    const dist = distanceMeters(player, poi);
+    if (dist < nearestDistance) {
+      nearest = poi;
+      nearestDistance = dist;
+    }
+  }
+
+  return nearest;
+}

@@ -1,16 +1,30 @@
 "use client";
 
+import { formatGpsAccuracy } from "@/lib/distance";
 import { xpProgress, xpToNextLevel } from "@/lib/xp";
 import type { Player } from "@/lib/types";
 
 interface CharacterHUDProps {
   player: Player;
   gpsLabel: string;
+  gpsAccuracyMeters?: number | null;
+  showGpsAccuracy?: boolean;
 }
 
-export default function CharacterHUD({ player, gpsLabel }: CharacterHUDProps) {
+export default function CharacterHUD({
+  player,
+  gpsLabel,
+  gpsAccuracyMeters = null,
+  showGpsAccuracy = false,
+}: CharacterHUDProps) {
   const progress = xpProgress(player.xp);
   const toNext = xpToNextLevel(player.xp);
+  const accuracyLabel =
+    showGpsAccuracy &&
+    gpsAccuracyMeters !== null &&
+    Number.isFinite(gpsAccuracyMeters)
+      ? formatGpsAccuracy(gpsAccuracyMeters)
+      : null;
 
   return (
     <div className="rpg-panel p-4">
@@ -26,9 +40,19 @@ export default function CharacterHUD({ player, gpsLabel }: CharacterHUDProps) {
             {player.xp} XP
           </p>
         </div>
-        <span className="rounded-full border border-violet-500/35 bg-violet-500/15 px-2.5 py-1 text-xs font-medium text-violet-200">
-          {gpsLabel}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="rounded-full border border-violet-500/35 bg-violet-500/15 px-2.5 py-1 text-xs font-medium text-violet-200">
+            {gpsLabel}
+          </span>
+          {accuracyLabel && (
+            <span
+              className="text-[10px] font-medium text-slate-500"
+              title="Estimated horizontal GPS accuracy from your device"
+            >
+              {accuracyLabel}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-3">

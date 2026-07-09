@@ -54,6 +54,13 @@ export function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
+export function formatGpsAccuracy(meters: number): string {
+  if (meters < 1000) {
+    return `±${Math.round(meters)} m`;
+  }
+  return `±${(meters / 1000).toFixed(1)} km`;
+}
+
 /**
  * Initial bearing from `from` to `to` in degrees (0 = north, clockwise).
  */
