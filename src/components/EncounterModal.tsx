@@ -1,3 +1,4 @@
+import { getCatalogEntry, getItemSet } from "@/lib/item-catalog";
 import {
   ITEM_TYPE_LABEL,
   RARITY_CHIP,
@@ -18,6 +19,10 @@ export default function EncounterModal({
   if (!encounter) return null;
 
   const newKeys = new Set(encounter.newCodexItemKeys ?? []);
+  const hasNewDiscoveries = newKeys.size > 0;
+  const completedSets = (encounter.completedSetIds ?? [])
+    .map((id) => getItemSet(id))
+    .filter((set): set is NonNullable<typeof set> => Boolean(set));
 
   return (
     <div className="app-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-black/60">
@@ -40,10 +45,54 @@ export default function EncounterModal({
           {encounter.description}
         </p>
 
+        {hasNewDiscoveries && (
+          <div className="mt-4 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sky-200">
+              Catalogued!
+            </p>
+            <ul className="mt-2 space-y-2">
+              {encounter.loot
+                .filter((item) => newKeys.has(itemCatalogKey(item)))
+                .map((item) => {
+                  const entry = getCatalogEntry(item);
+                  return (
+                    <li key={item.id} className="text-sm text-sky-50">
+                      <span className="font-medium">{item.name}</span>
+                      {entry && (
+                        <p className="mt-0.5 text-xs leading-relaxed text-sky-100/75">
+                          {entry.description}
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+            </ul>
+          </div>
+        )}
+
+        {completedSets.length > 0 && (
+          <div className="mt-3 rounded-lg border border-amber-500/35 bg-amber-500/10 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-200">
+              Album set complete
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-amber-50">
+              {completedSets.map((set) => (
+                <li key={set.id}>
+                  {set.name}{" "}
+                  <span className="text-amber-200/80">(+{set.rewardXp} XP)</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="mt-4 rounded-lg border border-slate-700/70 bg-slate-950/50 p-3">
           <div className="rpg-xp-flash">
             <p className="text-sm font-semibold text-amber-300">
               +{encounter.xpGained} XP
+              {encounter.setBonusXp
+                ? ` · +${encounter.setBonusXp} set bonus`
+                : ""}
             </p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
               <div className="h-full w-full rounded-full bg-gradient-to-r from-amber-500 via-violet-500 to-amber-400" />

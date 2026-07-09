@@ -22,6 +22,20 @@ export function createEmptyCodex(): Codex {
       totalItemsFound: 0,
       rarityCounts: emptyRarityCounts(),
     },
+    completedSetIds: [],
+  };
+}
+
+export function normalizeCodex(codex: Partial<Codex> | undefined): Codex {
+  const empty = createEmptyCodex();
+  if (!codex) return empty;
+
+  return {
+    items: codex.items ?? empty.items,
+    pois: codex.pois ?? empty.pois,
+    encounters: codex.encounters ?? empty.encounters,
+    stats: codex.stats ?? empty.stats,
+    completedSetIds: codex.completedSetIds ?? [],
   };
 }
 
@@ -164,5 +178,5 @@ export function recordExplore(
   const encounters = recordEncounter(codex, encounter, timestamp);
   const stats = buildStats(codex.stats, encounter.loot, newPoi);
 
-  return { items, pois, encounters, stats };
+  return { items, pois, encounters, stats, completedSetIds: codex.completedSetIds ?? [] };
 }

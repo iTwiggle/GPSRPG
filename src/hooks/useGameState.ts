@@ -3,8 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   appendExploreEvents,
+  appendSetCompleteEvents,
   appendTaskCompleteEvents,
 } from "@/lib/activity-log";
+import {
+  getItemSet,
+  getNewlyCompletedSetIds,
+  getSetRewardXp,
+} from "@/lib/item-catalog";
 import { recordExplore, codexItemKey } from "@/lib/codex";
 import { applyExploreToTasks, refreshFieldTasks as rollFieldTasks } from "@/lib/tasks";
 import { updateFieldReportOnExplore } from "@/lib/field-report";
@@ -55,33 +61,65 @@ export function useGameState() {
       const newCodexItemKeys = encounter.loot
         .filter((item) => !gameState.codex.items[codexItemKey(item)])
         .map((item) => codexItemKey(item));
+
+      const prevLevel = gameState.player.level;
+      const playerAfterEncounter = applyXp(
+        gameState.player,
+        encounter.xpGained
+      );
+      let player = addLootToPlayer(playerAfterEncounter, encounter.loot);
+
+      let withCodex = recordExplore(gameState.codex, poi, encounter);
+      const newSetIds = getNewlyCompletedSetIds(
+        withCodex,
+        withCodex.completedSetIds
+      );
+      const setBonusXp = getSetRewardXp(newSetIds);
+
+      if (newSetIds.length > 0) {
+        withCodex = {
+          ...withCodex,
+          completedSetIds: [...withCodex.completedSetIds, ...newSetIds],
+        };
+      }
+
       const encounterWithDiscoveries: EncounterResult = {
         ...encounter,
         newCodexItemKeys,
+        completedSetIds: newSetIds,
+        setBonusXp: setBonusXp > 0 ? setBonusXp : undefined,
       };
 
-      const prevLevel = gameState.player.level;
-      const withXp = applyXp(gameState.player, encounterWithDiscoveries.xpGained);
-      const withLoot = addLootToPlayer(withXp, encounterWithDiscoveries.loot);
-      const withCodex = recordExplore(
-        gameState.codex,
-        poi,
-        encounterWithDiscoveries
-      );
-      const withActivity = appendExploreEvents(gameState.activityLog, {
+      let activityLog = appendExploreEvents(gameState.activityLog, {
         poi,
         encounter: encounterWithDiscoveries,
         prevLevel,
-        newLevel: withXp.level,
+        newLevel: playerAfterEncounter.level,
       });
+
+      if (setBonusXp > 0) {
+        const levelBeforeSets = player.level;
+        player = applyXp(player, setBonusXp);
+        activityLog = appendSetCompleteEvents(
+          activityLog,
+          newSetIds
+            .map((id) => getItemSet(id))
+            .filter((set): set is NonNullable<typeof set> => Boolean(set))
+            .map((set) => ({
+              id: set.id,
+              name: set.name,
+              rewardXp: set.rewardXp,
+            })),
+          levelBeforeSets,
+          player.level
+        );
+      }
 
       const { tasks: withTasks, completions } = applyExploreToTasks(
         gameState.fieldTasks,
         { poi, encounter: encounterWithDiscoveries }
       );
 
-      let player = withLoot;
-      let activityLog = withActivity;
       const taskRewardXp = completions.reduce(
         (sum, task) => sum + task.rewardXp,
         0

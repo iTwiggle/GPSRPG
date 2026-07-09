@@ -20,7 +20,9 @@ import SiteFooter from "@/components/SiteFooter";
 import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useOsmContext } from "@/hooks/useOsmContext";
-import { generateNearbyPOIs } from "@/lib/poi-generator";
+import { useStickyPois } from "@/hooks/useStickyPois";
+import { POI_ANCHOR_REGENERATE_METERS } from "@/lib/poi-anchor";
+import { formatDistance } from "@/lib/distance";
 import {
   FANTASY_GRID_SESSION_KEY,
   STREET_REF_SESSION_KEY,
@@ -91,12 +93,17 @@ export default function HomePage() {
     sessionStorage.setItem(STREET_REF_SESSION_KEY, enabled ? "1" : "0");
   }, []);
 
-  const pois = useMemo(() => {
-    if (!playerPosition) return [];
-    return generateNearbyPOIs(playerPosition.lat, playerPosition.lng, {
-      areaContext,
-    });
-  }, [playerPosition, areaContext]);
+  const { pois, metersUntilRefresh } = useStickyPois(
+    playerPosition,
+    areaContext
+  );
+
+  useEffect(() => {
+    if (!selectedPoi) return;
+    if (!pois.some((poi) => poi.id === selectedPoi.id)) {
+      setSelectedPoi(null);
+    }
+  }, [pois, selectedPoi]);
 
   const gpsLabel = useMemo(() => {
     switch (geo.status) {
@@ -218,6 +225,13 @@ export default function HomePage() {
             Overworld companion — explore nearby fantasy sites from your
             real-world position, roll encounters, and track loot locally.
           </p>
+          {playerPosition && metersUntilRefresh !== null && (
+            <p className="text-xs text-slate-500" role="status">
+              Sites locked to session anchor · refresh in{" "}
+              {formatDistance(metersUntilRefresh)} (or after{" "}
+              {POI_ANCHOR_REGENERATE_METERS} m walked)
+            </p>
+          )}
         </header>
 
         <PwaInstallPrompt />

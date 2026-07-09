@@ -166,6 +166,42 @@ export function appendTaskCompleteEvents(
   return prependEvents(log, events);
 }
 
+/** Append album set completion rewards after an explore. */
+export function appendSetCompleteEvents(
+  log: ActivityEvent[],
+  setCompletions: { id: string; name: string; rewardXp: number }[],
+  prevLevel: number,
+  newLevel: number,
+  timestamp: string = new Date().toISOString()
+): ActivityEvent[] {
+  if (setCompletions.length === 0) {
+    return log;
+  }
+
+  const events: ActivityEvent[] = [];
+  let index = 0;
+
+  for (const set of setCompletions) {
+    events.push({
+      id: makeId(timestamp, "set_complete", index++),
+      timestamp,
+      type: "set_complete",
+      message: `Album set complete: ${set.name} (+${set.rewardXp} XP)`,
+    });
+  }
+
+  if (newLevel > prevLevel) {
+    events.push({
+      id: makeId(timestamp, "level_up", index++),
+      timestamp,
+      type: "level_up",
+      message: `Reached Level ${newLevel}`,
+    });
+  }
+
+  return prependEvents(log, events);
+}
+
 /** Log field report archive + new outing start when the player resets their report. */
 export function appendFieldReportEvents(
   log: ActivityEvent[],

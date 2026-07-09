@@ -1,5 +1,5 @@
 import { createEmptyActivityLog, appendFieldReportEvents } from "./activity-log";
-import { createEmptyCodex } from "./codex";
+import { createEmptyCodex, normalizeCodex } from "./codex";
 import {
   createEmptyFieldReport,
   normalizeFieldReport,
@@ -66,7 +66,7 @@ function normalizeGameState(parsed: StoredGameState): GameState {
       inventory: savedPlayer.inventory ?? [],
     },
     visitedPOIIds: parsed.visitedPOIIds ?? [],
-    codex: parsed.codex ?? createEmptyCodex(),
+    codex: normalizeCodex(parsed.codex),
     activityLog: parsed.activityLog ?? createEmptyActivityLog(),
     fieldTasks: normalizeFieldTasks(parsed.fieldTasks),
     fieldReport: normalizeFieldReport(parsed.fieldReport),
