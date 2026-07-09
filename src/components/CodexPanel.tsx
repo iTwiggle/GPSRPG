@@ -1,14 +1,14 @@
-import type { Codex, ItemRarity } from "@/lib/types";
+import { getUniqueLootCatalogSize } from "@/lib/loot";
+import {
+  ITEM_TYPE_LABEL,
+  RARITY_TEXT,
+  itemCatalogKey,
+} from "@/lib/item-visual";
+import type { Codex } from "@/lib/types";
 
 interface CodexPanelProps {
   codex: Codex;
 }
-
-const RARITY_COLORS: Record<ItemRarity, string> = {
-  common: "text-slate-300",
-  uncommon: "text-emerald-300",
-  rare: "text-amber-300",
-};
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -31,6 +31,10 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
   const items = sortByLast(Object.values(codex.items), "lastFoundAt");
   const pois = sortByLast(Object.values(codex.pois), "lastVisitedAt");
   const encounters = sortByLast(Object.values(codex.encounters), "lastAt");
+  const catalogSize = getUniqueLootCatalogSize();
+  const uniqueItemsFound = items.length;
+  const collectionProgress =
+    catalogSize > 0 ? Math.min(1, uniqueItemsFound / catalogSize) : 0;
   const isEmpty =
     stats.totalExplores === 0 &&
     items.length === 0 &&
@@ -48,6 +52,24 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
         <p className="mt-3 text-sm text-slate-500">No discoveries yet.</p>
       ) : (
         <>
+          <div className="mt-3 rounded-lg border border-violet-500/20 bg-slate-950/45 p-3">
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="font-medium text-slate-300">Item catalog</span>
+              <span className="text-slate-500">
+                {uniqueItemsFound} / {catalogSize} unique
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full border border-slate-700/60 bg-slate-900">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-600 via-amber-500 to-emerald-400 transition-all"
+                style={{ width: `${Math.round(collectionProgress * 100)}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] text-slate-500">
+              Discover every item template by exploring different site types.
+            </p>
+          </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             <StatChip label="Explores" value={stats.totalExplores} />
             <StatChip label="POIs" value={stats.totalVisitedPois} />
@@ -71,7 +93,7 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
               <ul className="max-h-36 space-y-2 overflow-y-auto">
                 {items.map((item) => (
                   <li
-                    key={`${item.name}|${item.type}`}
+                    key={itemCatalogKey(item)}
                     className="flex items-start justify-between gap-2 rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm"
                   >
                     <div className="min-w-0">
@@ -84,13 +106,14 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                         )}
                       </p>
                       <p className="text-xs text-slate-500">
-                        First {formatDate(item.firstFoundAt)}
+                        {ITEM_TYPE_LABEL[item.type]} · First{" "}
+                        {formatDate(item.firstFoundAt)}
                       </p>
                     </div>
                     <span
-                      className={`shrink-0 capitalize ${RARITY_COLORS[item.rarity]}`}
+                      className={`shrink-0 capitalize ${RARITY_TEXT[item.rarity]}`}
                     >
-                      {item.rarity} {item.type}
+                      {item.rarity}
                     </span>
                   </li>
                 ))}

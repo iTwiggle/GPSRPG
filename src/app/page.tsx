@@ -14,6 +14,7 @@ import InventoryPanel from "@/components/InventoryPanel";
 import MobilePanelNav, {
   type MobilePanelSection,
 } from "@/components/MobilePanelNav";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import POIPanel from "@/components/POIPanel";
 import SiteFooter from "@/components/SiteFooter";
 import { useGameState } from "@/hooks/useGameState";
@@ -114,6 +115,11 @@ export default function HomePage() {
     }
   }, [geo.status]);
 
+  const inventoryCount = gameState?.player.inventory.length ?? 0;
+  const codexUniqueItems = gameState
+    ? Object.keys(gameState.codex.items).length
+    : 0;
+
   const handleExplore = useCallback(() => {
     if (!selectedPoi) return;
     explorePoi(selectedPoi);
@@ -213,6 +219,8 @@ export default function HomePage() {
             real-world position, roll encounters, and track loot locally.
           </p>
         </header>
+
+        <PwaInstallPrompt />
 
         {geo.isDemo && (
           <div
@@ -323,6 +331,8 @@ export default function HomePage() {
             <MobilePanelNav
               activeSection={activeMobileSection}
               devToolsEnabled={devToolsEnabled}
+              inventoryCount={inventoryCount}
+              codexUniqueItems={codexUniqueItems}
               onSectionChange={setActiveMobileSection}
             />
 

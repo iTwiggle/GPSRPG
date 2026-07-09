@@ -43,6 +43,8 @@ export interface EncounterResult {
   description: string;
   xpGained: number;
   loot: Item[];
+  /** Catalog keys (`name|type`) logged to the codex for the first time this explore. */
+  newCodexItemKeys?: string[];
 }
 
 export interface CodexItemEntry {
