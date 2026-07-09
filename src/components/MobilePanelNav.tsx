@@ -19,20 +19,26 @@ const SECTIONS: { id: MobilePanelSection; label: string }[] = [
 
 interface MobilePanelNavProps {
   activeSection: MobilePanelSection;
+  devToolsEnabled: boolean;
   onSectionChange: (section: MobilePanelSection) => void;
 }
 
 export default function MobilePanelNav({
   activeSection,
+  devToolsEnabled,
   onSectionChange,
 }: MobilePanelNavProps) {
+  const visibleSections = devToolsEnabled
+    ? SECTIONS
+    : SECTIONS.filter((section) => section.id !== "dev");
+
   return (
     <nav
       className="rpg-panel sticky top-0 z-10 -mx-1 px-2 py-2 lg:hidden"
       aria-label="Panel sections"
     >
       <div className="flex flex-wrap gap-1.5">
-        {SECTIONS.map(({ id, label }) => {
+        {visibleSections.map(({ id, label }) => {
           const isActive = activeSection === id;
           return (
             <button

@@ -2,7 +2,7 @@ import type { FieldTask } from "@/lib/types";
 
 interface FieldTasksPanelProps {
   tasks: FieldTask[];
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
 function progressPercent(task: FieldTask): number {
@@ -31,13 +31,15 @@ export default function FieldTasksPanel({
             {completedCount > 0 ? ` · ${completedCount} fulfilled` : ""}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="shrink-0 rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-500/25"
-        >
-          New Contracts
-        </button>
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="shrink-0 rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-500/25"
+          >
+            New Contracts
+          </button>
+        )}
       </div>
 
       <ul className="mt-3 space-y-2" aria-live="polite" aria-relevant="additions">

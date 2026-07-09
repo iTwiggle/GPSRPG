@@ -22,6 +22,7 @@ import {
   FANTASY_GRID_SESSION_KEY,
   STREET_REF_SESSION_KEY,
 } from "@/lib/fantasy-grid-surface";
+import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
 
 const GameMap = dynamic(() => import("@/components/GameMap"), {
@@ -48,12 +49,19 @@ export default function HomePage() {
 
   const areaContext =
     osmContext.status === "ready" ? osmContext.category : "generic";
+  const devToolsEnabled = DEV_TOOLS_ENABLED;
 
   useEffect(() => {
     if (selectedPoi) {
       setActiveMobileSection("poi");
     }
   }, [selectedPoi]);
+
+  useEffect(() => {
+    if (!devToolsEnabled && activeMobileSection === "dev") {
+      setActiveMobileSection("poi");
+    }
+  }, [activeMobileSection, devToolsEnabled]);
 
   useEffect(() => {
     const gridStored = sessionStorage.getItem(FANTASY_GRID_SESSION_KEY);
@@ -282,6 +290,7 @@ export default function HomePage() {
 
             <MobilePanelNav
               activeSection={activeMobileSection}
+              devToolsEnabled={devToolsEnabled}
               onSectionChange={setActiveMobileSection}
             />
 
@@ -292,13 +301,15 @@ export default function HomePage() {
                   playerPosition={playerPosition}
                   visited={selectedPoi ? isVisited(selectedPoi.id) : false}
                   onExplore={handleExplore}
-                  onSimulateVisit={handleSimulateVisit}
+                  onSimulateVisit={
+                    devToolsEnabled ? handleSimulateVisit : undefined
+                  }
                 />
               )}
               {activeMobileSection === "tasks" && (
                 <FieldTasksPanel
                   tasks={gameState.fieldTasks}
-                  onRefresh={refreshFieldTasks}
+                  onRefresh={devToolsEnabled ? refreshFieldTasks : undefined}
                 />
               )}
               {activeMobileSection === "bag" && (
@@ -316,7 +327,7 @@ export default function HomePage() {
                   <ActivityLogPanel events={gameState.activityLog} />
                 </>
               )}
-              {activeMobileSection === "dev" && (
+              {devToolsEnabled && activeMobileSection === "dev" && (
                 <DevControls
                   isDemo={geo.isDemo}
                   gpsStatus={geo.status}
@@ -338,11 +349,13 @@ export default function HomePage() {
                 playerPosition={playerPosition}
                 visited={selectedPoi ? isVisited(selectedPoi.id) : false}
                 onExplore={handleExplore}
-                onSimulateVisit={handleSimulateVisit}
+                onSimulateVisit={
+                  devToolsEnabled ? handleSimulateVisit : undefined
+                }
               />
               <FieldTasksPanel
                 tasks={gameState.fieldTasks}
-                onRefresh={refreshFieldTasks}
+                onRefresh={devToolsEnabled ? refreshFieldTasks : undefined}
               />
               <InventoryPanel inventory={gameState.player.inventory} />
               <CodexPanel codex={gameState.codex} />
@@ -351,18 +364,20 @@ export default function HomePage() {
                 onReset={resetFieldReport}
               />
               <ActivityLogPanel events={gameState.activityLog} />
-              <DevControls
-                isDemo={geo.isDemo}
-                gpsStatus={geo.status}
-                fantasyGridEnabled={fantasyGridEnabled}
-                streetReferenceMode={streetReferenceMode}
-                onToggleFantasyGrid={handleToggleFantasyGrid}
-                onToggleStreetReference={handleToggleStreetReference}
-                onEnableDemo={geo.enableDemoMode}
-                onNudge={geo.nudgePosition}
-                onReset={reset}
-                onRefreshTasks={refreshFieldTasks}
-              />
+              {devToolsEnabled && (
+                <DevControls
+                  isDemo={geo.isDemo}
+                  gpsStatus={geo.status}
+                  fantasyGridEnabled={fantasyGridEnabled}
+                  streetReferenceMode={streetReferenceMode}
+                  onToggleFantasyGrid={handleToggleFantasyGrid}
+                  onToggleStreetReference={handleToggleStreetReference}
+                  onEnableDemo={geo.enableDemoMode}
+                  onNudge={geo.nudgePosition}
+                  onReset={reset}
+                  onRefreshTasks={refreshFieldTasks}
+                />
+              )}
             </div>
           </div>
         </div>
