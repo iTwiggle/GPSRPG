@@ -5,14 +5,30 @@ import {
   type GeolocationSnapshot,
   watchPlayerPosition,
 } from "@/lib/geolocation";
+import {
+  inferLegacyLiveConsent,
+  readLocationConsent,
+  writeLocationConsent,
+} from "@/lib/location-consent";
 import { DEMO_POSITION, type Position } from "@/lib/types";
 
 interface UseGeolocationResult extends GeolocationSnapshot {
   isDemo: boolean;
+  hasLocationConsent: boolean;
+  startLiveGps: () => void;
   enableDemoMode: () => void;
   retryLiveGps: () => void;
   setSimulatedPosition: (position: Position) => void;
   nudgePosition: (northMeters: number, eastMeters: number) => void;
+}
+
+function demoSnapshot(error: string | null = null): GeolocationSnapshot {
+  return {
+    position: DEMO_POSITION,
+    accuracy: 25,
+    status: "demo",
+    error,
+  };
 }
 
 export function useGeolocation(): UseGeolocationResult {
@@ -23,10 +39,30 @@ export function useGeolocation(): UseGeolocationResult {
     error: null,
   });
   const [isDemo, setIsDemo] = useState(false);
+  const [hasLocationConsent, setHasLocationConsent] = useState(false);
+  const [liveGpsEnabled, setLiveGpsEnabled] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
-    if (isDemo) return undefined;
+    const consent = readLocationConsent() ?? (inferLegacyLiveConsent() ? "live" : null);
+    if (!consent) return;
+
+    if (consent === "live" && !readLocationConsent()) {
+      writeLocationConsent("live");
+    }
+
+    setHasLocationConsent(true);
+    if (consent === "demo") {
+      setIsDemo(true);
+      setSnapshot(demoSnapshot());
+      return;
+    }
+
+    setLiveGpsEnabled(true);
+  }, []);
+
+  useEffect(() => {
+    if (!liveGpsEnabled || isDemo) return undefined;
 
     const stop = watchPlayerPosition((next) => {
       setSnapshot(next);
@@ -36,30 +72,18 @@ export function useGeolocation(): UseGeolocationResult {
         next.status === "unavailable"
       ) {
         setIsDemo(true);
-        setSnapshot({
-          position: DEMO_POSITION,
-          accuracy: 25,
-          status: "demo",
-          error: next.error,
-        });
+        setSnapshot(demoSnapshot(next.error));
       }
     });
 
     return stop;
-  }, [isDemo, retryNonce]);
+  }, [isDemo, liveGpsEnabled, retryNonce]);
 
-  const enableDemoMode = useCallback(() => {
-    setIsDemo(true);
-    setSnapshot({
-      position: DEMO_POSITION,
-      accuracy: 25,
-      status: "demo",
-      error: null,
-    });
-  }, []);
-
-  const retryLiveGps = useCallback(() => {
+  const startLiveGps = useCallback(() => {
+    writeLocationConsent("live");
+    setHasLocationConsent(true);
     setIsDemo(false);
+    setLiveGpsEnabled(true);
     setSnapshot({
       position: null,
       accuracy: null,
@@ -69,8 +93,23 @@ export function useGeolocation(): UseGeolocationResult {
     setRetryNonce((value) => value + 1);
   }, []);
 
-  const setSimulatedPosition = useCallback((position: Position) => {
+  const enableDemoMode = useCallback(() => {
+    writeLocationConsent("demo");
+    setHasLocationConsent(true);
     setIsDemo(true);
+    setLiveGpsEnabled(false);
+    setSnapshot(demoSnapshot());
+  }, []);
+
+  const retryLiveGps = useCallback(() => {
+    startLiveGps();
+  }, [startLiveGps]);
+
+  const setSimulatedPosition = useCallback((position: Position) => {
+    writeLocationConsent("demo");
+    setHasLocationConsent(true);
+    setIsDemo(true);
+    setLiveGpsEnabled(false);
     setSnapshot({
       position,
       accuracy: 10,
@@ -81,6 +120,10 @@ export function useGeolocation(): UseGeolocationResult {
 
   const nudgePosition = useCallback(
     (northMeters: number, eastMeters: number) => {
+      writeLocationConsent("demo");
+      setHasLocationConsent(true);
+      setIsDemo(true);
+      setLiveGpsEnabled(false);
       setSnapshot((prev) => {
         if (!prev.position) {
           const base = DEMO_POSITION;
@@ -113,7 +156,6 @@ export function useGeolocation(): UseGeolocationResult {
           error: null,
         };
       });
-      setIsDemo(true);
     },
     []
   );
@@ -121,6 +163,8 @@ export function useGeolocation(): UseGeolocationResult {
   return {
     ...snapshot,
     isDemo,
+    hasLocationConsent,
+    startLiveGps,
     enableDemoMode,
     retryLiveGps,
     setSimulatedPosition,
