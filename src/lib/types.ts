@@ -109,7 +109,8 @@ export type FieldTaskType =
   | "find_uncommon_plus"
   | "gain_xp"
   | "complete_poi_type"
-  | "trigger_encounters";
+  | "trigger_encounters"
+  | "catalog_set_items";
 
 export type FieldTaskStatus = "active" | "completed";
 
@@ -124,6 +125,9 @@ export interface FieldTask {
   rewardXp: number;
   poiType?: POIType;
   poiTypesSeen?: POIType[];
+  /** Album set tracked by catalog_set_items contracts. */
+  setId?: string;
+  catalogKeysSeen?: string[];
   createdAt: string;
   completedAt?: string;
 }

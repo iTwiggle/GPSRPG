@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import ItemIcon from "@/components/ItemIcon";
 import {
   ITEM_CATALOG,
+  getAlmostCompleteSets,
   getCatalogEntriesByAffinity,
   getSetProgressList,
   getUniqueLootCatalogSize,
@@ -68,6 +70,7 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
   const collectionProgress =
     catalogSize > 0 ? Math.min(1, uniqueItemsFound / catalogSize) : 0;
   const setProgress = getSetProgressList(codex);
+  const almostComplete = getAlmostCompleteSets(codex);
   const isEmpty =
     stats.totalExplores === 0 &&
     items.length === 0 &&
@@ -99,6 +102,21 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
               />
             </div>
           </div>
+
+          {almostComplete.length > 0 && (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-200">
+                Almost there
+              </p>
+              <ul className="mt-1 space-y-0.5 text-xs text-amber-50">
+                {almostComplete.map(({ set, discovered, total }) => (
+                  <li key={set.id}>
+                    {set.name} — {discovered}/{total} (one piece left!)
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {(
@@ -139,15 +157,27 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                         : "border-slate-700/40 bg-slate-950/40 text-slate-500"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-medium">
-                          {discovered ? entry.name : "???"}
-                        </p>
+                    <div className="flex items-start gap-2">
+                      <ItemIcon
+                        type={entry.type}
+                        rarity={entry.rarity}
+                        className={discovered ? "" : "opacity-40 grayscale"}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-medium">
+                            {discovered ? entry.name : "???"}
+                          </p>
+                          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide">
+                            {discovered ? RARITY_LABEL[entry.rarity] : "—"}
+                          </span>
+                        </div>
                         <p className="mt-0.5 text-xs leading-relaxed opacity-80">
                           {discovered
                             ? entry.description
-                            : "Uncharted — explore sites to catalog."}
+                            : entry.poiAffinity === "general"
+                              ? "Uncharted — explore any site to catalog."
+                              : `Uncharted — try ${affinityLabel(entry.poiAffinity).toLowerCase()}.`}
                         </p>
                         {codexEntry && (
                           <p className="mt-1 text-[11px] opacity-70">
@@ -160,9 +190,6 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                           </p>
                         )}
                       </div>
-                      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide">
-                        {discovered ? RARITY_LABEL[entry.rarity] : "—"}
-                      </span>
                     </div>
                   </li>
                 );
@@ -194,12 +221,16 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                         return (
                           <li
                             key={key}
-                            className="flex items-center justify-between rounded-lg border border-slate-700/40 bg-slate-900/40 px-2.5 py-1.5 text-xs"
+                            className="flex items-center gap-2 rounded-lg border border-slate-700/40 bg-slate-900/40 px-2.5 py-1.5 text-xs"
                           >
+                            <ItemIcon
+                              type={entry.type}
+                              rarity={entry.rarity}
+                              size="sm"
+                              className={discovered ? "" : "opacity-35 grayscale"}
+                            />
                             <span
-                              className={
-                                discovered ? "text-slate-200" : "text-slate-500"
-                              }
+                              className={`min-w-0 flex-1 ${discovered ? "text-slate-200" : "text-slate-500"}`}
                             >
                               {discovered ? entry.name : "???"}
                             </span>
@@ -275,12 +306,15 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                     {items.slice(0, 8).map((item) => (
                       <li
                         key={itemCatalogKey(item)}
-                        className="rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm"
+                        className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm"
                       >
-                        <p className="font-medium text-slate-200">{item.name}</p>
-                        <p className="text-xs text-slate-500">
-                          {formatDate(item.lastFoundAt)}
-                        </p>
+                        <ItemIcon type={item.type} rarity={item.rarity} />
+                        <div>
+                          <p className="font-medium text-slate-200">{item.name}</p>
+                          <p className="text-xs text-slate-500">
+                            {formatDate(item.lastFoundAt)}
+                          </p>
+                        </div>
                       </li>
                     ))}
                   </ul>

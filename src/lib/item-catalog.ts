@@ -379,6 +379,22 @@ export function getSetRewardXp(setIds: string[]): number {
   );
 }
 
+/** Sets that still have undiscovered catalog entries. */
+export function getIncompleteSetProgress(codex: Codex): SetProgress[] {
+  return getSetProgressList(codex).filter((progress) => !progress.complete);
+}
+
+/** Sets one item away from completion (for album nudges). */
+export function getAlmostCompleteSets(codex: Codex): SetProgress[] {
+  return getSetProgressList(codex).filter(
+    (progress) => !progress.complete && progress.total - progress.discovered === 1
+  );
+}
+
+export function getCatalogKeysForSet(setId: string): string[] {
+  return getCatalogEntriesForSet(setId).map((entry) => itemCatalogKey(entry));
+}
+
 export function getLootWeightTable(
   poiType?: POIType
 ): ItemCatalogEntry[] {

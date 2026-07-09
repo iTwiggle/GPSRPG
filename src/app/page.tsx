@@ -41,7 +41,7 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
+  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activeMobileSection, setActiveMobileSection] =
@@ -371,7 +371,10 @@ export default function HomePage() {
                 />
               )}
               {activeMobileSection === "bag" && (
-                <InventoryPanel inventory={gameState.player.inventory} />
+                <InventoryPanel
+                  inventory={gameState.player.inventory}
+                  onSalvageCommon={salvageCommonTriplet}
+                />
               )}
               {activeMobileSection === "codex" && (
                 <CodexPanel codex={gameState.codex} />
@@ -417,7 +420,10 @@ export default function HomePage() {
                 tasks={gameState.fieldTasks}
                 onRefresh={devToolsEnabled ? refreshFieldTasks : undefined}
               />
-              <InventoryPanel inventory={gameState.player.inventory} />
+              <InventoryPanel
+                inventory={gameState.player.inventory}
+                onSalvageCommon={salvageCommonTriplet}
+              />
               <CodexPanel codex={gameState.codex} />
               <FieldReportPanel
                 report={gameState.fieldReport}
