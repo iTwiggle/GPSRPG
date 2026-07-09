@@ -17,8 +17,8 @@ export default function GlobalErrorPage({
 
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">
-        <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-center text-slate-100">
+      <body className="app-shell min-h-dvh antialiased">
+        <main className="app-page--centered flex items-center justify-center bg-slate-950 p-6 text-center text-slate-100">
           <section className="max-w-lg rounded-xl border border-rose-400/30 bg-slate-900/95 p-6 shadow-[0_0_32px_rgba(244,63,94,0.16)]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-300">
               Critical scanner fault

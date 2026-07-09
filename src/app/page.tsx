@@ -124,7 +124,7 @@ export default function HomePage() {
 
   if (!gameState) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
+      <main className="app-page--centered flex items-center justify-center bg-slate-950 text-slate-400">
         Loading saved game…
       </main>
     );
@@ -132,7 +132,7 @@ export default function HomePage() {
 
   if (!playerPosition) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-6 text-center">
+      <main className="app-page--centered flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-6 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-300/80">
           Companion App / Overworld Prototype
         </p>
@@ -174,7 +174,7 @@ export default function HomePage() {
     : "rpg-map-frame";
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6">
+    <main className="app-page bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6">
       <div className="mx-auto flex max-w-6xl flex-col gap-4">
         <header className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-300/80">
