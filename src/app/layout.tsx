@@ -20,6 +20,14 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: siteName,
+  title: "GPSRPG — Companion App / Overworld Prototype",
+  description:
+    "Browser-based companion app and overworld prototype for GPSRPG. Not the main 3D extraction RPG.",
+  applicationName: "GPSRPG",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "GPSRPG",
   },
   formatDetection: {
     telephone: false,
