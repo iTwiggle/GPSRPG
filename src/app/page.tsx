@@ -20,7 +20,9 @@ import SiteFooter from "@/components/SiteFooter";
 import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useOsmContext } from "@/hooks/useOsmContext";
-import { generateNearbyPOIs } from "@/lib/poi-generator";
+import { useStickyPois } from "@/hooks/useStickyPois";
+import { POI_ANCHOR_REGENERATE_METERS } from "@/lib/poi-anchor";
+import { formatDistance } from "@/lib/distance";
 import {
   FANTASY_GRID_SESSION_KEY,
   STREET_REF_SESSION_KEY,
@@ -39,7 +41,7 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
+  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activeMobileSection, setActiveMobileSection] =
@@ -91,12 +93,17 @@ export default function HomePage() {
     sessionStorage.setItem(STREET_REF_SESSION_KEY, enabled ? "1" : "0");
   }, []);
 
-  const pois = useMemo(() => {
-    if (!playerPosition) return [];
-    return generateNearbyPOIs(playerPosition.lat, playerPosition.lng, {
-      areaContext,
-    });
-  }, [playerPosition, areaContext]);
+  const { pois, metersUntilRefresh } = useStickyPois(
+    playerPosition,
+    areaContext
+  );
+
+  useEffect(() => {
+    if (!selectedPoi) return;
+    if (!pois.some((poi) => poi.id === selectedPoi.id)) {
+      setSelectedPoi(null);
+    }
+  }, [pois, selectedPoi]);
 
   const gpsLabel = useMemo(() => {
     switch (geo.status) {
@@ -218,6 +225,13 @@ export default function HomePage() {
             Overworld companion — explore nearby fantasy sites from your
             real-world position, roll encounters, and track loot locally.
           </p>
+          {playerPosition && metersUntilRefresh !== null && (
+            <p className="text-xs text-slate-500" role="status">
+              Sites locked to session anchor · refresh in{" "}
+              {formatDistance(metersUntilRefresh)} (or after{" "}
+              {POI_ANCHOR_REGENERATE_METERS} m walked)
+            </p>
+          )}
         </header>
 
         <PwaInstallPrompt />
@@ -357,7 +371,10 @@ export default function HomePage() {
                 />
               )}
               {activeMobileSection === "bag" && (
-                <InventoryPanel inventory={gameState.player.inventory} />
+                <InventoryPanel
+                  inventory={gameState.player.inventory}
+                  onSalvageCommon={salvageCommonTriplet}
+                />
               )}
               {activeMobileSection === "codex" && (
                 <CodexPanel codex={gameState.codex} />
@@ -403,7 +420,10 @@ export default function HomePage() {
                 tasks={gameState.fieldTasks}
                 onRefresh={devToolsEnabled ? refreshFieldTasks : undefined}
               />
-              <InventoryPanel inventory={gameState.player.inventory} />
+              <InventoryPanel
+                inventory={gameState.player.inventory}
+                onSalvageCommon={salvageCommonTriplet}
+              />
               <CodexPanel codex={gameState.codex} />
               <FieldReportPanel
                 report={gameState.fieldReport}

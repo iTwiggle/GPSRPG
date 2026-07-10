@@ -645,3 +645,84 @@ body {
 .rpg-xp-flash {
   animation: rpg-reward-flash 0.5s ease-out;
 }
+
+/* Item icon glow by rarity */
+.rpg-item-icon--uncommon {
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.35);
+}
+
+.rpg-item-icon--rare {
+  box-shadow:
+    0 0 12px rgba(251, 191, 36, 0.55),
+    inset 0 0 8px rgba(251, 191, 36, 0.15);
+}
+
+/* Loot reveal animations in encounter modal */
+@keyframes rpg-loot-reveal-uncommon {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    box-shadow: 0 0 0 rgba(52, 211, 153, 0);
+  }
+  45% {
+    box-shadow: 0 0 18px rgba(52, 211, 153, 0.45);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.2);
+  }
+}
+
+@keyframes rpg-loot-reveal-rare {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+    filter: brightness(2);
+  }
+  25% {
+    filter: brightness(1.6);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.03);
+    filter: brightness(1.3);
+  }
+  75% {
+    box-shadow:
+      0 0 28px rgba(251, 191, 36, 0.65),
+      inset 0 0 12px rgba(251, 191, 36, 0.2);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.35);
+  }
+}
+
+@keyframes rpg-rare-pull-backdrop {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 8px 24px rgba(0, 0, 0, 0.28);
+  }
+  40% {
+    box-shadow:
+      inset 0 0 32px rgba(251, 191, 36, 0.12),
+      0 0 40px rgba(251, 191, 36, 0.25),
+      0 8px 24px rgba(0, 0, 0, 0.28);
+  }
+}
+
+.rpg-loot-reveal--uncommon {
+  animation: rpg-loot-reveal-uncommon 0.55s ease-out both;
+}
+
+.rpg-loot-reveal--rare {
+  animation: rpg-loot-reveal-rare 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rpg-encounter--rare-pull {
+  animation: rpg-rare-pull-backdrop 1.2s ease-out;
+}

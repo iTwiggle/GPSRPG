@@ -45,6 +45,10 @@ export interface EncounterResult {
   loot: Item[];
   /** Catalog keys (`name|type`) logged to the codex for the first time this explore. */
   newCodexItemKeys?: string[];
+  /** Album set IDs completed on this explore. */
+  completedSetIds?: string[];
+  /** Bonus XP from newly completed album sets. */
+  setBonusXp?: number;
 }
 
 export interface CodexItemEntry {
@@ -84,6 +88,8 @@ export interface Codex {
   pois: Record<string, CodexPoiEntry>;
   encounters: Record<string, CodexEncounterEntry>;
   stats: CodexStats;
+  /** Album set IDs the player has already claimed completion rewards for. */
+  completedSetIds: string[];
 }
 
 export type ActivityEventType =
@@ -93,7 +99,8 @@ export type ActivityEventType =
   | "item_found"
   | "level_up"
   | "task_complete"
-  | "field_report";
+  | "field_report"
+  | "set_complete";
 
 export type FieldTaskType =
   | "explore_pois"
@@ -102,7 +109,8 @@ export type FieldTaskType =
   | "find_uncommon_plus"
   | "gain_xp"
   | "complete_poi_type"
-  | "trigger_encounters";
+  | "trigger_encounters"
+  | "catalog_set_items";
 
 export type FieldTaskStatus = "active" | "completed";
 
@@ -117,6 +125,9 @@ export interface FieldTask {
   rewardXp: number;
   poiType?: POIType;
   poiTypesSeen?: POIType[];
+  /** Album set tracked by catalog_set_items contracts. */
+  setId?: string;
+  catalogKeysSeen?: string[];
   createdAt: string;
   completedAt?: string;
 }

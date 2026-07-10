@@ -1,4 +1,12 @@
+import {
+  getCatalogEntry,
+  getCatalogKeysForSet,
+  getIncompleteSetProgress,
+  getItemSet,
+} from "./item-catalog";
+import { itemCatalogKey } from "./item-visual";
 import type {
+  Codex,
   EncounterResult,
   FieldTask,
   FieldTaskType,
@@ -88,6 +96,13 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     description: "Trigger three encounters while exploring sites.",
     rewardXp: 15,
   },
+  {
+    type: "catalog_set_items",
+    target: 2,
+    title: "Field Contract: Album set hunt",
+    description: "Catalog items from a specific album set while exploring.",
+    rewardXp: 30,
+  },
 ];
 
 function hashSeed(...values: (string | number)[]): number {
@@ -114,13 +129,59 @@ function makeTaskId(seed: number, index: number): string {
   return `task-${seed}-${index}`;
 }
 
+function buildCatalogSetTask(
+  setId: string,
+  seed: number,
+  index: number,
+  timestamp: string,
+  codex: Codex
+): FieldTask {
+  const itemSet = getItemSet(setId);
+  const setKeys = getCatalogKeysForSet(setId);
+  const discoveredKeys = new Set(Object.keys(codex.items));
+  const missing = setKeys.filter((key) => !discoveredKeys.has(key)).length;
+  const target = Math.min(3, Math.max(1, missing));
+  const id = makeTaskId(seed, index);
+
+  return {
+    id,
+    type: "catalog_set_items",
+    title: `Field Contract: ${itemSet?.name ?? "Album set"}`,
+    description: `Find ${target} item${target === 1 ? "" : "s"} from the ${itemSet?.name ?? "album set"} while exploring.`,
+    target,
+    progress: 0,
+    status: "active",
+    rewardXp: 30,
+    setId,
+    catalogKeysSeen: [],
+    createdAt: timestamp,
+  };
+}
+
 function buildTaskFromTemplate(
   template: TaskTemplate,
   seed: number,
   index: number,
-  timestamp: string
+  timestamp: string,
+  codex?: Codex
 ): FieldTask {
   const id = makeTaskId(seed, index);
+
+  if (template.type === "catalog_set_items") {
+    const incomplete = codex ? getIncompleteSetProgress(codex) : [];
+    if (incomplete.length === 0) {
+      return buildTaskFromTemplate(
+        TASK_TEMPLATES.find((t) => t.type === "find_items")!,
+        seed,
+        index,
+        timestamp,
+        codex
+      );
+    }
+    const rand = seededRandom(hashSeed(seed, index, "album-set"));
+    const pick = incomplete[Math.floor(rand() * incomplete.length)];
+    return buildCatalogSetTask(pick.set.id, seed, index, timestamp, codex!);
+  }
 
   if (template.type === "complete_poi_type") {
     const rand = seededRandom(hashSeed(seed, index, "poi-type"));
@@ -154,8 +215,12 @@ function buildTaskFromTemplate(
   };
 }
 
-function pickDistinctTemplates(rand: () => number, count: number): TaskTemplate[] {
-  const pool = [...TASK_TEMPLATES];
+function pickDistinctTemplates(
+  rand: () => number,
+  count: number,
+  poolSource: TaskTemplate[] = TASK_TEMPLATES
+): TaskTemplate[] {
+  const pool = [...poolSource];
   const picked: TaskTemplate[] = [];
 
   for (let i = 0; i < count && pool.length > 0; i += 1) {
@@ -168,13 +233,23 @@ function pickDistinctTemplates(rand: () => number, count: number): TaskTemplate[
 }
 
 /** Generate a fresh set of field contracts. */
-export function generateFieldTasks(seed: number = Date.now()): FieldTask[] {
+export function generateFieldTasks(
+  seed: number = Date.now(),
+  codex?: Codex
+): FieldTask[] {
   const rand = seededRandom(hashSeed(seed, "field-tasks"));
-  const templates = pickDistinctTemplates(rand, FIELD_TASK_SLOT_COUNT);
+  const pool = codex?.items
+    ? TASK_TEMPLATES.filter(
+        (template) =>
+          template.type !== "catalog_set_items" ||
+          getIncompleteSetProgress(codex).length > 0
+      )
+    : TASK_TEMPLATES.filter((template) => template.type !== "catalog_set_items");
+  const templates = pickDistinctTemplates(rand, FIELD_TASK_SLOT_COUNT, pool);
   const timestamp = new Date().toISOString();
 
   return templates.map((template, index) =>
-    buildTaskFromTemplate(template, seed, index, timestamp)
+    buildTaskFromTemplate(template, seed, index, timestamp, codex)
   );
 }
 
@@ -209,8 +284,8 @@ export function normalizeFieldTasks(tasks: unknown): FieldTask[] {
   return normalized;
 }
 
-export function refreshFieldTasks(): FieldTask[] {
-  return generateFieldTasks();
+export function refreshFieldTasks(codex?: Codex): FieldTask[] {
+  return generateFieldTasks(Date.now(), codex);
 }
 
 export interface ExploreTaskContext {
@@ -259,6 +334,31 @@ function advanceTask(task: FieldTask, ctx: ExploreTaskContext): FieldTask {
         progress += 1;
       }
       break;
+    case "catalog_set_items": {
+      if (!task.setId) break;
+      const seen = new Set(task.catalogKeysSeen ?? []);
+      for (const item of ctx.encounter.loot) {
+        const entry = getCatalogEntry(item);
+        const key = itemCatalogKey(item);
+        if (entry?.setId === task.setId && !seen.has(key)) {
+          seen.add(key);
+        }
+      }
+      progress = seen.size;
+      return progress >= task.target
+        ? {
+            ...task,
+            progress: Math.min(progress, task.target),
+            catalogKeysSeen: [...seen],
+            status: "completed",
+            completedAt: new Date().toISOString(),
+          }
+        : {
+            ...task,
+            progress: Math.min(progress, task.target),
+            catalogKeysSeen: [...seen],
+          };
+    }
     default:
       break;
   }

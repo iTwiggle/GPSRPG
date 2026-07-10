@@ -1,3 +1,9 @@
+import ItemIcon from "@/components/ItemIcon";
+import {
+  SALVAGE_COMMON_COUNT,
+  SALVAGE_XP_REWARD,
+  canSalvageCommon,
+} from "@/lib/duplicate-salvage";
 import {
   aggregateInventory,
   ITEM_TYPE_LABEL,
@@ -9,9 +15,13 @@ import type { Item } from "@/lib/types";
 
 interface InventoryPanelProps {
   inventory: Item[];
+  onSalvageCommon?: (catalogKey: string) => boolean;
 }
 
-export default function InventoryPanel({ inventory }: InventoryPanelProps) {
+export default function InventoryPanel({
+  inventory,
+  onSalvageCommon,
+}: InventoryPanelProps) {
   const items = aggregateInventory(inventory);
   const totalPieces = inventory.length;
 
@@ -39,27 +49,51 @@ export default function InventoryPanel({ inventory }: InventoryPanelProps) {
         </p>
       ) : (
         <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto">
-          {items.map((item) => (
-            <li
-              key={item.key}
-              className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${RARITY_CHIP[item.rarity]}`}
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium">
-                  {item.name}
-                  {item.count > 1 && (
-                    <span className="ml-1 text-xs opacity-75">×{item.count}</span>
+          {items.map((item) => {
+            const salvageable =
+              onSalvageCommon &&
+              canSalvageCommon(
+                { name: item.name, type: item.type, rarity: item.rarity },
+                item.count
+              );
+
+            return (
+              <li
+                key={item.key}
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${RARITY_CHIP[item.rarity]}`}
+              >
+                <ItemIcon type={item.type} rarity={item.rarity} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">
+                    {item.name}
+                    {item.count > 1 && (
+                      <span className="ml-1 text-xs opacity-75">×{item.count}</span>
+                    )}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-wide opacity-75">
+                    {ITEM_TYPE_LABEL[item.type]}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {salvageable && (
+                    <button
+                      type="button"
+                      onClick={() => onSalvageCommon(item.key)}
+                      className="rounded border border-slate-500/50 bg-slate-800/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-200 hover:bg-slate-700/80"
+                      title={`Trade ${SALVAGE_COMMON_COUNT} copies for ${SALVAGE_XP_REWARD} XP`}
+                    >
+                      Salvage
+                    </button>
                   )}
-                </p>
-                <p className="text-[11px] uppercase tracking-wide opacity-75">
-                  {ITEM_TYPE_LABEL[item.type]}
-                </p>
-              </div>
-              <span className={`shrink-0 text-xs font-semibold uppercase tracking-wide ${RARITY_TEXT[item.rarity]}`}>
-                {RARITY_LABEL[item.rarity]}
-              </span>
-            </li>
-          ))}
+                  <span
+                    className={`text-xs font-semibold uppercase tracking-wide ${RARITY_TEXT[item.rarity]}`}
+                  >
+                    {RARITY_LABEL[item.rarity]}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

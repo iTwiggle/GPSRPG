@@ -31,6 +31,20 @@ export const ITEM_TYPE_LABEL: Record<Item["type"], string> = {
   treasure: "Treasure",
 };
 
+/** Compact glyph used in album/inventory icon slots. */
+export const ITEM_TYPE_GLYPH: Record<Item["type"], string> = {
+  weapon: "⚔",
+  armor: "🛡",
+  consumable: "✦",
+  treasure: "◆",
+};
+
+export const RARITY_GLOW_CLASS: Record<ItemRarity, string> = {
+  common: "",
+  uncommon: "rpg-item-icon--uncommon",
+  rare: "rpg-item-icon--rare",
+};
+
 export function itemCatalogKey(item: Pick<Item, "name" | "type">): string {
   return `${item.name}|${item.type}`;
 }
@@ -67,4 +81,10 @@ export function aggregateInventory(inventory: Item[]): AggregatedInventoryItem[]
     if (rarityDiff !== 0) return rarityDiff;
     return a.name.localeCompare(b.name);
   });
+}
+
+export function lootRevealClass(rarity: ItemRarity): string {
+  if (rarity === "rare") return "rpg-loot-reveal--rare";
+  if (rarity === "uncommon") return "rpg-loot-reveal--uncommon";
+  return "";
 }

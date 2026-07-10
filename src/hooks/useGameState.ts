@@ -3,8 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   appendExploreEvents,
+  appendSetCompleteEvents,
   appendTaskCompleteEvents,
 } from "@/lib/activity-log";
+import {
+  getItemSet,
+  getNewlyCompletedSetIds,
+  getSetRewardXp,
+} from "@/lib/item-catalog";
 import { recordExplore, codexItemKey } from "@/lib/codex";
 import { applyExploreToTasks, refreshFieldTasks as rollFieldTasks } from "@/lib/tasks";
 import { updateFieldReportOnExplore } from "@/lib/field-report";
@@ -19,6 +25,7 @@ import {
 } from "@/lib/storage";
 import type { EncounterResult, GameState, POI } from "@/lib/types";
 import { rollEncounter } from "@/lib/encounter";
+import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -55,33 +62,65 @@ export function useGameState() {
       const newCodexItemKeys = encounter.loot
         .filter((item) => !gameState.codex.items[codexItemKey(item)])
         .map((item) => codexItemKey(item));
+
+      const prevLevel = gameState.player.level;
+      const playerAfterEncounter = applyXp(
+        gameState.player,
+        encounter.xpGained
+      );
+      let player = addLootToPlayer(playerAfterEncounter, encounter.loot);
+
+      let withCodex = recordExplore(gameState.codex, poi, encounter);
+      const newSetIds = getNewlyCompletedSetIds(
+        withCodex,
+        withCodex.completedSetIds
+      );
+      const setBonusXp = getSetRewardXp(newSetIds);
+
+      if (newSetIds.length > 0) {
+        withCodex = {
+          ...withCodex,
+          completedSetIds: [...withCodex.completedSetIds, ...newSetIds],
+        };
+      }
+
       const encounterWithDiscoveries: EncounterResult = {
         ...encounter,
         newCodexItemKeys,
+        completedSetIds: newSetIds,
+        setBonusXp: setBonusXp > 0 ? setBonusXp : undefined,
       };
 
-      const prevLevel = gameState.player.level;
-      const withXp = applyXp(gameState.player, encounterWithDiscoveries.xpGained);
-      const withLoot = addLootToPlayer(withXp, encounterWithDiscoveries.loot);
-      const withCodex = recordExplore(
-        gameState.codex,
-        poi,
-        encounterWithDiscoveries
-      );
-      const withActivity = appendExploreEvents(gameState.activityLog, {
+      let activityLog = appendExploreEvents(gameState.activityLog, {
         poi,
         encounter: encounterWithDiscoveries,
         prevLevel,
-        newLevel: withXp.level,
+        newLevel: playerAfterEncounter.level,
       });
+
+      if (setBonusXp > 0) {
+        const levelBeforeSets = player.level;
+        player = applyXp(player, setBonusXp);
+        activityLog = appendSetCompleteEvents(
+          activityLog,
+          newSetIds
+            .map((id) => getItemSet(id))
+            .filter((set): set is NonNullable<typeof set> => Boolean(set))
+            .map((set) => ({
+              id: set.id,
+              name: set.name,
+              rewardXp: set.rewardXp,
+            })),
+          levelBeforeSets,
+          player.level
+        );
+      }
 
       const { tasks: withTasks, completions } = applyExploreToTasks(
         gameState.fieldTasks,
         { poi, encounter: encounterWithDiscoveries }
       );
 
-      let player = withLoot;
-      let activityLog = withActivity;
       const taskRewardXp = completions.reduce(
         (sum, task) => sum + task.rewardXp,
         0
@@ -128,9 +167,55 @@ export function useGameState() {
     if (!gameState) return;
     persist({
       ...gameState,
-      fieldTasks: rollFieldTasks(),
+      fieldTasks: rollFieldTasks(gameState.codex),
     });
   }, [gameState, persist]);
+
+  const salvageCommonTriplet = useCallback(
+    (catalogKey: string) => {
+      if (!gameState) return false;
+
+      const result = salvageCommonTripletFromLib(
+        gameState.player,
+        catalogKey
+      );
+      if (!result) return false;
+
+      const prevLevel = gameState.player.level;
+      const player = applyXp(result.player, result.xpGained);
+      const timestamp = new Date().toISOString();
+
+      let activityLog = [
+        ...gameState.activityLog,
+        {
+          id: `act-${timestamp}-xp_gained-salvage`,
+          timestamp,
+          type: "xp_gained" as const,
+          message: `Salvaged ${result.removedCount} commons for ${result.xpGained} XP`,
+        },
+      ];
+
+      if (player.level > prevLevel) {
+        activityLog = [
+          ...activityLog,
+          {
+            id: `act-${timestamp}-level_up-salvage`,
+            timestamp,
+            type: "level_up" as const,
+            message: `Reached level ${player.level}!`,
+          },
+        ];
+      }
+
+      persist({
+        ...gameState,
+        player,
+        activityLog: activityLog.slice(-50),
+      });
+      return true;
+    },
+    [gameState, persist]
+  );
 
   const clearEncounter = useCallback(() => {
     setLastEncounter(null);
@@ -158,6 +243,7 @@ export function useGameState() {
     lastEncounter,
     explorePoi,
     refreshFieldTasks,
+    salvageCommonTriplet,
     resetFieldReport,
     clearEncounter,
     clearSaveWarning,
