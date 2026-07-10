@@ -5,6 +5,7 @@ export type MobilePanelSection =
   | "tasks"
   | "bag"
   | "codex"
+  | "camp"
   | "journey"
   | "dev";
 
@@ -13,6 +14,7 @@ const SECTIONS: { id: MobilePanelSection; label: string }[] = [
   { id: "tasks", label: "Tasks" },
   { id: "bag", label: "Bag" },
   { id: "codex", label: "Codex" },
+  { id: "camp", label: "Camp" },
   { id: "journey", label: "Journey" },
   { id: "dev", label: "Dev" },
 ];
@@ -22,16 +24,19 @@ interface MobilePanelNavProps {
   devToolsEnabled: boolean;
   inventoryCount?: number;
   codexUniqueItems?: number;
+  readyDepotDoors?: number;
   onSectionChange: (section: MobilePanelSection) => void;
 }
 
 function sectionBadge(
   id: MobilePanelSection,
   inventoryCount: number,
-  codexUniqueItems: number
+  codexUniqueItems: number,
+  readyDepotDoors: number
 ): number | null {
   if (id === "bag" && inventoryCount > 0) return inventoryCount;
   if (id === "codex" && codexUniqueItems > 0) return codexUniqueItems;
+  if (id === "camp" && readyDepotDoors > 0) return readyDepotDoors;
   return null;
 }
 
@@ -40,6 +45,7 @@ export default function MobilePanelNav({
   devToolsEnabled,
   inventoryCount = 0,
   codexUniqueItems = 0,
+  readyDepotDoors = 0,
   onSectionChange,
 }: MobilePanelNavProps) {
   const visibleSections = devToolsEnabled
@@ -54,7 +60,7 @@ export default function MobilePanelNav({
       <div className="flex flex-wrap gap-1.5">
         {visibleSections.map(({ id, label }) => {
           const isActive = activeSection === id;
-          const badge = sectionBadge(id, inventoryCount, codexUniqueItems);
+          const badge = sectionBadge(id, inventoryCount, codexUniqueItems, readyDepotDoors);
           return (
             <button
               key={id}

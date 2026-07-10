@@ -1,4 +1,5 @@
 import { createEmptyActivityLog, appendFieldReportEvents } from "./activity-log";
+import { createEmptyBaseCamp, normalizeBaseCamp } from "./base-camp";
 import { createEmptyCodex, normalizeCodex } from "./codex";
 import {
   createEmptyFieldReport,
@@ -36,6 +37,7 @@ export function createInitialState(): GameState {
     activityLog: createEmptyActivityLog(),
     fieldTasks: generateFieldTasks(),
     fieldReport: createEmptyFieldReport(),
+    baseCamp: createEmptyBaseCamp(),
   };
 }
 
@@ -70,6 +72,7 @@ function normalizeGameState(parsed: StoredGameState): GameState {
     activityLog: parsed.activityLog ?? createEmptyActivityLog(),
     fieldTasks: normalizeFieldTasks(parsed.fieldTasks),
     fieldReport: normalizeFieldReport(parsed.fieldReport),
+    baseCamp: normalizeBaseCamp(parsed.baseCamp),
   };
 }
 

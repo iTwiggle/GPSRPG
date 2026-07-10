@@ -7,6 +7,11 @@ import {
   appendTaskCompleteEvents,
 } from "@/lib/activity-log";
 import {
+  applyActivePerksToEncounter,
+  getDepotDoor,
+  tryClaimDepotDoor,
+} from "@/lib/base-camp";
+import {
   getItemSet,
   getNewlyCompletedSetIds,
   getSetRewardXp,
@@ -54,10 +59,17 @@ export function useGameState() {
         return null;
       }
 
-      const encounter = rollEncounter(
+      const rollSeed = options?.simulate ? Date.now() : undefined;
+      let encounter = rollEncounter(poi, rollSeed);
+
+      const perkResult = applyActivePerksToEncounter(
+        encounter,
         poi,
-        options?.simulate ? Date.now() : undefined
+        gameState.baseCamp,
+        rollSeed ?? poi.id
       );
+      encounter = perkResult.encounter;
+      const baseCamp = perkResult.baseCamp;
 
       const newCodexItemKeys = encounter.loot
         .filter((item) => !gameState.codex.items[codexItemKey(item)])
@@ -89,6 +101,12 @@ export function useGameState() {
         newCodexItemKeys,
         completedSetIds: newSetIds,
         setBonusXp: setBonusXp > 0 ? setBonusXp : undefined,
+        perkBonusXp:
+          perkResult.perkBonusXp > 0 ? perkResult.perkBonusXp : undefined,
+        perkMessages:
+          perkResult.perkMessages.length > 0
+            ? perkResult.perkMessages
+            : undefined,
       };
 
       let activityLog = appendExploreEvents(gameState.activityLog, {
@@ -149,6 +167,7 @@ export function useGameState() {
           ...gameState,
           player,
           codex: withCodex,
+          baseCamp,
           activityLog,
           fieldTasks: withTasks,
           fieldReport: withFieldReport,
@@ -217,6 +236,51 @@ export function useGameState() {
     [gameState, persist]
   );
 
+  const claimDepotDoor = useCallback(
+    (doorId: string) => {
+      if (!gameState) return false;
+
+      const nextBaseCamp = tryClaimDepotDoor(
+        gameState.codex,
+        gameState.baseCamp,
+        doorId
+      );
+      if (!nextBaseCamp) return false;
+
+      const door = getDepotDoor(doorId);
+      const timestamp = new Date().toISOString();
+
+      persist({
+        ...gameState,
+        baseCamp: nextBaseCamp,
+        activityLog: [
+          ...gameState.activityLog,
+          {
+            id: `act-${timestamp}-door_opened-${doorId}`,
+            timestamp,
+            type: "door_opened" as const,
+            message: door
+              ? `Opened ${door.name} — ${door.perkName} loaded for the field`
+              : "Opened a depot door",
+          },
+        ].slice(-50),
+      });
+      return true;
+    },
+    [gameState, persist]
+  );
+
+  const markBaseCampVisit = useCallback(() => {
+    if (!gameState) return;
+    persist({
+      ...gameState,
+      baseCamp: {
+        ...gameState.baseCamp,
+        lastCampVisitAt: new Date().toISOString(),
+      },
+    });
+  }, [gameState, persist]);
+
   const clearEncounter = useCallback(() => {
     setLastEncounter(null);
   }, []);
@@ -244,6 +308,8 @@ export function useGameState() {
     explorePoi,
     refreshFieldTasks,
     salvageCommonTriplet,
+    claimDepotDoor,
+    markBaseCampVisit,
     resetFieldReport,
     clearEncounter,
     clearSaveWarning,

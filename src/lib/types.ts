@@ -49,6 +49,10 @@ export interface EncounterResult {
   completedSetIds?: string[];
   /** Bonus XP from newly completed album sets. */
   setBonusXp?: number;
+  /** Bonus XP from active base-camp field perks this explore. */
+  perkBonusXp?: number;
+  /** Human-readable perk triggers for this explore. */
+  perkMessages?: string[];
 }
 
 export interface CodexItemEntry {
@@ -100,7 +104,8 @@ export type ActivityEventType =
   | "level_up"
   | "task_complete"
   | "field_report"
-  | "set_complete";
+  | "set_complete"
+  | "door_opened";
 
 export type FieldTaskType =
   | "explore_pois"
@@ -157,6 +162,17 @@ export interface FieldReport {
   tasksCompleted: number;
 }
 
+export interface ActiveFieldPerk {
+  perkId: string;
+  chargesRemaining: number;
+}
+
+export interface BaseCampState {
+  claimedDoorIds: string[];
+  activePerks: ActiveFieldPerk[];
+  lastCampVisitAt?: string;
+}
+
 export interface GameState {
   schemaVersion: number;
   player: Player;
@@ -165,6 +181,7 @@ export interface GameState {
   activityLog: ActivityEvent[];
   fieldTasks: FieldTask[];
   fieldReport: FieldReport;
+  baseCamp: BaseCampState;
 }
 
 export const EXPLORE_RADIUS_METERS = 150;

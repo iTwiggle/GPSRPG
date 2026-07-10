@@ -102,11 +102,22 @@ export default function EncounterModal({
               {encounter.setBonusXp
                 ? ` · +${encounter.setBonusXp} set bonus`
                 : ""}
+              {encounter.perkBonusXp
+                ? ` · +${encounter.perkBonusXp} perk bonus`
+                : ""}
             </p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
               <div className="h-full w-full rounded-full bg-gradient-to-r from-amber-500 via-violet-500 to-amber-400" />
             </div>
           </div>
+
+          {encounter.perkMessages && encounter.perkMessages.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs text-violet-200">
+              {encounter.perkMessages.map((message) => (
+                <li key={message}>⚡ {message}</li>
+              ))}
+            </ul>
+          )}
 
           {encounter.loot.length > 0 ? (
             <ul className="mt-3 space-y-2">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import BaseCampPanel from "@/components/BaseCampPanel";
 import ActivityLogPanel from "@/components/ActivityLogPanel";
 import CharacterHUD from "@/components/CharacterHUD";
 import CodexPanel from "@/components/CodexPanel";
@@ -21,6 +22,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useOsmContext } from "@/hooks/useOsmContext";
 import { useStickyPois } from "@/hooks/useStickyPois";
+import { countReadyDepotDoors } from "@/lib/base-camp";
 import { POI_ANCHOR_REGENERATE_METERS } from "@/lib/poi-anchor";
 import { formatDistance } from "@/lib/distance";
 import {
@@ -41,7 +43,7 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
+  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activeMobileSection, setActiveMobileSection] =
@@ -126,6 +128,10 @@ export default function HomePage() {
   const codexUniqueItems = gameState
     ? Object.keys(gameState.codex.items).length
     : 0;
+  const readyDepotDoors =
+    gameState != null
+      ? countReadyDepotDoors(gameState.codex, gameState.baseCamp)
+      : 0;
 
   const handleExplore = useCallback(() => {
     if (!selectedPoi) return;
@@ -347,6 +353,7 @@ export default function HomePage() {
               devToolsEnabled={devToolsEnabled}
               inventoryCount={inventoryCount}
               codexUniqueItems={codexUniqueItems}
+              readyDepotDoors={readyDepotDoors}
               onSectionChange={setActiveMobileSection}
             />
 
@@ -378,6 +385,15 @@ export default function HomePage() {
               )}
               {activeMobileSection === "codex" && (
                 <CodexPanel codex={gameState.codex} />
+              )}
+              {activeMobileSection === "camp" && (
+                <BaseCampPanel
+                  codex={gameState.codex}
+                  baseCamp={gameState.baseCamp}
+                  fieldReportSites={gameState.fieldReport.sitesExplored}
+                  onClaimDoor={claimDepotDoor}
+                  onMarkVisit={markBaseCampVisit}
+                />
               )}
               {activeMobileSection === "journey" && (
                 <>
@@ -425,6 +441,13 @@ export default function HomePage() {
                 onSalvageCommon={salvageCommonTriplet}
               />
               <CodexPanel codex={gameState.codex} />
+              <BaseCampPanel
+                codex={gameState.codex}
+                baseCamp={gameState.baseCamp}
+                fieldReportSites={gameState.fieldReport.sitesExplored}
+                onClaimDoor={claimDepotDoor}
+                onMarkVisit={markBaseCampVisit}
+              />
               <FieldReportPanel
                 report={gameState.fieldReport}
                 onReset={resetFieldReport}
