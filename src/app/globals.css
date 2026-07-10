@@ -744,3 +744,382 @@ body {
 .rpg-depot-door-open:active {
   transform: scale(0.98);
 }
+
+/* ══ Game-feel feedback layer ═════════════════════════════
+   Rendered once at the app root by FeedbackProvider. All effects live above
+   the app (including the encounter modal at z-2000) but never capture input. */
+
+.rpg-feedback-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── AnimatedNumber pop ── */
+@keyframes an-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ── Floating XP ── */
+.rpg-xp-stack {
+  position: absolute;
+  top: max(18%, calc(var(--safe-top) + 84px));
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.rpg-xp-float {
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  transform: translateX(var(--xp-x, 0));
+  animation: rpg-xp-rise var(--xp-ms, 1150ms) cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes rpg-xp-rise {
+  0% {
+    opacity: 0;
+    transform: translate(var(--xp-x, 0), 8px) scale(0.85);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(var(--xp-x, 0), 0) scale(1.06);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--xp-x, 0), calc(-1 * var(--xp-rise, 52px)))
+      scale(1);
+  }
+}
+
+.rpg-xp-float--reduced {
+  animation: rpg-fade-inout 900ms ease-out forwards;
+}
+
+@keyframes rpg-fade-inout {
+  0% {
+    opacity: 0;
+  }
+  20%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ── Pickup particle burst ── */
+.rpg-pickup-anchor {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.rpg-particle-burst {
+  position: absolute;
+  inset: 0;
+}
+
+.rpg-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 9999px;
+  opacity: 0;
+  animation-name: rpg-particle-fly;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes rpg-particle-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--px), var(--py)) scale(0.2);
+  }
+}
+
+.rpg-pickup-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  border-radius: 9999px;
+  opacity: 0.6;
+  filter: blur(6px);
+  animation: rpg-fade-inout 420ms ease-out forwards;
+}
+
+/* Rare "stop walking" screen sheen. */
+.rpg-screen-sheen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 46%,
+    rgba(251, 191, 36, 0.16) 0%,
+    transparent 62%
+  );
+  animation: rpg-fade-inout 900ms ease-out forwards;
+}
+
+/* ── Toast stack ── */
+.rpg-toast-stack {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+  width: min(92vw, 22rem);
+}
+
+.rpg-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--toast-accent, rgba(148, 163, 184, 0.6));
+  background: rgba(15, 23, 42, 0.94);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 12px 30px rgba(0, 0, 0, 0.45),
+    0 0 22px color-mix(in srgb, var(--toast-accent) 35%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.rpg-toast--enter {
+  animation: rpg-toast-in var(--toast-enter-ms, 260ms)
+    cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.rpg-toast--exit {
+  animation: rpg-toast-out var(--toast-exit-ms, 320ms)
+    cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rpg-toast--reduced {
+  animation: rpg-fade-inout-hold 200ms ease-out both;
+}
+
+@keyframes rpg-fade-inout-hold {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rpg-toast-in {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rpg-toast-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+
+.rpg-toast--showstopper {
+  animation-name: rpg-toast-in, rpg-toast-shimmer;
+  animation-duration: var(--toast-enter-ms, 260ms), 1.6s;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1), ease-in-out;
+  animation-iteration-count: 1, infinite;
+  animation-delay: 0s, var(--toast-enter-ms, 260ms);
+}
+
+@keyframes rpg-toast-shimmer {
+  0%,
+  100% {
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.45),
+      0 0 18px color-mix(in srgb, var(--toast-accent) 30%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.45),
+      0 0 34px color-mix(in srgb, var(--toast-accent) 65%, transparent);
+  }
+}
+
+.rpg-toast__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  border: 1px solid var(--toast-accent, rgba(148, 163, 184, 0.5));
+  background: rgba(2, 6, 23, 0.6);
+  font-size: 1.15rem;
+}
+
+/* ── Level-up celebration ── */
+.rpg-levelup {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rpg-levelup__particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+
+.rpg-levelup__card {
+  position: relative;
+  text-align: center;
+  padding: 1.25rem 2.25rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 60px rgba(251, 191, 36, 0.35),
+    inset 0 0 30px rgba(251, 191, 36, 0.12);
+  animation: rpg-levelup-card 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes rpg-levelup-card {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(10px);
+  }
+  16% {
+    opacity: 1;
+    transform: scale(1.08) translateY(0);
+  }
+  26% {
+    transform: scale(1);
+  }
+  76% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04) translateY(-8px);
+  }
+}
+
+.rpg-levelup__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(251, 191, 36, 0.9);
+}
+
+.rpg-levelup__level {
+  margin-top: 0.25rem;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fef3c7;
+  text-shadow: 0 0 22px rgba(251, 191, 36, 0.7);
+}
+
+.rpg-levelup--reduced .rpg-levelup__card {
+  animation: rpg-fade-inout 1.4s ease-out forwards;
+}
+
+/* ── Discovery glow (newly catalogued items in the encounter modal) ── */
+.rpg-discovery-glow {
+  animation: rpg-discovery-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes rpg-discovery-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(56, 189, 248, 0);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+  }
+}
+
+.rpg-discovery-panel {
+  animation: rpg-discovery-sheen 0.6s ease-out;
+}
+
+@keyframes rpg-discovery-sheen {
+  0% {
+    box-shadow: 0 0 0 rgba(56, 189, 248, 0);
+    transform: translateY(4px);
+    opacity: 0.4;
+  }
+  100% {
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.25);
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-discovery-glow,
+  .rpg-discovery-panel {
+    animation: none;
+  }
+}
+
+/* Global safety net: honor reduced motion for the whole feedback layer even if
+   a component variant is missed. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-feedback-layer * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .rpg-feedback-layer .rpg-xp-float,
+  .rpg-feedback-layer .rpg-toast,
+  .rpg-feedback-layer .rpg-levelup__card {
+    animation: rpg-fade-inout 900ms ease-out forwards !important;
+  }
+}

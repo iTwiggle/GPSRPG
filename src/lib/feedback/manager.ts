@@ -1,0 +1,74 @@
+import { hapticsSink } from "./haptics";
+import { soundSink } from "./sound";
+import type {
+  FeedbackEvent,
+  LevelUpFeedbackEvent,
+  PickupFeedbackEvent,
+  ToastFeedbackEvent,
+  XpFeedbackEvent,
+} from "./types";
+
+type Listener = (event: FeedbackEvent) => void;
+
+/**
+ * The FeedbackManager is the one place gameplay talks to for "juice". Systems
+ * call `feedback.emit(...)` (or a typed helper) and never touch effects directly.
+ *
+ * It fans every event out to:
+ *   - always-on sinks (haptics, sound) registered at construction, and
+ *   - dynamic listeners (the React visual overlay) added at runtime.
+ *
+ * Framework-agnostic on purpose: it can be called from hooks, lib code, or tests.
+ */
+class FeedbackManager {
+  private listeners = new Set<Listener>();
+
+  constructor() {
+    // Permanent, non-visual sinks. The visual overlay subscribes separately.
+    this.subscribe((event) => hapticsSink.handle(event));
+    this.subscribe((event) => soundSink.handle(event));
+  }
+
+  subscribe(listener: Listener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  emit(event: FeedbackEvent): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(event);
+      } catch {
+        // One misbehaving sink must never break gameplay or other sinks.
+      }
+    }
+  }
+
+  emitXp(amount: number, source: XpFeedbackEvent["source"]): void {
+    if (amount <= 0) return;
+    this.emit({ kind: "xp", amount, source });
+  }
+
+  emitPickup(
+    rarity: PickupFeedbackEvent["rarity"],
+    count: number,
+    isDiscovery: boolean
+  ): void {
+    this.emit({ kind: "pickup", rarity, count, isDiscovery });
+  }
+
+  emitToast(toast: Omit<ToastFeedbackEvent, "kind">): void {
+    this.emit({ kind: "toast", ...toast });
+  }
+
+  emitLevelUp(level: LevelUpFeedbackEvent["level"]): void {
+    this.emit({ kind: "levelUp", level });
+  }
+}
+
+/** App-wide singleton. Import this everywhere; do not construct your own. */
+export const feedback = new FeedbackManager();
+
+export type { FeedbackEvent } from "./types";
