@@ -136,9 +136,7 @@ export default function GameMap({
               label: getPoiMarkerLabel(poi, visited, isSelected),
               selected: isSelected,
             }}
-            eventHandlers={{
-              click: () => onSelectPoi(poi),
-            }}
+            onActivate={() => onSelectPoi(poi)}
           >
             <Popup>
               <div className="text-sm">

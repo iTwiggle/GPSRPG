@@ -1,7 +1,7 @@
 "use client";
 
 import L from "leaflet";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Marker as LeafletMarker,
   type MarkerProps,
@@ -14,10 +14,13 @@ import {
 interface AccessibleMapMarkerProps
   extends Omit<MarkerProps, "interactive" | "keyboard"> {
   accessibility: MarkerAccessibility;
+  onActivate?: () => void;
 }
 
 export default function AccessibleMapMarker({
   accessibility,
+  eventHandlers,
+  onActivate,
   ...markerProps
 }: AccessibleMapMarkerProps) {
   const markerRef = useRef<L.Marker | null>(null);
@@ -50,9 +53,32 @@ export default function AccessibleMapMarker({
     syncAccessibility();
   }, [accessibility, syncAccessibility]);
 
+  const accessibleEventHandlers = useMemo<MarkerProps["eventHandlers"]>(
+    () => {
+      if (!accessibility.interactive) return undefined;
+      if (!onActivate) return eventHandlers;
+
+      return {
+        ...eventHandlers,
+        click: (event) => {
+          eventHandlers?.click?.(event);
+          onActivate();
+        },
+        keypress: (event) => {
+          eventHandlers?.keypress?.(event);
+          if (event.originalEvent.key === "Enter") {
+            onActivate();
+          }
+        },
+      };
+    },
+    [accessibility.interactive, eventHandlers, onActivate]
+  );
+
   return (
     <LeafletMarker
       {...markerProps}
+      eventHandlers={accessibleEventHandlers}
       ref={setMarkerRef}
       interactive={accessibility.interactive}
       keyboard={accessibility.interactive}
