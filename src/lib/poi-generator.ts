@@ -10,11 +10,14 @@ import {
   type OsmContextCategory,
 } from "./osm-context";
 import type { POI } from "./types";
-import { EXPLORE_RADIUS_METERS } from "./types";
 
 const POI_COUNT = 8;
 const MIN_RADIUS_METERS = 120;
 const MAX_RADIUS_METERS = 450;
+
+/** Guaranteed reachable first site — leaves margin below the 150 m explore radius for GPS error. */
+export const GUARANTEED_FIRST_POI_MIN_METERS = 70;
+export const GUARANTEED_FIRST_POI_MAX_METERS = 110;
 
 /** POIs regenerate only after crossing into a new ~400 m grid cell. */
 export const POI_CELL_SIZE_METERS = 400;
@@ -81,11 +84,11 @@ export function generateNearbyPOIs(
     const type = pickPoiType(areaContext, typeRand);
     const originLat = i === 0 ? lat : anchorLat;
     const originLng = i === 0 ? lng : anchorLng;
-    const inRangeCap = Math.min(MAX_RADIUS_METERS, EXPLORE_RADIUS_METERS);
     const distance =
       i === 0
-        ? MIN_RADIUS_METERS +
-          rand() * Math.max(0, inRangeCap - MIN_RADIUS_METERS)
+        ? GUARANTEED_FIRST_POI_MIN_METERS +
+          rand() *
+            (GUARANTEED_FIRST_POI_MAX_METERS - GUARANTEED_FIRST_POI_MIN_METERS)
         : MIN_RADIUS_METERS + rand() * (MAX_RADIUS_METERS - MIN_RADIUS_METERS);
     const bearing = rand() * Math.PI * 2;
     const offset = metersToLatLngOffset(originLat, distance, bearing);

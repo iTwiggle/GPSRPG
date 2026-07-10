@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { getApproachReadout } from "./approach";
 import { canExplorePoi } from "./explore-validation";
 import { distanceMeters } from "./distance";
-import { generateNearbyPOIs } from "./poi-generator";
+import {
+  GUARANTEED_FIRST_POI_MAX_METERS,
+  GUARANTEED_FIRST_POI_MIN_METERS,
+  generateNearbyPOIs,
+} from "./poi-generator";
+import { getAreaCellCenter, getAreaCellKey } from "./osm-context";
 import { EXPLORE_RADIUS_METERS, type POI } from "./types";
 
 function makePoi(overrides: Partial<POI> = {}): POI {
@@ -68,13 +73,37 @@ describe("canExplorePoi", () => {
 });
 
 describe("generateNearbyPOIs", () => {
-  it("places the first POI within explore radius of the anchor", () => {
-    const anchor = { lat: 40.7128, lng: -74.006 };
-    const pois = generateNearbyPOIs(anchor.lat, anchor.lng);
+  const sampleAnchors = [
+    { lat: 40.7128, lng: -74.006 },
+    { lat: 51.5, lng: -0.12 },
+    { lat: 37.7749, lng: -122.4194 },
+    { lat: 35.6762, lng: 139.6503 },
+  ];
 
-    expect(pois.length).toBeGreaterThan(0);
-    const firstDistance = distanceMeters(anchor, pois[0]);
-    expect(firstDistance).toBeLessThanOrEqual(EXPLORE_RADIUS_METERS);
+  it("places the first POI between 70 m and 110 m from the anchor", () => {
+    for (const anchor of sampleAnchors) {
+      const pois = generateNearbyPOIs(anchor.lat, anchor.lng);
+      const firstDistance = distanceMeters(anchor, pois[0]);
+
+      expect(firstDistance).toBeGreaterThanOrEqual(
+        GUARANTEED_FIRST_POI_MIN_METERS
+      );
+      expect(firstDistance).toBeLessThanOrEqual(GUARANTEED_FIRST_POI_MAX_METERS);
+      expect(firstDistance).toBeLessThanOrEqual(EXPLORE_RADIUS_METERS);
+    }
+  });
+
+  it("keeps remaining POIs on the cell-centered 120–450 m ring", () => {
+    for (const anchor of sampleAnchors) {
+      const pois = generateNearbyPOIs(anchor.lat, anchor.lng);
+      const cellCenter = getAreaCellCenter(getAreaCellKey(anchor.lat, anchor.lng));
+
+      for (const poi of pois.slice(1)) {
+        const distance = distanceMeters(cellCenter, poi);
+        expect(distance).toBeGreaterThanOrEqual(120);
+        expect(distance).toBeLessThanOrEqual(450);
+      }
+    }
   });
 
   it("returns deterministic POIs for the same anchor", () => {

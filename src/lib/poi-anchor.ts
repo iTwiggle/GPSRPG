@@ -7,9 +7,18 @@ export const POI_ANCHOR_STORAGE_KEY = "gpsrpg-poi-anchor-v1";
 /** @deprecated Migrated to localStorage — read for one-time upgrade only. */
 const POI_ANCHOR_LEGACY_SESSION_KEY = POI_ANCHOR_STORAGE_KEY;
 
-/** Regenerate the POI field after moving this far from the field anchor. */
+/** Regenerate the POI field after moving this far from the field anchor during play. */
 export const POI_ANCHOR_REGENERATE_METERS = Math.round(
   POI_CELL_SIZE_METERS * 0.7
+);
+
+/**
+ * On cold start, replace a persisted anchor when live GPS is farther than this.
+ * Half a POI grid cell (~200 m): beyond normal GPS drift, but below the 280 m
+ * walk-time refresh so a nearby reopen keeps the same field.
+ */
+export const POI_ANCHOR_STALE_RELOCATION_METERS = Math.round(
+  POI_CELL_SIZE_METERS * 0.5
 );
 
 export interface PoiAnchorState {
@@ -79,6 +88,27 @@ export function shouldRegeneratePoiAnchor(
   return (
     distanceMeters(player, anchor) >= POI_ANCHOR_REGENERATE_METERS
   );
+}
+
+/** True when a persisted anchor should be discarded on startup for a new field. */
+export function shouldReplaceStaleAnchorOnStartup(
+  player: Position,
+  anchor: PoiAnchorState
+): boolean {
+  return (
+    distanceMeters(player, anchor) >= POI_ANCHOR_STALE_RELOCATION_METERS
+  );
+}
+
+export function createPoiAnchor(
+  player: Position,
+  areaContext: OsmContextCategory
+): PoiAnchorState {
+  return {
+    lat: player.lat,
+    lng: player.lng,
+    areaContext,
+  };
 }
 
 export function metersUntilPoiRefresh(
