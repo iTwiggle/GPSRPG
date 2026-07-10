@@ -1,9 +1,10 @@
 import {
   getLootWeightTable,
-  getUniqueLootCatalogSize,
   type ItemCatalogEntry,
 } from "./item-catalog";
 import type { Item, POIType } from "./types";
+
+export { getUniqueLootCatalogSize } from "./item-catalog";
 
 function pickWeighted(
   table: ItemCatalogEntry[],
@@ -37,9 +38,3 @@ export function rollLoot(
   const template = pickWeighted(getLootWeightTable(poiType), rand);
   return createItem(template, suffix);
 }
-
-export function getLootTableSize(): number {
-  return getUniqueLootCatalogSize();
-}
-
-export { getUniqueLootCatalogSize } from "./item-catalog";

@@ -5,14 +5,17 @@ import {
   createEmptyFieldReport,
   normalizeFieldReport,
 } from "./field-report";
+import { getSetProgressList } from "./item-catalog";
 import { generateFieldTasks, normalizeFieldTasks } from "./tasks";
-import { createDefaultPlayer } from "./xp";
-import type { GameState, Item, Player } from "./types";
+import { createDefaultPlayer, levelFromXp } from "./xp";
+import type { ActivityEvent, Codex, GameState, Item, Player } from "./types";
 
 const STORAGE_KEY = "gpsrpg-game-state-v1";
 export const STORAGE_SCHEMA_VERSION = 1;
 
 const CORRUPT_SAVE_BACKUP_PREFIX = `${STORAGE_KEY}-corrupt-`;
+const VISITED_POI_CAP = 500;
+const ACTIVITY_LOG_CAP = 50;
 
 export interface LoadGameStateResult {
   state: GameState;
@@ -28,14 +31,94 @@ type StoredGameState = Partial<GameState> & {
   schemaVersion?: number;
 };
 
+function isValidItem(value: unknown): value is Item {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<Item>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.name === "string" &&
+    (item.type === "weapon" ||
+      item.type === "armor" ||
+      item.type === "consumable" ||
+      item.type === "treasure") &&
+    (item.rarity === "common" ||
+      item.rarity === "uncommon" ||
+      item.rarity === "rare")
+  );
+}
+
+function normalizePlayer(raw: Partial<Player> | undefined): Player {
+  const fallback = createDefaultPlayer();
+  const inventory = Array.isArray(raw?.inventory)
+    ? raw!.inventory.filter(isValidItem)
+    : [];
+  const xp =
+    typeof raw?.xp === "number" && Number.isFinite(raw.xp) && raw.xp >= 0
+      ? Math.floor(raw.xp)
+      : 0;
+
+  return {
+    name:
+      typeof raw?.name === "string" && raw.name.trim()
+        ? raw.name.trim()
+        : fallback.name,
+    xp,
+    level: levelFromXp(xp),
+    inventory,
+  };
+}
+
+function normalizeVisitedPoiIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const ids = raw.filter((id): id is string => typeof id === "string" && id.length > 0);
+  return [...new Set(ids)].slice(-VISITED_POI_CAP);
+}
+
+function normalizeActivityLog(raw: unknown): ActivityEvent[] {
+  if (!Array.isArray(raw)) return createEmptyActivityLog();
+  return raw
+    .filter((event): event is ActivityEvent => {
+      if (!event || typeof event !== "object") return false;
+      const e = event as Partial<ActivityEvent>;
+      return (
+        typeof e.id === "string" &&
+        typeof e.timestamp === "string" &&
+        typeof e.type === "string" &&
+        typeof e.message === "string"
+      );
+    })
+    .slice(0, ACTIVITY_LOG_CAP);
+}
+
+/**
+ * Mark already-complete album sets as claimed without granting XP.
+ * Prevents a one-time XP burst when loading saves from before completedSetIds.
+ */
+export function backfillCompletedSetIds(codex: Codex): Codex {
+  const claimed = new Set(codex.completedSetIds);
+  for (const progress of getSetProgressList(codex)) {
+    if (progress.complete) {
+      claimed.add(progress.set.id);
+    }
+  }
+  if (claimed.size === codex.completedSetIds.length) {
+    return codex;
+  }
+  return {
+    ...codex,
+    completedSetIds: [...claimed],
+  };
+}
+
 export function createInitialState(): GameState {
+  const codex = createEmptyCodex();
   return {
     schemaVersion: STORAGE_SCHEMA_VERSION,
     player: createDefaultPlayer(),
     visitedPOIIds: [],
-    codex: createEmptyCodex(),
+    codex,
     activityLog: createEmptyActivityLog(),
-    fieldTasks: generateFieldTasks(),
+    fieldTasks: generateFieldTasks(Date.now(), codex),
     fieldReport: createEmptyFieldReport(),
     baseCamp: createEmptyBaseCamp(),
   };
@@ -57,20 +140,15 @@ function backupCorruptSave(raw: string): string | null {
 }
 
 function normalizeGameState(parsed: StoredGameState): GameState {
-  const fallbackPlayer = createDefaultPlayer();
-  const savedPlayer = parsed.player ?? fallbackPlayer;
+  const codex = backfillCompletedSetIds(normalizeCodex(parsed.codex));
 
   return {
     schemaVersion: STORAGE_SCHEMA_VERSION,
-    player: {
-      ...fallbackPlayer,
-      ...savedPlayer,
-      inventory: savedPlayer.inventory ?? [],
-    },
-    visitedPOIIds: parsed.visitedPOIIds ?? [],
-    codex: normalizeCodex(parsed.codex),
-    activityLog: parsed.activityLog ?? createEmptyActivityLog(),
-    fieldTasks: normalizeFieldTasks(parsed.fieldTasks),
+    player: normalizePlayer(parsed.player),
+    visitedPOIIds: normalizeVisitedPoiIds(parsed.visitedPOIIds),
+    codex,
+    activityLog: normalizeActivityLog(parsed.activityLog),
+    fieldTasks: normalizeFieldTasks(parsed.fieldTasks, codex),
     fieldReport: normalizeFieldReport(parsed.fieldReport),
     baseCamp: normalizeBaseCamp(parsed.baseCamp),
   };
@@ -140,9 +218,13 @@ export function markPoiVisited(state: GameState, poiId: string): GameState {
   if (state.visitedPOIIds.includes(poiId)) {
     return state;
   }
+  const visitedPOIIds = [...state.visitedPOIIds, poiId];
+  if (visitedPOIIds.length > VISITED_POI_CAP) {
+    visitedPOIIds.splice(0, visitedPOIIds.length - VISITED_POI_CAP);
+  }
   return {
     ...state,
-    visitedPOIIds: [...state.visitedPOIIds, poiId],
+    visitedPOIIds,
   };
 }
 

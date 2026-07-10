@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ACTIVITY_LOG_MAX,
   appendExploreEvents,
   appendSetCompleteEvents,
   appendTaskCompleteEvents,
@@ -11,15 +12,16 @@ import {
   getDepotDoor,
   tryClaimDepotDoor,
 } from "@/lib/base-camp";
+import { catalogItemKey } from "@/lib/catalog-key";
+import { recordExplore } from "@/lib/codex";
+import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
+import { rollEncounter } from "@/lib/encounter";
+import { updateFieldReportOnExplore } from "@/lib/field-report";
 import {
   getItemSet,
   getNewlyCompletedSetIds,
   getSetRewardXp,
 } from "@/lib/item-catalog";
-import { recordExplore, codexItemKey } from "@/lib/codex";
-import { applyExploreToTasks, refreshFieldTasks as rollFieldTasks } from "@/lib/tasks";
-import { updateFieldReportOnExplore } from "@/lib/field-report";
-import { applyXp } from "@/lib/xp";
 import {
   addLootToPlayer,
   loadGameState,
@@ -28,9 +30,20 @@ import {
   resetGameState,
   saveGameState,
 } from "@/lib/storage";
+import { applyExploreToTasks, refreshFieldTasks as rollFieldTasks } from "@/lib/tasks";
 import type { EncounterResult, GameState, POI } from "@/lib/types";
-import { rollEncounter } from "@/lib/encounter";
-import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
+import { applyXp } from "@/lib/xp";
+
+function prependActivityEvents(
+  log: GameState["activityLog"],
+  events: GameState["activityLog"]
+): GameState["activityLog"] {
+  const next = [...events, ...log];
+  if (next.length > ACTIVITY_LOG_MAX) {
+    next.length = ACTIVITY_LOG_MAX;
+  }
+  return next;
+}
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -38,14 +51,17 @@ export function useGameState() {
   const [lastEncounter, setLastEncounter] = useState<EncounterResult | null>(
     null
   );
+  const stateRef = useRef<GameState | null>(null);
 
   useEffect(() => {
     const result = loadGameState();
+    stateRef.current = result.state;
     setGameState(result.state);
     setSaveWarning(result.warning);
   }, []);
 
   const persist = useCallback((next: GameState) => {
+    stateRef.current = next;
     setGameState(next);
     const result = saveGameState(next);
     setSaveWarning(result.warning);
@@ -53,9 +69,10 @@ export function useGameState() {
 
   const explorePoi = useCallback(
     (poi: POI, options?: { simulate?: boolean }) => {
-      if (!gameState) return null;
+      const current = stateRef.current;
+      if (!current) return null;
 
-      if (gameState.visitedPOIIds.includes(poi.id) && !options?.simulate) {
+      if (current.visitedPOIIds.includes(poi.id) && !options?.simulate) {
         return null;
       }
 
@@ -65,24 +82,21 @@ export function useGameState() {
       const perkResult = applyActivePerksToEncounter(
         encounter,
         poi,
-        gameState.baseCamp,
+        current.baseCamp,
         rollSeed ?? poi.id
       );
       encounter = perkResult.encounter;
       const baseCamp = perkResult.baseCamp;
 
       const newCodexItemKeys = encounter.loot
-        .filter((item) => !gameState.codex.items[codexItemKey(item)])
-        .map((item) => codexItemKey(item));
+        .filter((item) => !current.codex.items[catalogItemKey(item)])
+        .map((item) => catalogItemKey(item));
 
-      const prevLevel = gameState.player.level;
-      const playerAfterEncounter = applyXp(
-        gameState.player,
-        encounter.xpGained
-      );
+      const prevLevel = current.player.level;
+      const playerAfterEncounter = applyXp(current.player, encounter.xpGained);
       let player = addLootToPlayer(playerAfterEncounter, encounter.loot);
 
-      let withCodex = recordExplore(gameState.codex, poi, encounter);
+      let withCodex = recordExplore(current.codex, poi, encounter);
       const newSetIds = getNewlyCompletedSetIds(
         withCodex,
         withCodex.completedSetIds
@@ -109,7 +123,7 @@ export function useGameState() {
             : undefined,
       };
 
-      let activityLog = appendExploreEvents(gameState.activityLog, {
+      let activityLog = appendExploreEvents(current.activityLog, {
         poi,
         encounter: encounterWithDiscoveries,
         prevLevel,
@@ -135,7 +149,7 @@ export function useGameState() {
       }
 
       const { tasks: withTasks, completions } = applyExploreToTasks(
-        gameState.fieldTasks,
+        current.fieldTasks,
         { poi, encounter: encounterWithDiscoveries }
       );
 
@@ -155,16 +169,17 @@ export function useGameState() {
         );
       }
 
-      const withFieldReport = updateFieldReportOnExplore(gameState.fieldReport, {
+      const withFieldReport = updateFieldReportOnExplore(current.fieldReport, {
         poi,
         encounter: encounterWithDiscoveries,
         taskRewardXp,
+        setBonusXp,
         tasksCompleted: completions.length,
       });
 
       const nextState = markPoiVisited(
         {
-          ...gameState,
+          ...current,
           player,
           codex: withCodex,
           baseCamp,
@@ -179,70 +194,70 @@ export function useGameState() {
       setLastEncounter(encounterWithDiscoveries);
       return encounterWithDiscoveries;
     },
-    [gameState, persist]
+    [persist]
   );
 
   const refreshFieldTasks = useCallback(() => {
-    if (!gameState) return;
+    const current = stateRef.current;
+    if (!current) return;
     persist({
-      ...gameState,
-      fieldTasks: rollFieldTasks(gameState.codex),
+      ...current,
+      fieldTasks: rollFieldTasks(current.codex),
     });
-  }, [gameState, persist]);
+  }, [persist]);
 
   const salvageCommonTriplet = useCallback(
     (catalogKey: string) => {
-      if (!gameState) return false;
+      const current = stateRef.current;
+      if (!current) return false;
 
-      const result = salvageCommonTripletFromLib(
-        gameState.player,
-        catalogKey
-      );
+      const result = salvageCommonTripletFromLib(current.player, catalogKey);
       if (!result) return false;
 
-      const prevLevel = gameState.player.level;
+      const prevLevel = current.player.level;
       const player = applyXp(result.player, result.xpGained);
       const timestamp = new Date().toISOString();
 
-      let activityLog = [
-        ...gameState.activityLog,
+      const events: GameState["activityLog"] = [
         {
           id: `act-${timestamp}-xp_gained-salvage`,
           timestamp,
-          type: "xp_gained" as const,
+          type: "xp_gained",
           message: `Salvaged ${result.removedCount} commons for ${result.xpGained} XP`,
         },
       ];
 
       if (player.level > prevLevel) {
-        activityLog = [
-          ...activityLog,
-          {
-            id: `act-${timestamp}-level_up-salvage`,
-            timestamp,
-            type: "level_up" as const,
-            message: `Reached level ${player.level}!`,
-          },
-        ];
+        events.push({
+          id: `act-${timestamp}-level_up-salvage`,
+          timestamp,
+          type: "level_up",
+          message: `Reached Level ${player.level}`,
+        });
       }
 
       persist({
-        ...gameState,
+        ...current,
         player,
-        activityLog: activityLog.slice(-50),
+        activityLog: prependActivityEvents(current.activityLog, events),
+        fieldReport: {
+          ...current.fieldReport,
+          xpGained: current.fieldReport.xpGained + result.xpGained,
+        },
       });
       return true;
     },
-    [gameState, persist]
+    [persist]
   );
 
   const claimDepotDoor = useCallback(
     (doorId: string) => {
-      if (!gameState) return false;
+      const current = stateRef.current;
+      if (!current) return false;
 
       const nextBaseCamp = tryClaimDepotDoor(
-        gameState.codex,
-        gameState.baseCamp,
+        current.codex,
+        current.baseCamp,
         doorId
       );
       if (!nextBaseCamp) return false;
@@ -251,47 +266,49 @@ export function useGameState() {
       const timestamp = new Date().toISOString();
 
       persist({
-        ...gameState,
+        ...current,
         baseCamp: nextBaseCamp,
-        activityLog: [
-          ...gameState.activityLog,
+        activityLog: prependActivityEvents(current.activityLog, [
           {
             id: `act-${timestamp}-door_opened-${doorId}`,
             timestamp,
-            type: "door_opened" as const,
+            type: "door_opened",
             message: door
               ? `Opened ${door.name} — ${door.perkName} loaded for the field`
               : "Opened a depot door",
           },
-        ].slice(-50),
+        ]),
       });
       return true;
     },
-    [gameState, persist]
+    [persist]
   );
 
   const markBaseCampVisit = useCallback(() => {
-    if (!gameState) return;
+    const current = stateRef.current;
+    if (!current) return;
     persist({
-      ...gameState,
+      ...current,
       baseCamp: {
-        ...gameState.baseCamp,
+        ...current.baseCamp,
         lastCampVisitAt: new Date().toISOString(),
       },
     });
-  }, [gameState, persist]);
+  }, [persist]);
 
   const clearEncounter = useCallback(() => {
     setLastEncounter(null);
   }, []);
 
   const resetFieldReport = useCallback(() => {
-    if (!gameState) return;
-    persist(resetFieldReportInState(gameState));
-  }, [gameState, persist]);
+    const current = stateRef.current;
+    if (!current) return;
+    persist(resetFieldReportInState(current));
+  }, [persist]);
 
   const reset = useCallback(() => {
     const fresh = resetGameState();
+    stateRef.current = fresh;
     setGameState(fresh);
     setLastEncounter(null);
     setSaveWarning(null);
@@ -315,6 +332,8 @@ export function useGameState() {
     clearSaveWarning,
     reset,
     isVisited: (poiId: string) =>
-      gameState?.visitedPOIIds.includes(poiId) ?? false,
+      stateRef.current?.visitedPOIIds.includes(poiId) ??
+      gameState?.visitedPOIIds.includes(poiId) ??
+      false,
   };
 }

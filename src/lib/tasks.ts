@@ -1,10 +1,12 @@
+import { catalogItemKey } from "./catalog-key";
 import {
   getCatalogEntry,
   getCatalogKeysForSet,
   getIncompleteSetProgress,
   getItemSet,
 } from "./item-catalog";
-import { itemCatalogKey } from "./item-visual";
+import { getPoiTypeLabel } from "./poi-flavor";
+import { hashSeed, seededRandom } from "./random";
 import type {
   Codex,
   EncounterResult,
@@ -23,17 +25,6 @@ interface TaskTemplate {
   description: string;
   rewardXp: number;
 }
-
-const POI_TYPE_LABELS: Record<POIType, string> = {
-  shrine: "Shrine",
-  camp: "Camp",
-  tower: "Tower",
-  gate: "Gate",
-  grove: "Grove",
-  cache: "Cache",
-  quarry: "Quarry",
-  well: "Well",
-};
 
 const ALL_POI_TYPES: POIType[] = [
   "shrine",
@@ -105,26 +96,6 @@ const TASK_TEMPLATES: TaskTemplate[] = [
   },
 ];
 
-function hashSeed(...values: (string | number)[]): number {
-  let hash = 2166136261;
-  for (const value of values) {
-    const str = String(value);
-    for (let i = 0; i < str.length; i += 1) {
-      hash ^= str.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
-  }
-  return hash >>> 0;
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0x100000000;
-  };
-}
-
 function makeTaskId(seed: number, index: number): string {
   return `task-${seed}-${index}`;
 }
@@ -186,7 +157,7 @@ function buildTaskFromTemplate(
   if (template.type === "complete_poi_type") {
     const rand = seededRandom(hashSeed(seed, index, "poi-type"));
     const poiType = ALL_POI_TYPES[Math.floor(rand() * ALL_POI_TYPES.length)];
-    const label = POI_TYPE_LABELS[poiType];
+    const label = getPoiTypeLabel(poiType);
     return {
       id,
       type: template.type,
@@ -254,9 +225,12 @@ export function generateFieldTasks(
 }
 
 /** Ensure saves always have exactly three valid task slots. */
-export function normalizeFieldTasks(tasks: unknown): FieldTask[] {
+export function normalizeFieldTasks(
+  tasks: unknown,
+  codex?: Codex
+): FieldTask[] {
   if (!Array.isArray(tasks) || tasks.length === 0) {
-    return generateFieldTasks();
+    return generateFieldTasks(Date.now(), codex);
   }
 
   const normalized = tasks
@@ -275,7 +249,10 @@ export function normalizeFieldTasks(tasks: unknown): FieldTask[] {
     .slice(0, FIELD_TASK_SLOT_COUNT);
 
   if (normalized.length < FIELD_TASK_SLOT_COUNT) {
-    const filler = generateFieldTasks(hashSeed("fill", normalized.length));
+    const filler = generateFieldTasks(
+      hashSeed("fill", normalized.length),
+      codex
+    );
     while (normalized.length < FIELD_TASK_SLOT_COUNT) {
       normalized.push(filler[normalized.length]);
     }
@@ -339,7 +316,7 @@ function advanceTask(task: FieldTask, ctx: ExploreTaskContext): FieldTask {
       const seen = new Set(task.catalogKeysSeen ?? []);
       for (const item of ctx.encounter.loot) {
         const entry = getCatalogEntry(item);
-        const key = itemCatalogKey(item);
+        const key = catalogItemKey(item);
         if (entry?.setId === task.setId && !seen.has(key)) {
           seen.add(key);
         }

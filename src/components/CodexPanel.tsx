@@ -10,12 +10,12 @@ import {
   getUniqueLootCatalogSize,
 } from "@/lib/item-catalog";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
+import { catalogItemKey } from "@/lib/catalog-key";
 import {
   ITEM_TYPE_LABEL,
   RARITY_CHIP,
   RARITY_LABEL,
   RARITY_TEXT,
-  itemCatalogKey,
 } from "@/lib/item-visual";
 import type { Codex, POIType } from "@/lib/types";
 
@@ -145,7 +145,7 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
           {activeTab === "catalog" && (
             <ul className="mt-3 max-h-56 space-y-2 overflow-y-auto">
               {ITEM_CATALOG.map((entry) => {
-                const key = itemCatalogKey(entry);
+                const key = catalogItemKey(entry);
                 const discovered = discoveredKeys.has(key);
                 const codexEntry = codex.items[key];
                 return (
@@ -202,7 +202,7 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
               {SITE_AFFINITIES.map((affinity) => {
                 const entries = getCatalogEntriesByAffinity(affinity);
                 const found = entries.filter((entry) =>
-                  discoveredKeys.has(itemCatalogKey(entry))
+                  discoveredKeys.has(catalogItemKey(entry))
                 ).length;
                 return (
                   <section key={affinity}>
@@ -216,7 +216,7 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                     </div>
                     <ul className="space-y-1.5">
                       {entries.map((entry) => {
-                        const key = itemCatalogKey(entry);
+                        const key = catalogItemKey(entry);
                         const discovered = discoveredKeys.has(key);
                         return (
                           <li
@@ -305,7 +305,7 @@ export default function CodexPanel({ codex }: CodexPanelProps) {
                   <ul className="space-y-2">
                     {items.slice(0, 8).map((item) => (
                       <li
-                        key={itemCatalogKey(item)}
+                        key={catalogItemKey(item)}
                         className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-2 text-sm"
                       >
                         <ItemIcon type={item.type} rarity={item.rarity} />

@@ -1,5 +1,6 @@
 import { getItemSet, getSetProgressList } from "./item-catalog";
 import { rollLoot } from "./loot";
+import { hashSeed, seededRandom } from "./random";
 import type {
   BaseCampState,
   Codex,
@@ -195,26 +196,6 @@ export function claimDepotDoor(
     claimedDoorIds: [...baseCamp.claimedDoorIds, doorId],
     activePerks,
     lastCampVisitAt: new Date().toISOString(),
-  };
-}
-
-function hashSeed(...values: (string | number)[]): number {
-  let hash = 2166136261;
-  for (const value of values) {
-    const str = String(value);
-    for (let i = 0; i < str.length; i += 1) {
-      hash ^= str.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
-  }
-  return hash >>> 0;
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0x100000000;
   };
 }
 

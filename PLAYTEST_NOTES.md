@@ -64,13 +64,21 @@ Desktop **Demo Mode** (fixed Demo Location, nudge controls) remains the primary 
 
 ## Next candidate improvements
 
-Small, in-scope follow-ups (not committed in this pass):
+Shipped since earlier notes (no longer candidates):
 
-1. **Sticky POI anchor** — regenerate only after moving N meters from the anchor, not on every cell edge.
-2. **GPS accuracy display** in the HUD when `accuracy` is available.
-3. **“Nearest POI” hint** when no marker is selected — helps at walking pace.
-4. **Offline / PWA shell** for installed home-screen testing.
-5. **Encounter cooldown or daily cap** if farming Simulate visit becomes too generous in dev builds.
+1. **Sticky POI anchor** — `useStickyPois` / `poi-anchor.ts` (~280 m regenerate threshold).
+2. **GPS accuracy display** — Character HUD when live GPS accuracy is available.
+3. **Nearest POI hint** — empty Sites panel tracks nearest site.
+4. **PWA install shell** — manifest, icons, service worker, install prompt (map tiles still need network).
+5. **Collection Album v0.2–v0.3** — catalog, sets, icons, salvage, rare pull animation.
+6. **Base Camp v0.1** — depot doors + field perks from completed album sets.
+
+Still open / future:
+
+1. **Encounter cooldown or daily cap** if farming Simulate visit becomes too generous in dev builds.
+2. **True offline field play** — cache map tiles / degrade gracefully without OSM.
+3. **Export / sync packet** for a future main-game handoff (not in companion scope yet).
+4. **Remaining album sets → depot doors** — 6 of 11 sets currently unlock Base Camp doors.
 
 ## Site Approach / Navigation HUD v0.1
 

@@ -4,7 +4,7 @@ A tiny browser-based **companion app / overworld prototype** for GPSRPG. This is
 
 ## Core loop (prototype)
 
-GPS position → procedural nearby fantasy POIs → visit/explore POI → roll encounter reward → gain XP/loot → inventory and character state persist in `localStorage`. A **Collection Log / Codex** tracks discovered POIs, loot, and encounters across sessions in the same save. An **Activity Log / Journey Feed** records the latest 50 explore events (POI explored, encounter, XP gained, items found, level-ups, contract fulfillments) as a chronological timeline, also persisted in `localStorage`. **Field Contracts** give three short-term outing goals (explore sites, find loot, earn XP, etc.) that advance when you explore; completing a contract grants a small bonus XP reward.
+GPS position → procedural nearby fantasy POIs → visit/explore POI → roll encounter reward → gain XP/loot → inventory and character state persist in `localStorage`. The **Collection Album** (Album tab) tracks discovered loot, site affinities, album sets, and a field journal across sessions. An **Activity Log** (Journey tab) records the latest 50 events — explores, encounters, XP, loot, level-ups, contract fulfillments, album set completions, field report archives, and base-camp door opens. **Field Contracts** give three short-term outing goals that advance when you explore. **Base Camp** turns completed album sets into depot doors that load charged field perks for the next outing.
 
 ## Stack
 

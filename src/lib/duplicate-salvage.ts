@@ -1,4 +1,4 @@
-import { itemCatalogKey } from "./item-visual";
+import { catalogItemKey } from "./catalog-key";
 import type { Item, Player } from "./types";
 
 export const SALVAGE_COMMON_COUNT = 3;
@@ -16,7 +16,7 @@ export function salvageCommonTriplet(
   catalogKey: string
 ): SalvageResult | null {
   const matching = player.inventory.filter(
-    (item) => itemCatalogKey(item) === catalogKey && item.rarity === "common"
+    (item) => catalogItemKey(item) === catalogKey && item.rarity === "common"
   );
 
   if (matching.length < SALVAGE_COMMON_COUNT) {

@@ -13,7 +13,7 @@ const SECTIONS: { id: MobilePanelSection; label: string }[] = [
   { id: "poi", label: "Sites" },
   { id: "tasks", label: "Tasks" },
   { id: "bag", label: "Bag" },
-  { id: "codex", label: "Codex" },
+  { id: "codex", label: "Album" },
   { id: "camp", label: "Camp" },
   { id: "journey", label: "Journey" },
   { id: "dev", label: "Dev" },

@@ -1,4 +1,4 @@
-import { itemCatalogKey } from "./item-visual";
+import { catalogItemKey } from "./catalog-key";
 import type { Codex, Item, ItemRarity, POIType } from "./types";
 
 export interface ItemCatalogEntry {
@@ -308,7 +308,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
 ];
 
 const catalogByKey = new Map(
-  ITEM_CATALOG.map((entry) => [itemCatalogKey(entry), entry])
+  ITEM_CATALOG.map((entry) => [catalogItemKey(entry), entry])
 );
 
 const setsById = new Map(ITEM_SETS.map((set) => [set.id, set]));
@@ -316,7 +316,7 @@ const setsById = new Map(ITEM_SETS.map((set) => [set.id, set]));
 export function getCatalogEntry(
   item: Pick<Item, "name" | "type">
 ): ItemCatalogEntry | undefined {
-  return catalogByKey.get(itemCatalogKey(item));
+  return catalogByKey.get(catalogItemKey(item));
 }
 
 export function getUniqueLootCatalogSize(): number {
@@ -350,7 +350,7 @@ export function getSetProgressList(codex: Codex): SetProgress[] {
   return ITEM_SETS.map((set) => {
     const entries = getCatalogEntriesForSet(set.id);
     const discovered = entries.filter((entry) =>
-      discoveredKeys.has(itemCatalogKey(entry))
+      discoveredKeys.has(catalogItemKey(entry))
     ).length;
 
     return {
@@ -392,7 +392,7 @@ export function getAlmostCompleteSets(codex: Codex): SetProgress[] {
 }
 
 export function getCatalogKeysForSet(setId: string): string[] {
-  return getCatalogEntriesForSet(setId).map((entry) => itemCatalogKey(entry));
+  return getCatalogEntriesForSet(setId).map((entry) => catalogItemKey(entry));
 }
 
 export function getLootWeightTable(

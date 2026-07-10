@@ -4,7 +4,6 @@ import type {
   EncounterResult,
   FieldReport,
   FieldTask,
-  Item,
   POI,
 } from "./types";
 import { hasFieldReportActivity, summarizeFieldReport } from "./field-report";
@@ -107,16 +106,6 @@ export function appendExploreEvents(
     next.length = ACTIVITY_LOG_MAX;
   }
   return next;
-}
-
-interface ItemTemplate {
-  rarity: Item["rarity"];
-  name: string;
-}
-
-/** Helper for tests/devtools: build a single item-found message. */
-export function formatItemFoundMessage(item: ItemTemplate): string {
-  return `Found ${capitalize(item.rarity)} ${item.name}`;
 }
 
 function prependEvents(

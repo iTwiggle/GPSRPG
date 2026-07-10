@@ -1,10 +1,10 @@
 import ItemIcon from "@/components/ItemIcon";
 import { getCatalogEntry, getItemSet } from "@/lib/item-catalog";
+import { catalogItemKey } from "@/lib/catalog-key";
 import {
   ITEM_TYPE_LABEL,
   RARITY_CHIP,
   RARITY_LABEL,
-  itemCatalogKey,
   lootRevealClass,
 } from "@/lib/item-visual";
 import type { EncounterResult } from "@/lib/types";
@@ -36,7 +36,7 @@ export default function EncounterModal({
         aria-labelledby="encounter-title"
       >
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300/90">
-          Field report
+          Encounter summary
         </p>
         <h2
           id="encounter-title"
@@ -55,7 +55,7 @@ export default function EncounterModal({
             </p>
             <ul className="mt-2 space-y-2">
               {encounter.loot
-                .filter((item) => newKeys.has(itemCatalogKey(item)))
+                .filter((item) => newKeys.has(catalogItemKey(item)))
                 .map((item) => {
                   const entry = getCatalogEntry(item);
                   return (
@@ -99,11 +99,11 @@ export default function EncounterModal({
           <div className="rpg-xp-flash">
             <p className="text-sm font-semibold text-amber-300">
               +{encounter.xpGained} XP
+              {encounter.perkBonusXp
+                ? ` (includes +${encounter.perkBonusXp} perk)`
+                : ""}
               {encounter.setBonusXp
                 ? ` · +${encounter.setBonusXp} set bonus`
-                : ""}
-              {encounter.perkBonusXp
-                ? ` · +${encounter.perkBonusXp} perk bonus`
                 : ""}
             </p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
@@ -122,7 +122,7 @@ export default function EncounterModal({
           {encounter.loot.length > 0 ? (
             <ul className="mt-3 space-y-2">
               {encounter.loot.map((item, index) => {
-                const isNew = newKeys.has(itemCatalogKey(item));
+                const isNew = newKeys.has(catalogItemKey(item));
                 const revealClass = lootRevealClass(item.rarity);
                 return (
                   <li

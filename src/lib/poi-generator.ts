@@ -9,6 +9,7 @@ import {
   getContextCategoryCode,
   type OsmContextCategory,
 } from "./osm-context";
+import { seededRandom } from "./random";
 import type { POI } from "./types";
 
 const POI_COUNT = 8;
@@ -20,6 +21,10 @@ export const POI_CELL_SIZE_METERS = 400;
 
 export { getAreaCellKey };
 
+/**
+ * Numeric-only seed hash used for POI generation.
+ * Kept local (not shared random.hashSeed) so existing world seeds stay stable.
+ */
 function hashSeed(...values: number[]): number {
   let hash = 2166136261;
   for (const value of values) {
@@ -28,14 +33,6 @@ function hashSeed(...values: number[]): number {
     hash = Math.imul(hash, 16777619);
   }
   return hash >>> 0;
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0x100000000;
-  };
 }
 
 function metersToLatLngOffset(

@@ -1,4 +1,7 @@
+import { catalogItemKey } from "./catalog-key";
 import type { Item, ItemRarity } from "./types";
+
+export { catalogItemKey, catalogItemKey as itemCatalogKey } from "./catalog-key";
 
 export const RARITY_ORDER: Record<ItemRarity, number> = {
   rare: 0,
@@ -45,10 +48,6 @@ export const RARITY_GLOW_CLASS: Record<ItemRarity, string> = {
   rare: "rpg-item-icon--rare",
 };
 
-export function itemCatalogKey(item: Pick<Item, "name" | "type">): string {
-  return `${item.name}|${item.type}`;
-}
-
 export interface AggregatedInventoryItem {
   key: string;
   name: string;
@@ -61,7 +60,7 @@ export function aggregateInventory(inventory: Item[]): AggregatedInventoryItem[]
   const grouped = new Map<string, AggregatedInventoryItem>();
 
   for (const item of inventory) {
-    const key = itemCatalogKey(item);
+    const key = catalogItemKey(item);
     const existing = grouped.get(key);
     if (existing) {
       existing.count += 1;

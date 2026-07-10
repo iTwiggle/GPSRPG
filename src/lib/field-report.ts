@@ -127,17 +127,25 @@ interface ExploreFieldReportContext {
   poi: POI;
   encounter: EncounterResult;
   taskRewardXp: number;
+  setBonusXp?: number;
   tasksCompleted: number;
 }
 
 export function updateFieldReportOnExplore(
   report: FieldReport,
-  { poi, encounter, taskRewardXp, tasksCompleted }: ExploreFieldReportContext
+  {
+    poi,
+    encounter,
+    taskRewardXp,
+    setBonusXp = 0,
+    tasksCompleted,
+  }: ExploreFieldReportContext
 ): FieldReport {
   return {
     ...report,
     sitesExplored: report.sitesExplored + 1,
-    xpGained: report.xpGained + encounter.xpGained + taskRewardXp,
+    xpGained:
+      report.xpGained + encounter.xpGained + taskRewardXp + setBonusXp,
     itemsFound: report.itemsFound + encounter.loot.length,
     bestFind: pickBestFind(report.bestFind, encounter.loot),
     poiTypesExplored: addPoiType(report.poiTypesExplored, poi.type),

@@ -1,3 +1,4 @@
+import { catalogItemKey } from "./catalog-key";
 import type {
   Codex,
   CodexStats,
@@ -7,8 +8,44 @@ import type {
   POI,
 } from "./types";
 
+/** @deprecated Prefer catalogItemKey from catalog-key. */
+export const codexItemKey = catalogItemKey;
+
 function emptyRarityCounts(): Record<ItemRarity, number> {
   return { common: 0, uncommon: 0, rare: 0 };
+}
+
+function normalizeRarityCounts(
+  raw: Partial<Record<ItemRarity, number>> | undefined
+): Record<ItemRarity, number> {
+  const empty = emptyRarityCounts();
+  if (!raw) return empty;
+  return {
+    common: typeof raw.common === "number" && raw.common >= 0 ? raw.common : 0,
+    uncommon:
+      typeof raw.uncommon === "number" && raw.uncommon >= 0 ? raw.uncommon : 0,
+    rare: typeof raw.rare === "number" && raw.rare >= 0 ? raw.rare : 0,
+  };
+}
+
+function normalizeCodexStats(raw: Partial<CodexStats> | undefined): CodexStats {
+  const empty = createEmptyCodex().stats;
+  if (!raw) return empty;
+  return {
+    totalExplores:
+      typeof raw.totalExplores === "number" && raw.totalExplores >= 0
+        ? raw.totalExplores
+        : 0,
+    totalVisitedPois:
+      typeof raw.totalVisitedPois === "number" && raw.totalVisitedPois >= 0
+        ? raw.totalVisitedPois
+        : 0,
+    totalItemsFound:
+      typeof raw.totalItemsFound === "number" && raw.totalItemsFound >= 0
+        ? raw.totalItemsFound
+        : 0,
+    rarityCounts: normalizeRarityCounts(raw.rarityCounts),
+  };
 }
 
 export function createEmptyCodex(): Codex {
@@ -26,6 +63,7 @@ export function createEmptyCodex(): Codex {
   };
 }
 
+/** Normalize codex shape. Call backfillCompletedSetIds after for legacy saves. */
 export function normalizeCodex(codex: Partial<Codex> | undefined): Codex {
   const empty = createEmptyCodex();
   if (!codex) return empty;
@@ -34,23 +72,19 @@ export function normalizeCodex(codex: Partial<Codex> | undefined): Codex {
     items: codex.items ?? empty.items,
     pois: codex.pois ?? empty.pois,
     encounters: codex.encounters ?? empty.encounters,
-    stats: codex.stats ?? empty.stats,
-    completedSetIds: codex.completedSetIds ?? [],
+    stats: normalizeCodexStats(codex.stats),
+    completedSetIds: Array.isArray(codex.completedSetIds)
+      ? codex.completedSetIds.filter((id): id is string => typeof id === "string")
+      : [],
   };
 }
-
-function itemKey(item: Pick<Item, "name" | "type">): string {
-  return `${item.name}|${item.type}`;
-}
-
-export { itemKey as codexItemKey };
 
 function recordItem(
   codex: Codex,
   item: Item,
   timestamp: string
 ): Codex["items"] {
-  const key = itemKey(item);
+  const key = catalogItemKey(item);
   const existing = codex.items[key];
 
   if (existing) {
@@ -149,7 +183,7 @@ function buildStats(
   loot: Item[],
   newPoi: boolean
 ): CodexStats {
-  const rarityCounts = { ...prev.rarityCounts };
+  const rarityCounts = { ...normalizeRarityCounts(prev.rarityCounts) };
   for (const item of loot) {
     rarityCounts[item.rarity] += 1;
   }
@@ -162,7 +196,7 @@ function buildStats(
   };
 }
 
-/** Record a completed explore into the collection log. */
+/** Record a completed explore into the Collection Album. */
 export function recordExplore(
   codex: Codex,
   poi: POI,
@@ -178,5 +212,11 @@ export function recordExplore(
   const encounters = recordEncounter(codex, encounter, timestamp);
   const stats = buildStats(codex.stats, encounter.loot, newPoi);
 
-  return { items, pois, encounters, stats, completedSetIds: codex.completedSetIds ?? [] };
+  return {
+    items,
+    pois,
+    encounters,
+    stats,
+    completedSetIds: codex.completedSetIds ?? [],
+  };
 }
