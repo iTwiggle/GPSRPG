@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import BaseCampPanel from "@/components/BaseCampPanel";
+import FeedbackProvider from "@/components/feedback/FeedbackProvider";
 import ActivityLogPanel from "@/components/ActivityLogPanel";
 import CharacterHUD from "@/components/CharacterHUD";
 import CodexPanel from "@/components/CodexPanel";
@@ -475,6 +476,7 @@ export default function HomePage() {
       </div>
 
       <EncounterModal encounter={lastEncounter} onClose={clearEncounter} />
+      <FeedbackProvider />
     </main>
   );
 }

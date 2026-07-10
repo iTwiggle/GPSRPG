@@ -1004,14 +1004,16 @@ body {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: min(20vh, 160px);
 }
 
 .rpg-levelup__particles {
   position: absolute;
   top: 50%;
   left: 50%;
+  pointer-events: none;
 }
 
 .rpg-levelup__card {

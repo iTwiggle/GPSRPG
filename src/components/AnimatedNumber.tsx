@@ -18,68 +18,54 @@ function easeOutCubic(t: number): number {
 }
 
 /**
- * Counts smoothly between values instead of snapping. Small touch, but a ticking
- * inventory/XP total reads as "alive". Respects reduced motion by snapping.
+ * Counts smoothly between values instead of snapping. A ticking inventory/XP
+ * total reads as "alive". Snaps instantly under reduced motion.
  */
 export default function AnimatedNumber({
   value,
-  durationMs = 520,
+  durationMs = 600,
   className = "",
   popOnIncrease = true,
 }: AnimatedNumberProps) {
   const reducedMotion = useReducedMotion();
   const [display, setDisplay] = useState(value);
   const [popping, setPopping] = useState(false);
-  const fromRef = useRef(value);
-  const frameRef = useRef<number | null>(null);
+  const displayRef = useRef(value);
   const prevValueRef = useRef(value);
 
   useEffect(() => {
     const previous = prevValueRef.current;
     prevValueRef.current = value;
+    if (previous === value) return;
 
-    if (reducedMotion || previous === value) {
+    if (reducedMotion) {
+      displayRef.current = value;
       setDisplay(value);
       return;
     }
 
+    let popTimer: number | undefined;
     if (popOnIncrease && value > previous) {
       setPopping(true);
-      const popTimer = window.setTimeout(() => setPopping(false), 260);
-      // fall through to tween; cleanup handles both
-      fromRef.current = display;
-      const start = performance.now();
-      const animate = (now: number) => {
-        const t = Math.min(1, (now - start) / durationMs);
-        const eased = easeOutCubic(t);
-        setDisplay(Math.round(fromRef.current + (value - fromRef.current) * eased));
-        if (t < 1) {
-          frameRef.current = requestAnimationFrame(animate);
-        }
-      };
-      frameRef.current = requestAnimationFrame(animate);
-      return () => {
-        window.clearTimeout(popTimer);
-        if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      };
+      popTimer = window.setTimeout(() => setPopping(false), 260);
     }
 
-    fromRef.current = display;
+    const from = displayRef.current;
     const start = performance.now();
-    const animate = (now: number) => {
+    let raf = 0;
+    const step = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
-      const eased = easeOutCubic(t);
-      setDisplay(Math.round(fromRef.current + (value - fromRef.current) * eased));
-      if (t < 1) {
-        frameRef.current = requestAnimationFrame(animate);
-      }
+      const current = Math.round(from + (value - from) * easeOutCubic(t));
+      displayRef.current = current;
+      setDisplay(current);
+      if (t < 1) raf = requestAnimationFrame(step);
     };
-    frameRef.current = requestAnimationFrame(animate);
+    raf = requestAnimationFrame(step);
+
     return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      cancelAnimationFrame(raf);
+      if (popTimer) window.clearTimeout(popTimer);
     };
-    // display intentionally excluded: we snapshot it as the tween origin.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, reducedMotion, durationMs, popOnIncrease]);
 
   return (
