@@ -10,6 +10,7 @@ import {
   type OsmContextCategory,
 } from "./osm-context";
 import type { POI } from "./types";
+import { EXPLORE_RADIUS_METERS } from "./types";
 
 const POI_COUNT = 8;
 const MIN_RADIUS_METERS = 120;
@@ -78,10 +79,16 @@ export function generateNearbyPOIs(
       hashSeed(cellLat, cellLng, i, categoryCode)
     );
     const type = pickPoiType(areaContext, typeRand);
+    const originLat = i === 0 ? lat : anchorLat;
+    const originLng = i === 0 ? lng : anchorLng;
+    const inRangeCap = Math.min(MAX_RADIUS_METERS, EXPLORE_RADIUS_METERS);
     const distance =
-      MIN_RADIUS_METERS + rand() * (MAX_RADIUS_METERS - MIN_RADIUS_METERS);
+      i === 0
+        ? MIN_RADIUS_METERS +
+          rand() * Math.max(0, inRangeCap - MIN_RADIUS_METERS)
+        : MIN_RADIUS_METERS + rand() * (MAX_RADIUS_METERS - MIN_RADIUS_METERS);
     const bearing = rand() * Math.PI * 2;
-    const offset = metersToLatLngOffset(anchorLat, distance, bearing);
+    const offset = metersToLatLngOffset(originLat, distance, bearing);
 
     const nameRand = seededRandom(
       hashSeed(cellLat, cellLng, i, 1, categoryCode)
@@ -95,8 +102,8 @@ export function generateNearbyPOIs(
       name: buildPoiName(type, nameRand, areaContext),
       type,
       flavor: pickPoiFlavor(type, flavorRand, areaContext),
-      lat: anchorLat + offset.lat,
-      lng: anchorLng + offset.lng,
+      lat: originLat + offset.lat,
+      lng: originLng + offset.lng,
     });
   }
 

@@ -144,7 +144,7 @@ function NearestPoiEmptyState({
         <p className="text-slate-300">Scan the overworld map for nearby sites.</p>
         <p className="mt-2 text-xs text-slate-500">
           Tap a marker to inspect a point of interest. Sites stay stable until
-          you walk ~{POI_ANCHOR_REGENERATE_METERS} m from the session anchor.
+          you walk ~{POI_ANCHOR_REGENERATE_METERS} m from the field anchor.
         </p>
       </div>
     );

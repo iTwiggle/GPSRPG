@@ -28,8 +28,9 @@ import {
   resetGameState,
   saveGameState,
 } from "@/lib/storage";
-import type { EncounterResult, GameState, POI } from "@/lib/types";
+import type { EncounterResult, GameState, POI, Position } from "@/lib/types";
 import { rollEncounter } from "@/lib/encounter";
+import { canExplorePoi } from "@/lib/explore-validation";
 import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
 
 export function useGameState() {
@@ -52,12 +53,16 @@ export function useGameState() {
   }, []);
 
   const explorePoi = useCallback(
-    (poi: POI, options?: { simulate?: boolean }) => {
+    (poi: POI, playerPosition: Position, options?: { simulate?: boolean }) => {
       if (!gameState) return null;
 
-      if (gameState.visitedPOIIds.includes(poi.id) && !options?.simulate) {
-        return null;
-      }
+      const validation = canExplorePoi(
+        playerPosition,
+        poi,
+        gameState.visitedPOIIds,
+        options
+      );
+      if (!validation.ok) return null;
 
       const rollSeed = options?.simulate ? Date.now() : undefined;
       let encounter = rollEncounter(poi, rollSeed);
