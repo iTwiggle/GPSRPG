@@ -19,6 +19,7 @@ const TYPE_ACCENTS: Record<ActivityEventType, string> = {
   task_complete: "border-l-teal-400",
   field_report: "border-l-cyan-400",
   set_complete: "border-l-amber-500",
+  door_opened: "border-l-orange-400",
 };
 
 const TYPE_LABELS: Record<ActivityEventType, string> = {
@@ -30,6 +31,7 @@ const TYPE_LABELS: Record<ActivityEventType, string> = {
   task_complete: "Contract",
   field_report: "Report",
   set_complete: "Album",
+  door_opened: "Camp",
 };
 
 function formatTime(iso: string): string {

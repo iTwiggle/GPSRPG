@@ -726,3 +726,21 @@ body {
 .rpg-encounter--rare-pull {
   animation: rpg-rare-pull-backdrop 1.2s ease-out;
 }
+
+@keyframes rpg-depot-door-ready {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.35);
+  }
+}
+
+.rpg-depot-door--ready {
+  animation: rpg-depot-door-ready 2.4s ease-in-out infinite;
+}
+
+.rpg-depot-door-open:active {
+  transform: scale(0.98);
+}
