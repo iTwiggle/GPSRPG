@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { generateNearbyPOIs } from "@/lib/poi-generator";
 import {
   type PoiAnchorState,
+  createPoiAnchor,
   metersUntilPoiRefresh,
   readPoiAnchor,
   shouldRegeneratePoiAnchor,
+  shouldReplaceStaleAnchorOnStartup,
   writePoiAnchor,
 } from "@/lib/poi-anchor";
 import type { OsmContextCategory } from "@/lib/osm-context";
@@ -18,48 +20,56 @@ interface UseStickyPoisResult {
   metersUntilRefresh: number | null;
 }
 
+function readInitialAnchor(): PoiAnchorState | null {
+  if (typeof window === "undefined") return null;
+  return readPoiAnchor();
+}
+
 export function useStickyPois(
   playerPosition: Position | null,
   areaContext: OsmContextCategory
 ): UseStickyPoisResult {
-  const [anchor, setAnchor] = useState<PoiAnchorState | null>(null);
+  const [anchor, setAnchor] = useState<PoiAnchorState | null>(readInitialAnchor);
+  const startupAnchorResolved = useRef(false);
 
   useEffect(() => {
-    const stored = readPoiAnchor();
-    if (stored) {
-      setAnchor(stored);
-    }
-  }, []);
+    if (!playerPosition || startupAnchorResolved.current) return;
 
-  const resolvedAnchor = useMemo(() => {
-    if (!playerPosition) return null;
+    startupAnchorResolved.current = true;
 
-    if (shouldRegeneratePoiAnchor(playerPosition, anchor)) {
-      const nextAnchor: PoiAnchorState = {
-        lat: playerPosition.lat,
-        lng: playerPosition.lng,
-        areaContext,
-      };
-      return nextAnchor;
+    if (!anchor) {
+      const nextAnchor = createPoiAnchor(playerPosition, areaContext);
+      setAnchor(nextAnchor);
+      writePoiAnchor(nextAnchor);
+      return;
     }
 
-    return anchor;
+    if (shouldReplaceStaleAnchorOnStartup(playerPosition, anchor)) {
+      const nextAnchor = createPoiAnchor(playerPosition, areaContext);
+      setAnchor(nextAnchor);
+      writePoiAnchor(nextAnchor);
+    }
   }, [anchor, areaContext, playerPosition]);
 
   useEffect(() => {
-    if (!resolvedAnchor) return;
+    if (!playerPosition || !startupAnchorResolved.current || !anchor) return;
 
-    const changed =
-      !anchor ||
-      anchor.lat !== resolvedAnchor.lat ||
-      anchor.lng !== resolvedAnchor.lng ||
-      anchor.areaContext !== resolvedAnchor.areaContext;
+    if (!shouldRegeneratePoiAnchor(playerPosition, anchor)) return;
 
-    if (changed) {
-      setAnchor(resolvedAnchor);
-      writePoiAnchor(resolvedAnchor);
+    const nextAnchor = createPoiAnchor(playerPosition, areaContext);
+    if (
+      nextAnchor.lat === anchor.lat &&
+      nextAnchor.lng === anchor.lng &&
+      nextAnchor.areaContext === anchor.areaContext
+    ) {
+      return;
     }
-  }, [anchor, resolvedAnchor]);
+
+    setAnchor(nextAnchor);
+    writePoiAnchor(nextAnchor);
+  }, [anchor, areaContext, playerPosition]);
+
+  const resolvedAnchor = anchor;
 
   const pois = useMemo(() => {
     if (!resolvedAnchor) return [];

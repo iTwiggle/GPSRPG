@@ -134,14 +134,14 @@ export default function HomePage() {
       : 0;
 
   const handleExplore = useCallback(() => {
-    if (!selectedPoi) return;
-    explorePoi(selectedPoi);
-  }, [explorePoi, selectedPoi]);
+    if (!selectedPoi || !playerPosition) return;
+    explorePoi(selectedPoi, playerPosition);
+  }, [explorePoi, playerPosition, selectedPoi]);
 
   const handleSimulateVisit = useCallback(() => {
-    if (!selectedPoi) return;
-    explorePoi(selectedPoi, { simulate: true });
-  }, [explorePoi, selectedPoi]);
+    if (!selectedPoi || !playerPosition) return;
+    explorePoi(selectedPoi, playerPosition, { simulate: true });
+  }, [explorePoi, playerPosition, selectedPoi]);
 
   if (!gameState) {
     return (
@@ -233,7 +233,7 @@ export default function HomePage() {
           </p>
           {playerPosition && metersUntilRefresh !== null && (
             <p className="text-xs text-slate-500" role="status">
-              Sites locked to session anchor · refresh in{" "}
+              Sites locked to field anchor · refresh in{" "}
               {formatDistance(metersUntilRefresh)} (or after{" "}
               {POI_ANCHOR_REGENERATE_METERS} m walked)
             </p>

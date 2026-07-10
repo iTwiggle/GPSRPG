@@ -15,6 +15,10 @@ const POI_COUNT = 8;
 const MIN_RADIUS_METERS = 120;
 const MAX_RADIUS_METERS = 450;
 
+/** Guaranteed reachable first site — leaves margin below the 150 m explore radius for GPS error. */
+export const GUARANTEED_FIRST_POI_MIN_METERS = 70;
+export const GUARANTEED_FIRST_POI_MAX_METERS = 110;
+
 /** POIs regenerate only after crossing into a new ~400 m grid cell. */
 export const POI_CELL_SIZE_METERS = 400;
 
@@ -78,10 +82,16 @@ export function generateNearbyPOIs(
       hashSeed(cellLat, cellLng, i, categoryCode)
     );
     const type = pickPoiType(areaContext, typeRand);
+    const originLat = i === 0 ? lat : anchorLat;
+    const originLng = i === 0 ? lng : anchorLng;
     const distance =
-      MIN_RADIUS_METERS + rand() * (MAX_RADIUS_METERS - MIN_RADIUS_METERS);
+      i === 0
+        ? GUARANTEED_FIRST_POI_MIN_METERS +
+          rand() *
+            (GUARANTEED_FIRST_POI_MAX_METERS - GUARANTEED_FIRST_POI_MIN_METERS)
+        : MIN_RADIUS_METERS + rand() * (MAX_RADIUS_METERS - MIN_RADIUS_METERS);
     const bearing = rand() * Math.PI * 2;
-    const offset = metersToLatLngOffset(anchorLat, distance, bearing);
+    const offset = metersToLatLngOffset(originLat, distance, bearing);
 
     const nameRand = seededRandom(
       hashSeed(cellLat, cellLng, i, 1, categoryCode)
@@ -95,8 +105,8 @@ export function generateNearbyPOIs(
       name: buildPoiName(type, nameRand, areaContext),
       type,
       flavor: pickPoiFlavor(type, flavorRand, areaContext),
-      lat: anchorLat + offset.lat,
-      lng: anchorLng + offset.lng,
+      lat: originLat + offset.lat,
+      lng: originLng + offset.lng,
     });
   }
 
