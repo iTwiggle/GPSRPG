@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Popup, Circle, useMap } from "react-leaflet";
+import AccessibleMarker from "@/components/AccessibleMarker";
 import FantasyGridOverlay from "@/components/FantasyGridOverlay";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
 import { mapCategoryToBiome } from "@/lib/fantasy-grid-surface";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
-import { createPoiMarkerIcon, playerMarkerIcon } from "@/lib/poi-marker-icons";
+import {
+  createPoiMarkerConfig,
+  playerMarkerConfig,
+} from "@/lib/poi-marker-icons";
 import type { OsmContextCategory } from "@/lib/osm-context";
 import type { POI } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
@@ -87,9 +91,13 @@ export default function GameMap({
       />
       <RecenterMap lat={playerLat} lng={playerLng} />
 
-      <Marker position={center} icon={playerMarkerIcon}>
+      <AccessibleMarker
+        position={center}
+        icon={playerMarkerConfig.icon}
+        accessibility={playerMarkerConfig.accessibility}
+      >
         <Popup>You are here</Popup>
-      </Marker>
+      </AccessibleMarker>
 
       <Circle
         center={center}
@@ -113,15 +121,19 @@ export default function GameMap({
         const isSelected = poi.id === selectedPoiId;
         const inRange = readout.status === "in_range";
 
+        const markerConfig = createPoiMarkerConfig(poi, {
+          selected: isSelected,
+          visited,
+          inRange: isSelected && inRange,
+        });
+
         return (
-          <Marker
+          <AccessibleMarker
             key={poi.id}
             position={[poi.lat, poi.lng]}
-            icon={createPoiMarkerIcon(poi.type, {
-              selected: isSelected,
-              visited,
-              inRange: isSelected && inRange,
-            })}
+            icon={markerConfig.icon}
+            accessibility={markerConfig.accessibility}
+            onKeyboardActivate={() => onSelectPoi(poi)}
             eventHandlers={{
               click: () => onSelectPoi(poi),
             }}
@@ -138,7 +150,7 @@ export default function GameMap({
                 )}
               </div>
             </Popup>
-          </Marker>
+          </AccessibleMarker>
         );
       })}
     </MapContainer>
