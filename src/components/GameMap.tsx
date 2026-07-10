@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Popup, Circle, useMap } from "react-leaflet";
+import AccessibleMapMarker from "@/components/AccessibleMapMarker";
 import FantasyGridOverlay from "@/components/FantasyGridOverlay";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
 import { mapCategoryToBiome } from "@/lib/fantasy-grid-surface";
+import { getPoiMarkerLabel } from "@/lib/marker-accessibility";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { createPoiMarkerIcon, playerMarkerIcon } from "@/lib/poi-marker-icons";
 import type { OsmContextCategory } from "@/lib/osm-context";
@@ -87,9 +89,16 @@ export default function GameMap({
       />
       <RecenterMap lat={playerLat} lng={playerLng} />
 
-      <Marker position={center} icon={playerMarkerIcon}>
+      <AccessibleMapMarker
+        position={center}
+        icon={playerMarkerIcon}
+        accessibility={{
+          interactive: true,
+          label: "Player location, current position",
+        }}
+      >
         <Popup>You are here</Popup>
-      </Marker>
+      </AccessibleMapMarker>
 
       <Circle
         center={center}
@@ -114,7 +123,7 @@ export default function GameMap({
         const inRange = readout.status === "in_range";
 
         return (
-          <Marker
+          <AccessibleMapMarker
             key={poi.id}
             position={[poi.lat, poi.lng]}
             icon={createPoiMarkerIcon(poi.type, {
@@ -122,6 +131,11 @@ export default function GameMap({
               visited,
               inRange: isSelected && inRange,
             })}
+            accessibility={{
+              interactive: true,
+              label: getPoiMarkerLabel(poi, visited, isSelected),
+              selected: isSelected,
+            }}
             eventHandlers={{
               click: () => onSelectPoi(poi),
             }}
@@ -138,7 +152,7 @@ export default function GameMap({
                 )}
               </div>
             </Popup>
-          </Marker>
+          </AccessibleMapMarker>
         );
       })}
     </MapContainer>
