@@ -23,12 +23,18 @@ import type { FeedbackEvent } from "./types";
  */
 
 const LAYER_ID = "rpg-feedback-layer-root";
+const PLAYER_ANCHOR_SELECTOR = ".player-marker";
 
 interface OverlayRegions {
   layer: HTMLElement;
   xpStack: HTMLElement;
   pickupAnchor: HTMLElement;
   toastStack: HTMLElement;
+}
+
+interface AnchorPoint {
+  x: number;
+  y: number;
 }
 
 let regions: OverlayRegions | null = null;
@@ -59,6 +65,40 @@ function ensureRegions(): OverlayRegions | null {
   return regions;
 }
 
+function getPlayerAnchorPoint(): AnchorPoint | null {
+  if (typeof document === "undefined") return null;
+
+  const marker = document.querySelector<HTMLElement>(PLAYER_ANCHOR_SELECTOR);
+  if (!marker) return null;
+
+  const rect = marker.getBoundingClientRect();
+  if (rect.width <= 0 && rect.height <= 0) return null;
+
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+}
+
+function positionAtPlayer(
+  region: HTMLElement,
+  fallback: "xp" | "pickup"
+): void {
+  const point = getPlayerAnchorPoint();
+
+  if (!point) {
+    region.style.removeProperty("left");
+    region.style.removeProperty("top");
+    region.style.removeProperty("transform");
+    return;
+  }
+
+  region.style.left = `${point.x}px`;
+  region.style.top = `${point.y}px`;
+  region.style.transform =
+    fallback === "xp" ? "translate(-50%, -50%)" : "none";
+}
+
 function removeAfter(node: HTMLElement, ms: number): void {
   window.setTimeout(() => node.remove(), ms);
 }
@@ -69,6 +109,11 @@ function spawnXpFloat(amount: number, source: keyof typeof XP_FLOAT.colorBySourc
   const reduced = prefersReducedMotion();
   const color = XP_FLOAT.colorBySource[source];
   const jitterX = (Math.random() - 0.5) * 2 * XP_FLOAT.jitterPx;
+
+  // Resolve the marker's live viewport position at the exact moment XP emits.
+  // The map can recenter, resize, or move between responsive layouts; anchoring
+  // here keeps the reward visually attached to the player instead of the page.
+  positionAtPlayer(r.xpStack, "xp");
 
   const el = document.createElement("span");
   el.className = reduced ? "rpg-xp-float rpg-xp-float--reduced" : "rpg-xp-float";
@@ -95,6 +140,10 @@ function spawnParticles(
   if (!r) return;
   const feel = getRarityFeedback(rarity);
   const reduced = prefersReducedMotion();
+
+  // Pickup feedback belongs to the player who earned it. Re-resolve the marker
+  // for every burst so GPS recentering cannot leave effects behind.
+  positionAtPlayer(r.pickupAnchor, "pickup");
 
   if (reduced) {
     const flash = document.createElement("span");
