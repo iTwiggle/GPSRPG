@@ -9,6 +9,11 @@ import surfaceStyles from "@/components/FantasyMapSurface.module.css";
 import { useExplorationMemory } from "@/hooks/useExplorationMemory";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
+import {
+  explorationCellKey,
+  getExplorationCell,
+  getRevealCellKeys,
+} from "@/lib/exploration-memory";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import {
   createPoiMarkerConfig,
@@ -60,6 +65,22 @@ export default function GameMap({
     [playerLat, playerLng]
   );
   const explorationMemory = useExplorationMemory(playerPosition);
+  const fogOfWarEnabled = fantasyGridEnabled && !streetReferenceMode;
+
+  const visiblePois = useMemo(() => {
+    if (!fogOfWarEnabled) return pois;
+
+    // Include the live reveal footprint immediately instead of waiting for the
+    // exploration-memory effect to persist it on the next render.
+    const revealedCellKeys = new Set([
+      ...explorationMemory.revealedCellKeys,
+      ...getRevealCellKeys(playerPosition),
+    ]);
+
+    return pois.filter((poi) =>
+      revealedCellKeys.has(explorationCellKey(getExplorationCell(poi)))
+    );
+  }, [explorationMemory.revealedCellKeys, fogOfWarEnabled, playerPosition, pois]);
 
   const mapClassName = [
     "fantasy-map-surface h-full w-full rounded-xl",
@@ -86,7 +107,7 @@ export default function GameMap({
         streetReference={streetReferenceMode}
       />
       <ExplorationFogOverlay
-        enabled={fantasyGridEnabled && !streetReferenceMode}
+        enabled={fogOfWarEnabled}
         playerLat={playerLat}
         playerLng={playerLng}
         revealedCellKeys={explorationMemory.revealedCellKeys}
@@ -113,7 +134,7 @@ export default function GameMap({
         }}
       />
 
-      {pois.map((poi) => {
+      {visiblePois.map((poi) => {
         const visited = visitedPoiIds.includes(poi.id);
         const readout = getApproachReadout(
           { lat: playerLat, lng: playerLng },
