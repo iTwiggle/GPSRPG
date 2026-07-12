@@ -1,6 +1,7 @@
 import { createEmptyActivityLog, appendFieldReportEvents } from "./activity-log";
 import { createEmptyBaseCamp, normalizeBaseCamp } from "./base-camp";
 import { createEmptyCodex, normalizeCodex } from "./codex";
+import { clearExplorationMemory } from "./exploration-memory";
 import {
   createEmptyFieldReport,
   normalizeFieldReport,
@@ -174,6 +175,7 @@ export function resetGameState(): GameState {
     } catch {
       // Reset still returns a fresh in-memory save if browser storage is blocked.
     }
+    clearExplorationMemory();
   }
   return createInitialState();
 }
