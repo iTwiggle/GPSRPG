@@ -22,6 +22,18 @@ Validate the one-thumb map loop before visual terrain work begins.
 6. Select one POI, then tap a different POI.
    - The new POI should only become selected on that first tap; it must not immediately explore even if it is in range.
 
+## Demo Mode movement
+
+1. Enter Demo Mode in a Vercel preview or production build.
+2. Confirm the **Dev** tab is visible while Demo Mode is active.
+3. Open Dev and tap North, West, East, and South.
+   - The player position should move about 40 m per tap in the chosen direction.
+   - The map should recenter on the simulated position.
+4. Tap **Reset demo pos**.
+   - The player should return to the fixed demo location.
+5. Retry Live GPS.
+   - In a normal production build, the Dev tab should disappear again once live GPS is active.
+
 ## Regression sanity
 
 - GPS and map recentering still work.
