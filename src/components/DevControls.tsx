@@ -16,6 +16,7 @@ interface DevControlsProps {
 }
 
 const NUDGE_METERS = 40;
+const RANDOM_NEARBY_RADIUS_METERS = 1_000;
 
 export default function DevControls({
   isDemo,
@@ -29,6 +30,13 @@ export default function DevControls({
   onReset,
   onRefreshTasks,
 }: DevControlsProps) {
+  const handleRandomNearby = () => {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.sqrt(Math.random()) * RANDOM_NEARBY_RADIUS_METERS;
+    onEnableDemo();
+    onNudge(Math.cos(angle) * radius, Math.sin(angle) * radius);
+  };
+
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -80,7 +88,7 @@ export default function DevControls({
                 : "border-amber-300 bg-white text-amber-950 hover:bg-amber-100"
             }`}
           >
-            Fantasy grid: {fantasyGridEnabled ? "On" : "Off"}
+            Fantasy atlas: {fantasyGridEnabled ? "On" : "Off"}
           </button>
           <button
             type="button"
@@ -96,8 +104,21 @@ export default function DevControls({
           </button>
         </div>
         <p className="mt-2 text-xs text-amber-800">
-          Fantasy grid draws biome tiles over OSM. Street reference fades the grid so roads remain visible for debug.
+          Fantasy atlas keeps OSM as subdued geographic structure and draws stable authored world motifs above it. Street reference exposes the underlying roads for debug.
         </p>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={handleRandomNearby}
+          className="rounded-lg border border-violet-400 bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-900 hover:bg-violet-200"
+        >
+          Random nearby
+        </button>
+        <span className="self-center text-xs text-amber-800">
+          Sample a fresh point within 1 km of the fixed Demo Location.
+        </span>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2 max-w-xs">

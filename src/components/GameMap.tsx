@@ -4,6 +4,8 @@ import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Popup, Circle, useMap } from "react-leaflet";
 import AccessibleMarker from "@/components/AccessibleMarker";
 import ExplorationFogOverlay from "@/components/ExplorationFogOverlay";
+import FantasyAtlasOverlay from "@/components/FantasyAtlasOverlay";
+import surfaceStyles from "@/components/FantasyMapSurface.module.css";
 import { useExplorationMemory } from "@/hooks/useExplorationMemory";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
@@ -61,8 +63,9 @@ export default function GameMap({
 
   const mapClassName = [
     "fantasy-map-surface h-full w-full rounded-xl",
-    fantasyGridEnabled && "fantasy-map-surface--grid-active",
-    streetReferenceMode && "fantasy-map-surface--street-ref",
+    surfaceStyles.atlasSurface,
+    fantasyGridEnabled && surfaceStyles.atlasActive,
+    streetReferenceMode && surfaceStyles.streetReference,
   ]
     .filter(Boolean)
     .join(" ");
@@ -77,6 +80,10 @@ export default function GameMap({
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <FantasyAtlasOverlay
+        enabled={fantasyGridEnabled}
+        streetReference={streetReferenceMode}
       />
       <ExplorationFogOverlay
         enabled={fantasyGridEnabled && !streetReferenceMode}
