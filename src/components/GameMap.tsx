@@ -88,6 +88,8 @@ export default function GameMap({
         biome={surfaceBiome}
         enabled={fantasyGridEnabled}
         streetReference={streetReferenceMode}
+        playerLat={playerLat}
+        playerLng={playerLng}
       />
       <RecenterMap lat={playerLat} lng={playerLng} />
 
