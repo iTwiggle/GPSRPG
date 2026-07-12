@@ -101,7 +101,7 @@ export default function DevControls({
                 : "border-amber-300 bg-white text-amber-950 hover:bg-amber-100"
             }`}
           >
-            Fantasy grid: {fantasyGridEnabled ? "On" : "Off"}
+            Fantasy surface: {fantasyGridEnabled ? "On" : "Off"}
           </button>
           <button
             type="button"
@@ -117,7 +117,7 @@ export default function DevControls({
           </button>
         </div>
         <p className="mt-2 text-xs text-amber-800">
-          Fantasy grid draws biome tiles over OSM. Street reference fades the grid so roads remain visible for debug.
+          Fantasy surface draws biome cartography over OSM. Street reference fades the surface so roads remain visible for debug.
         </p>
       </div>
 
