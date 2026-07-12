@@ -41,7 +41,7 @@ interface GameMapProps {
   areaContext: OsmContextCategory;
   fantasyGridEnabled: boolean;
   streetReferenceMode: boolean;
-  onSelectPoi: (poi: POI) => void;
+  onInteractPoi: (poi: POI) => void;
 }
 
 export default function GameMap({
@@ -53,7 +53,7 @@ export default function GameMap({
   areaContext,
   fantasyGridEnabled,
   streetReferenceMode,
-  onSelectPoi,
+  onInteractPoi,
 }: GameMapProps) {
   const center = useMemo(
     () => [playerLat, playerLng] as [number, number],
@@ -133,21 +133,32 @@ export default function GameMap({
             position={[poi.lat, poi.lng]}
             icon={markerConfig.icon}
             accessibility={markerConfig.accessibility}
-            onKeyboardActivate={() => onSelectPoi(poi)}
+            onKeyboardActivate={() => onInteractPoi(poi)}
             eventHandlers={{
-              click: () => onSelectPoi(poi),
+              click: () => onInteractPoi(poi),
             }}
           >
-            <Popup>
-              <div className="text-sm">
+            <Popup closeButton={false}>
+              <div className="max-w-52 text-sm">
                 <p className="font-semibold text-slate-100">{poi.name}</p>
                 <p className="text-violet-300">{getPoiTypeLabel(poi.type)}</p>
-                <p className="text-slate-400">
+                <p className="mt-1 text-xs italic leading-relaxed text-slate-300/85">
+                  {poi.flavor}
+                </p>
+                <p className="mt-1 text-slate-400">
                   {formatDistance(readout.distanceMeters)} away
                 </p>
-                {visited && (
-                  <p className="text-emerald-400">Already explored</p>
-                )}
+                {visited ? (
+                  <p className="mt-1 font-medium text-emerald-400">Already explored</p>
+                ) : isSelected && inRange ? (
+                  <p className="mt-1 font-semibold text-amber-300">
+                    Tap again to explore
+                  </p>
+                ) : isSelected ? (
+                  <p className="mt-1 text-violet-200/85">
+                    Get within {EXPLORE_RADIUS_METERS} m to explore
+                  </p>
+                ) : null}
               </div>
             </Popup>
           </AccessibleMarker>
