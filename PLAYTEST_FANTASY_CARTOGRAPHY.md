@@ -2,23 +2,24 @@
 
 ## Goal
 
-Validate that the overworld reads as fantasy terrain under a moving player instead of a bordered debug grid.
+Validate that the overworld reads as dark fantasy cartography under a moving player instead of a visible debug lattice or repeated one-cell blobs.
 
 ## Visual read
 
 1. Open the branch preview on mobile with Fantasy grid enabled.
-2. Confirm the map no longer reads as repeated bordered green squares.
-3. Confirm terrain patches overlap and blend into an irregular cartographic surface.
-4. Confirm the current biome has recognizable marks:
+2. Confirm the map no longer reads as repeated bordered green squares or a field of small green circles.
+3. Confirm large terrain washes overlap across multiple underlying grid cells so the 40 m coordinate lattice is not visually obvious.
+4. Confirm contour-style linework gives the surface an illustrated map read rather than a tiled board read.
+5. Confirm the current biome has recognizable sparse ink marks:
    - Wilds: grass / brush strokes
-   - Grove: clustered canopy marks
+   - Grove: stylized tree marks
    - Water: wave marks
-   - Stone: cracked ruin marks
-   - Settlement: cobble / road marks
+   - Stone: broken ruin marks
+   - Settlement: road / structure marks
    - Shrine: triangular rune marks
-5. Confirm a dark field veil closes around the outer map while the player's nearby area stays readable.
-6. Move in Live GPS or use Demo Mode nudges and confirm the readable field remains centered on the live player position.
-7. Pan / zoom and confirm the canvas redraws without obvious seams, blank areas, or stale veil positioning.
+6. Confirm a dark field veil closes around the outer map while the player's nearby area stays readable.
+7. Move in Live GPS or use Demo Mode nudges and confirm the readable field remains centered on the live player position.
+8. Pan / zoom and confirm the canvas redraws without obvious seams, blank areas, or stale veil positioning.
 
 ## Random terrain sampling
 
