@@ -46,12 +46,8 @@
   filter: none;
 }
 
-:global(.fantasy-atlas-canvas) {
+.atlasSurface :global(.fantasy-atlas-canvas) {
   position: absolute;
   pointer-events: none;
   image-rendering: auto;
-}
-
-:global(.rpg-scanner-overlay) {
-  display: none !important;
 }
