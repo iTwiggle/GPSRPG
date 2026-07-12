@@ -49,7 +49,7 @@ export default function EncounterModal({
         </p>
 
         {hasNewDiscoveries && (
-          <div className="mt-4 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
+          <div className="rpg-discovery-panel mt-4 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sky-200">
               Catalogued!
             </p>
@@ -141,7 +141,7 @@ export default function EncounterModal({
                           <p className="font-medium">{item.name}</p>
                           <div className="flex shrink-0 flex-col items-end gap-1">
                             {isNew && (
-                              <span className="rounded-full border border-sky-400/40 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-100">
+                              <span className="rpg-discovery-glow rounded-full border border-sky-400/40 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-100">
                                 New
                               </span>
                             )}

@@ -28,10 +28,32 @@ import {
   resetGameState,
   saveGameState,
 } from "@/lib/storage";
-import type { EncounterResult, GameState, POI, Position } from "@/lib/types";
+import type {
+  EncounterResult,
+  GameState,
+  Item,
+  ItemRarity,
+  POI,
+  Position,
+} from "@/lib/types";
 import { rollEncounter } from "@/lib/encounter";
 import { canExplorePoi } from "@/lib/explore-validation";
 import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
+import { feedback } from "@/lib/feedback/manager";
+
+const RARITY_RANK: Record<ItemRarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+};
+
+function bestRarity(loot: Item[]): ItemRarity {
+  return loot.reduce<ItemRarity>(
+    (best, item) =>
+      RARITY_RANK[item.rarity] > RARITY_RANK[best] ? item.rarity : best,
+    "common"
+  );
+}
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -182,6 +204,21 @@ export function useGameState() {
 
       persist(nextState);
       setLastEncounter(encounterWithDiscoveries);
+
+      // Game feel — presentation only. Emitted after state is committed so the
+      // FeedbackManager never influences gameplay or save data.
+      if (encounter.loot.length > 0) {
+        feedback.emitPickup(
+          bestRarity(encounter.loot),
+          encounter.loot.length,
+          newCodexItemKeys.length > 0
+        );
+      }
+      feedback.emitXp(encounter.xpGained, "encounter");
+      if (setBonusXp > 0) feedback.emitXp(setBonusXp, "set");
+      if (taskRewardXp > 0) feedback.emitXp(taskRewardXp, "contract");
+      if (player.level > prevLevel) feedback.emitLevelUp(player.level);
+
       return encounterWithDiscoveries;
     },
     [gameState, persist]
@@ -236,6 +273,15 @@ export function useGameState() {
         player,
         activityLog: activityLog.slice(-50),
       });
+
+      feedback.emitXp(result.xpGained, "salvage");
+      feedback.emitToast({
+        title: `Salvaged ×${result.removedCount}`,
+        subtitle: `+${result.xpGained} XP`,
+        rarity: "common",
+        glyph: "♻",
+      });
+      if (player.level > prevLevel) feedback.emitLevelUp(player.level);
       return true;
     },
     [gameState, persist]
@@ -269,6 +315,13 @@ export function useGameState() {
               : "Opened a depot door",
           },
         ].slice(-50),
+      });
+
+      feedback.emitToast({
+        title: door ? door.name : "Depot door opened",
+        subtitle: door ? `${door.perkName} loaded` : "Perk loaded",
+        rarity: "uncommon",
+        glyph: "🗝",
       });
       return true;
     },

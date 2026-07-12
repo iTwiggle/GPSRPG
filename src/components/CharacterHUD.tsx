@@ -1,5 +1,6 @@
 "use client";
 
+import AnimatedNumber from "@/components/AnimatedNumber";
 import { formatGpsAccuracy } from "@/lib/distance";
 import { xpProgress, xpToNextLevel } from "@/lib/xp";
 import type { Player } from "@/lib/types";
@@ -35,9 +36,11 @@ export default function CharacterHUD({
           </p>
           <h1 className="text-lg font-bold text-slate-50">{player.name}</h1>
           <p className="text-sm text-slate-400">
-            <span className="font-semibold text-amber-300">Level {player.level}</span>
+            <span className="font-semibold text-amber-300">
+              Level <AnimatedNumber value={player.level} />
+            </span>
             {" · "}
-            {player.xp} XP
+            <AnimatedNumber value={player.xp} /> XP
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
