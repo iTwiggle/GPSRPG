@@ -59,6 +59,8 @@ export default function HomePage() {
 
   const areaContext =
     osmContext.status === "ready" ? osmContext.category : "generic";
+  // Demo Mode is itself a testing surface: its movement controls must remain
+  // reachable even when production builds hide the normal developer toolbox.
   const devToolsEnabled = DEV_TOOLS_ENABLED || geo.isDemo;
 
   useEffect(() => {
