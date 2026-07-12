@@ -3,7 +3,9 @@
 import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Popup, Circle, useMap } from "react-leaflet";
 import AccessibleMarker from "@/components/AccessibleMarker";
+import ExplorationFogOverlay from "@/components/ExplorationFogOverlay";
 import FantasyGridOverlay from "@/components/FantasyGridOverlay";
+import { useExplorationMemory } from "@/hooks/useExplorationMemory";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
 import { mapCategoryToBiome } from "@/lib/fantasy-grid-surface";
@@ -59,6 +61,11 @@ export default function GameMap({
     () => [playerLat, playerLng] as [number, number],
     [playerLat, playerLng]
   );
+  const playerPosition = useMemo(
+    () => ({ lat: playerLat, lng: playerLng }),
+    [playerLat, playerLng]
+  );
+  const explorationMemory = useExplorationMemory(playerPosition);
 
   const surfaceBiome = useMemo(
     () => mapCategoryToBiome(areaContext),
@@ -88,6 +95,12 @@ export default function GameMap({
         biome={surfaceBiome}
         enabled={fantasyGridEnabled}
         streetReference={streetReferenceMode}
+      />
+      <ExplorationFogOverlay
+        enabled={fantasyGridEnabled && !streetReferenceMode}
+        playerLat={playerLat}
+        playerLng={playerLng}
+        revealedCellKeys={explorationMemory.revealedCellKeys}
       />
       <RecenterMap lat={playerLat} lng={playerLng} />
 
