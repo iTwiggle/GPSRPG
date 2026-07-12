@@ -118,7 +118,11 @@ export function normalizeExplorationMemory(
   if (!Array.isArray(rawKeys)) return createEmptyExplorationMemory();
 
   return {
-    revealedCellKeys: [...new Set(rawKeys.filter((key): key is string => typeof key === "string"))],
+    revealedCellKeys: [
+      ...new Set(
+        rawKeys.filter((key): key is string => typeof key === "string")
+      ),
+    ],
   };
 }
 
@@ -150,7 +154,9 @@ export function clearExplorationMemory(): void {
   try {
     localStorage.removeItem(EXPLORATION_MEMORY_STORAGE_KEY);
   } catch {
-    // The reset event still clears in-memory reveal state.
+    // The reset signal still clears in-memory reveal state.
   }
-  window.dispatchEvent(new Event(EXPLORATION_RESET_EVENT));
+  if (typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new Event(EXPLORATION_RESET_EVENT));
+  }
 }
