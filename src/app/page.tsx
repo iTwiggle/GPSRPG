@@ -26,10 +26,12 @@ import { useStickyPois } from "@/hooks/useStickyPois";
 import { countReadyDepotDoors } from "@/lib/base-camp";
 import { POI_ANCHOR_REGENERATE_METERS } from "@/lib/poi-anchor";
 import { formatDistance } from "@/lib/distance";
+import { canExplorePoi } from "@/lib/explore-validation";
 import {
   FANTASY_GRID_SESSION_KEY,
   STREET_REF_SESSION_KEY,
 } from "@/lib/fantasy-grid-surface";
+import { getMapPoiTapAction } from "@/lib/map-poi-interaction";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
 
@@ -58,12 +60,6 @@ export default function HomePage() {
   const areaContext =
     osmContext.status === "ready" ? osmContext.category : "generic";
   const devToolsEnabled = DEV_TOOLS_ENABLED;
-
-  useEffect(() => {
-    if (selectedPoi) {
-      setActiveMobileSection("poi");
-    }
-  }, [selectedPoi]);
 
   useEffect(() => {
     if (!devToolsEnabled && activeMobileSection === "dev") {
@@ -133,6 +129,33 @@ export default function HomePage() {
     gameState != null
       ? countReadyDepotDoors(gameState.codex, gameState.baseCamp)
       : 0;
+
+  const handleMapPoiInteract = useCallback(
+    (poi: POI) => {
+      if (!gameState || !playerPosition) return;
+
+      const validation = canExplorePoi(
+        playerPosition,
+        poi,
+        gameState.visitedPOIIds
+      );
+      const action = getMapPoiTapAction(
+        selectedPoi?.id ?? null,
+        poi.id,
+        validation.ok
+      );
+
+      if (action === "select") {
+        setSelectedPoi(poi);
+        return;
+      }
+
+      if (action === "explore") {
+        explorePoi(poi, playerPosition);
+      }
+    },
+    [explorePoi, gameState, playerPosition, selectedPoi]
+  );
 
   const handleExplore = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
@@ -337,7 +360,7 @@ export default function HomePage() {
               areaContext={areaContext}
               fantasyGridEnabled={fantasyGridEnabled}
               streetReferenceMode={streetReferenceMode}
-              onSelectPoi={setSelectedPoi}
+              onInteractPoi={handleMapPoiInteract}
             />
           </div>
 
