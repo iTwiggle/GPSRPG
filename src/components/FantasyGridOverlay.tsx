@@ -12,15 +12,19 @@ import {
 } from "@/lib/fantasy-grid-surface";
 
 const PANE_NAME = "fantasyGridPane";
-const PANE_Z_INDEX = "350";
-const SCREEN_TILE_PX = 36;
-/** Below this on-screen size, world-meter tiles are skipped in favor of screen tiles. */
+const PANE_Z_INDEX = "425";
+const SCREEN_PATCH_PX = 46;
 const MIN_WORLD_TILE_PX = 8;
+const FIELD_VEIL_METERS = 260;
+
+type BiomePalette = ReturnType<typeof getBiomePalette>;
 
 interface FantasyGridOverlayProps {
   biome: FantasySurfaceBiome;
   enabled: boolean;
   streetReference: boolean;
+  playerLat: number;
+  playerLng: number;
 }
 
 function adjustColor(hex: string, delta: number): string {
@@ -48,125 +52,221 @@ function estimateWorldTilePx(map: L.Map, topLeft: L.Point): number {
   const { latStep } = snapToTileCell(center.lat, center.lng);
   const rowLngStep = lngStepAtLat(center.lat);
   const origin = layerToCanvasPoint(map, center, topLeft);
-  const north = layerToCanvasPoint(map, L.latLng(center.lat + latStep, center.lng), topLeft);
-  const east = layerToCanvasPoint(map, L.latLng(center.lat, center.lng + rowLngStep), topLeft);
+  const north = layerToCanvasPoint(
+    map,
+    L.latLng(center.lat + latStep, center.lng),
+    topLeft
+  );
+  const east = layerToCanvasPoint(
+    map,
+    L.latLng(center.lat, center.lng + rowLngStep),
+    topLeft
+  );
   return Math.min(Math.abs(north.y - origin.y), Math.abs(east.x - origin.x));
 }
 
-function pickTileFill(
-  palette: ReturnType<typeof getBiomePalette>,
-  variation: number
-): string {
-  if (variation > 0.66) return palette.highlight;
-  if (variation > 0.33) return palette.accent;
-  return adjustColor(palette.base, Math.round((variation - 0.5) * 12));
+function pickTerrainFill(palette: BiomePalette, variation: number): string {
+  if (variation > 0.76) return palette.highlight;
+  if (variation > 0.34) return palette.accent;
+  return adjustColor(palette.base, Math.round((variation - 0.5) * 16));
 }
 
-function drawTileShape(
+function drawTerrainMotif(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   w: number,
   h: number,
-  palette: ReturnType<typeof getBiomePalette>,
+  palette: BiomePalette,
+  biome: FantasySurfaceBiome,
+  variation: number
+) {
+  const cx = x + w * (0.38 + variation * 0.24);
+  const cy = y + h * (0.36 + (1 - variation) * 0.24);
+  const size = Math.min(w, h);
+
+  ctx.save();
+  ctx.globalAlpha = 0.38;
+  ctx.strokeStyle = palette.rune;
+  ctx.fillStyle = palette.rune;
+  ctx.lineWidth = Math.max(0.65, size * 0.025);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (biome === "water") {
+    for (let wave = 0; wave < 2; wave++) {
+      const wy = cy + wave * size * 0.15;
+      ctx.beginPath();
+      ctx.moveTo(cx - size * 0.28, wy);
+      ctx.bezierCurveTo(
+        cx - size * 0.12,
+        wy - size * 0.1,
+        cx + size * 0.08,
+        wy + size * 0.1,
+        cx + size * 0.28,
+        wy
+      );
+      ctx.stroke();
+    }
+  } else if (biome === "grove") {
+    ctx.beginPath();
+    ctx.arc(cx - size * 0.08, cy, size * 0.16, 0, Math.PI * 2);
+    ctx.arc(cx + size * 0.1, cy + size * 0.04, size * 0.13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + size * 0.08);
+    ctx.lineTo(cx, cy + size * 0.3);
+    ctx.stroke();
+  } else if (biome === "settlement") {
+    ctx.beginPath();
+    ctx.moveTo(cx - size * 0.28, cy - size * 0.18);
+    ctx.lineTo(cx + size * 0.24, cy - size * 0.04);
+    ctx.moveTo(cx - size * 0.22, cy + size * 0.04);
+    ctx.lineTo(cx + size * 0.28, cy + size * 0.18);
+    ctx.moveTo(cx - size * 0.06, cy - size * 0.24);
+    ctx.lineTo(cx - size * 0.13, cy + size * 0.22);
+    ctx.moveTo(cx + size * 0.13, cy - size * 0.18);
+    ctx.lineTo(cx + size * 0.05, cy + size * 0.26);
+    ctx.stroke();
+  } else if (biome === "stone") {
+    ctx.beginPath();
+    ctx.moveTo(cx - size * 0.22, cy - size * 0.2);
+    ctx.lineTo(cx - size * 0.03, cy - size * 0.03);
+    ctx.lineTo(cx - size * 0.12, cy + size * 0.24);
+    ctx.moveTo(cx - size * 0.03, cy - size * 0.03);
+    ctx.lineTo(cx + size * 0.22, cy - size * 0.14);
+    ctx.moveTo(cx - size * 0.03, cy - size * 0.03);
+    ctx.lineTo(cx + size * 0.16, cy + size * 0.21);
+    ctx.stroke();
+  } else if (biome === "shrine") {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - size * 0.27);
+    ctx.lineTo(cx + size * 0.24, cy + size * 0.2);
+    ctx.lineTo(cx - size * 0.24, cy + size * 0.2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy + size * 0.03, size * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    for (let blade = -1; blade <= 1; blade++) {
+      const bx = cx + blade * size * 0.13;
+      ctx.beginPath();
+      ctx.moveTo(bx, cy + size * 0.22);
+      ctx.quadraticCurveTo(
+        bx + blade * size * 0.04,
+        cy,
+        bx + blade * size * 0.08,
+        cy - size * 0.18
+      );
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawTerrainPatch(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  palette: BiomePalette,
   biome: FantasySurfaceBiome,
   variation: number
 ) {
   if (w < 1 || h < 1) return;
 
-  const skew = Math.min(4, w * 0.08);
-  const fill = pickTileFill(palette, variation);
+  const jitterX = (variation - 0.5) * w * 0.22;
+  const jitterY = (0.5 - variation) * h * 0.18;
+  const overlap = Math.min(w, h) * 0.12;
 
   ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + w, y - skew);
-  ctx.lineTo(x + w, y + h - skew);
-  ctx.lineTo(x, y + h);
+  ctx.moveTo(x - overlap + jitterX * 0.2, y + h * 0.14);
+  ctx.quadraticCurveTo(
+    x + w * 0.3,
+    y - overlap + jitterY,
+    x + w * 0.78,
+    y + h * 0.04
+  );
+  ctx.quadraticCurveTo(
+    x + w + overlap + jitterX,
+    y + h * 0.28,
+    x + w * 0.94,
+    y + h * 0.76
+  );
+  ctx.quadraticCurveTo(
+    x + w * 0.72,
+    y + h + overlap - jitterY,
+    x + w * 0.22,
+    y + h * 0.93
+  );
+  ctx.quadraticCurveTo(
+    x - overlap - jitterX,
+    y + h * 0.7,
+    x - overlap + jitterX * 0.2,
+    y + h * 0.14
+  );
   ctx.closePath();
+
+  const fill = pickTerrainFill(palette, variation);
   ctx.fillStyle = fill;
+  ctx.globalAlpha = 0.78 + variation * 0.14;
   ctx.fill();
+
+  ctx.globalAlpha = 0.2;
   ctx.strokeStyle = palette.border;
-  ctx.lineWidth = 1;
+  ctx.lineWidth = Math.max(0.6, Math.min(w, h) * 0.018);
   ctx.stroke();
+  ctx.globalAlpha = 1;
 
-  if (biome === "water" && variation > 0.55) {
-    ctx.strokeStyle = palette.rune;
-    ctx.lineWidth = 0.75;
-    ctx.beginPath();
-    ctx.arc(x + w * 0.5, y + h * 0.45, Math.min(w, h) * 0.12, 0, Math.PI * 2);
-    ctx.stroke();
-  } else if (biome === "settlement" && variation > 0.7) {
-    ctx.fillStyle = palette.rune;
-    ctx.fillRect(x + w * 0.35, y + h * 0.35, w * 0.3, h * 0.08);
-  } else if (biome === "shrine" && variation > 0.6) {
-    ctx.strokeStyle = palette.rune;
-    ctx.lineWidth = 0.75;
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.5, y + h * 0.25);
-    ctx.lineTo(x + w * 0.65, y + h * 0.55);
-    ctx.lineTo(x + w * 0.35, y + h * 0.55);
-    ctx.closePath();
-    ctx.stroke();
-  } else if (variation > 0.82) {
-    ctx.fillStyle = palette.rune;
-    ctx.beginPath();
-    ctx.arc(x + w * 0.72, y + h * 0.28, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  const inner = Math.min(w, h) * 0.15;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-  ctx.fillRect(x + inner * 0.5, y + inner * 0.5, inner, inner * 0.4);
-}
-
-function drawScannerLines(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number
-) {
-  ctx.strokeStyle = "rgba(167, 139, 250, 0.06)";
-  ctx.lineWidth = 1;
-  for (let i = 0; i < width; i += 48) {
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i, height);
-    ctx.stroke();
-  }
-  for (let j = 0; j < height; j += 48) {
-    ctx.beginPath();
-    ctx.moveTo(0, j);
-    ctx.lineTo(width, j);
-    ctx.stroke();
+  if (variation > 0.2) {
+    drawTerrainMotif(ctx, x, y, w, h, palette, biome, variation);
   }
 }
 
-function drawScreenSpaceGrid(
+function drawScreenSpaceTerrain(
   ctx: CanvasRenderingContext2D,
+  map: L.Map,
   width: number,
   height: number,
-  palette: ReturnType<typeof getBiomePalette>,
+  palette: BiomePalette,
   biome: FantasySurfaceBiome
 ) {
-  const cols = Math.ceil(width / SCREEN_TILE_PX) + 1;
-  const rows = Math.ceil(height / SCREEN_TILE_PX) + 1;
+  const center = map.getCenter();
+  const cols = Math.ceil(width / SCREEN_PATCH_PX) + 2;
+  const rows = Math.ceil(height / SCREEN_PATCH_PX) + 2;
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const x = col * SCREEN_TILE_PX;
-      const y = row * SCREEN_TILE_PX;
-      const variation = tileVariationHash(col * 0.31, row * 0.47);
-      drawTileShape(ctx, x, y, SCREEN_TILE_PX, SCREEN_TILE_PX, palette, biome, variation);
+  for (let row = -1; row < rows; row++) {
+    for (let col = -1; col < cols; col++) {
+      const x = col * SCREEN_PATCH_PX;
+      const y = row * SCREEN_PATCH_PX;
+      const variation = tileVariationHash(
+        center.lat + col * 0.017,
+        center.lng + row * 0.023
+      );
+      drawTerrainPatch(
+        ctx,
+        x,
+        y,
+        SCREEN_PATCH_PX,
+        SCREEN_PATCH_PX,
+        palette,
+        biome,
+        variation
+      );
     }
   }
 }
 
-function drawWorldSpaceGrid(
+function drawWorldSpaceTerrain(
   ctx: CanvasRenderingContext2D,
   map: L.Map,
   topLeft: L.Point,
   width: number,
   height: number,
-  palette: ReturnType<typeof getBiomePalette>,
+  palette: BiomePalette,
   biome: FantasySurfaceBiome
 ): number {
   const bounds = map.getBounds();
@@ -184,22 +284,32 @@ function drawWorldSpaceGrid(
     const startLng = Math.floor(west / rowLngStep) * rowLngStep;
 
     for (let lng = startLng; lng <= east; lng += rowLngStep) {
-      const nw = layerToCanvasPoint(map, L.latLng(lat + latStep, lng), topLeft);
-      const se = layerToCanvasPoint(map, L.latLng(lat, lng + rowLngStep), topLeft);
+      const nw = layerToCanvasPoint(
+        map,
+        L.latLng(lat + latStep, lng),
+        topLeft
+      );
+      const se = layerToCanvasPoint(
+        map,
+        L.latLng(lat, lng + rowLngStep),
+        topLeft
+      );
 
-      if (se.x < -24 || nw.x > width + 24 || se.y < -24 || nw.y > height + 24) {
+      if (
+        se.x < -36 ||
+        nw.x > width + 36 ||
+        se.y < -36 ||
+        nw.y > height + 36
+      ) {
         continue;
       }
 
-      const x = nw.x;
-      const y = nw.y;
       const w = se.x - nw.x;
       const h = se.y - nw.y;
-
       if (w < MIN_WORLD_TILE_PX || h < MIN_WORLD_TILE_PX) continue;
 
       const variation = tileVariationHash(lat, lng);
-      drawTileShape(ctx, x, y, w, h, palette, biome, variation);
+      drawTerrainPatch(ctx, nw.x, nw.y, w, h, palette, biome, variation);
       drawn++;
     }
   }
@@ -207,11 +317,87 @@ function drawWorldSpaceGrid(
   return drawn;
 }
 
-function drawFantasyGrid(
+function revealRadiusPx(
+  map: L.Map,
+  topLeft: L.Point,
+  playerLat: number,
+  playerLng: number
+): number {
+  const player = layerToCanvasPoint(
+    map,
+    L.latLng(playerLat, playerLng),
+    topLeft
+  );
+  const north = layerToCanvasPoint(
+    map,
+    L.latLng(playerLat + FIELD_VEIL_METERS / 111_320, playerLng),
+    topLeft
+  );
+  return Math.max(110, Math.abs(north.y - player.y));
+}
+
+function drawFieldVeil(
+  ctx: CanvasRenderingContext2D,
+  map: L.Map,
+  topLeft: L.Point,
+  width: number,
+  height: number,
+  palette: BiomePalette,
+  playerLat: number,
+  playerLng: number
+) {
+  const player = layerToCanvasPoint(
+    map,
+    L.latLng(playerLat, playerLng),
+    topLeft
+  );
+  const radius = revealRadiusPx(map, topLeft, playerLat, playerLng);
+  const veil = ctx.createRadialGradient(
+    player.x,
+    player.y,
+    radius * 0.26,
+    player.x,
+    player.y,
+    radius
+  );
+  veil.addColorStop(0, "rgba(3, 6, 10, 0)");
+  veil.addColorStop(0.42, "rgba(3, 6, 10, 0.03)");
+  veil.addColorStop(0.68, "rgba(3, 6, 10, 0.34)");
+  veil.addColorStop(0.86, "rgba(2, 5, 9, 0.72)");
+  veil.addColorStop(1, "rgba(1, 3, 7, 0.92)");
+
+  ctx.fillStyle = veil;
+  ctx.fillRect(0, 0, width, height);
+
+  const center = map.getCenter();
+  for (let i = 0; i < 18; i++) {
+    const variation = tileVariationHash(center.lat + i * 0.071, center.lng - i * 0.053);
+    const angle = variation * Math.PI * 2 + i * 0.91;
+    const distance = radius * (0.72 + (i % 5) * 0.12);
+    const x = player.x + Math.cos(angle) * distance;
+    const y = player.y + Math.sin(angle) * distance * 0.78;
+    const cloudRadius = radius * (0.12 + variation * 0.15);
+    const cloud = ctx.createRadialGradient(x, y, 0, x, y, cloudRadius);
+    cloud.addColorStop(0, palette.border.replace(/0\.[0-9]+\)/, "0.08)"));
+    cloud.addColorStop(0.45, "rgba(10, 14, 18, 0.18)");
+    cloud.addColorStop(1, "rgba(3, 5, 8, 0)");
+    ctx.fillStyle = cloud;
+    ctx.fillRect(
+      x - cloudRadius,
+      y - cloudRadius,
+      cloudRadius * 2,
+      cloudRadius * 2
+    );
+  }
+}
+
+function drawFantasyCartography(
   ctx: CanvasRenderingContext2D,
   map: L.Map,
   biome: FantasySurfaceBiome,
-  dpr: number
+  dpr: number,
+  playerLat: number,
+  playerLng: number
 ) {
   const palette = getBiomePalette(biome);
   const size = map.getSize();
@@ -220,16 +406,20 @@ function drawFantasyGrid(
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, size.x, size.y);
 
-  ctx.fillStyle = palette.base;
+  const wash = ctx.createLinearGradient(0, 0, size.x, size.y);
+  wash.addColorStop(0, adjustColor(palette.base, -8));
+  wash.addColorStop(0.55, palette.base);
+  wash.addColorStop(1, adjustColor(palette.base, 5));
+  ctx.fillStyle = wash;
   ctx.fillRect(0, 0, size.x, size.y);
 
   const worldTilePx = estimateWorldTilePx(map, topLeft);
   const useScreenSpace = worldTilePx < MIN_WORLD_TILE_PX;
 
   if (useScreenSpace) {
-    drawScreenSpaceGrid(ctx, size.x, size.y, palette, biome);
+    drawScreenSpaceTerrain(ctx, map, size.x, size.y, palette, biome);
   } else {
-    const drawn = drawWorldSpaceGrid(
+    const drawn = drawWorldSpaceTerrain(
       ctx,
       map,
       topLeft,
@@ -239,11 +429,20 @@ function drawFantasyGrid(
       biome
     );
     if (drawn === 0) {
-      drawScreenSpaceGrid(ctx, size.x, size.y, palette, biome);
+      drawScreenSpaceTerrain(ctx, map, size.x, size.y, palette, biome);
     }
   }
 
-  drawScannerLines(ctx, size.x, size.y);
+  drawFieldVeil(
+    ctx,
+    map,
+    topLeft,
+    size.x,
+    size.y,
+    palette,
+    playerLat,
+    playerLng
+  );
 }
 
 function positionCanvas(map: L.Map, canvas: HTMLCanvasElement, dpr: number) {
@@ -261,6 +460,8 @@ export default function FantasyGridOverlay({
   biome,
   enabled,
   streetReference,
+  playerLat,
+  playerLng,
 }: FantasyGridOverlayProps) {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -272,9 +473,7 @@ export default function FantasyGridOverlay({
   useEffect(() => {
     if (!enabled) {
       const existing = map.getPane(PANE_NAME);
-      if (existing) {
-        existing.replaceChildren();
-      }
+      if (existing) existing.replaceChildren();
       canvasRef.current = null;
       return;
     }
@@ -291,12 +490,10 @@ export default function FantasyGridOverlay({
     canvas.setAttribute("aria-hidden", "true");
     pane.replaceChildren(canvas);
     canvasRef.current = canvas;
-    canvas.style.opacity = streetReferenceRef.current ? "0.38" : "0.92";
+    canvas.style.opacity = streetReferenceRef.current ? "0.46" : "0.98";
 
     const redraw = () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-      }
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         const el = canvasRef.current;
         if (!el) return;
@@ -306,7 +503,14 @@ export default function FantasyGridOverlay({
 
         const ctx = el.getContext("2d");
         if (!ctx) return;
-        drawFantasyGrid(ctx, map, biome, dpr);
+        drawFantasyCartography(
+          ctx,
+          map,
+          biome,
+          dpr,
+          playerLat,
+          playerLng
+        );
       });
     };
 
@@ -327,18 +531,16 @@ export default function FantasyGridOverlay({
       map.off("zoomanim", redraw);
       map.off("viewreset", redraw);
       map.off("resize", redraw);
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-      }
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       pane?.replaceChildren();
       canvasRef.current = null;
     };
-  }, [map, enabled, biome]);
+  }, [map, enabled, biome, playerLat, playerLng]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !enabled) return;
-    canvas.style.opacity = streetReference ? "0.38" : "0.92";
+    canvas.style.opacity = streetReference ? "0.46" : "0.98";
   }, [streetReference, enabled]);
 
   return null;
