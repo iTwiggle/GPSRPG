@@ -40,5 +40,5 @@ Validate the one-thumb map loop before visual terrain work begins.
 - POI selection/highlight still updates.
 - The POI panel Explore button still works when deliberately opened.
 - Keyboard marker activation remains routed through the same two-step interaction.
-- Demo Mode movement controls remain available without enabling global production dev tools.
+- Demo Mode movement controls remain available without globally exposing production dev tools during live GPS play.
 - Loot, codex, XP, visited state, and persistence remain unchanged.
