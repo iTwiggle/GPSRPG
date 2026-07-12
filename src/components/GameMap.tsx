@@ -4,11 +4,9 @@ import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Popup, Circle, useMap } from "react-leaflet";
 import AccessibleMarker from "@/components/AccessibleMarker";
 import ExplorationFogOverlay from "@/components/ExplorationFogOverlay";
-import FantasyGridOverlay from "@/components/FantasyGridOverlay";
 import { useExplorationMemory } from "@/hooks/useExplorationMemory";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
-import { mapCategoryToBiome } from "@/lib/fantasy-grid-surface";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import {
   createPoiMarkerConfig,
@@ -18,13 +16,7 @@ import type { OsmContextCategory } from "@/lib/osm-context";
 import type { POI } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
 
-function RecenterMap({
-  lat,
-  lng,
-}: {
-  lat: number;
-  lng: number;
-}) {
+function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
 
   useEffect(() => {
@@ -52,7 +44,7 @@ export default function GameMap({
   pois,
   selectedPoiId,
   visitedPoiIds,
-  areaContext,
+  areaContext: _areaContext,
   fantasyGridEnabled,
   streetReferenceMode,
   onInteractPoi,
@@ -66,11 +58,6 @@ export default function GameMap({
     [playerLat, playerLng]
   );
   const explorationMemory = useExplorationMemory(playerPosition);
-
-  const surfaceBiome = useMemo(
-    () => mapCategoryToBiome(areaContext),
-    [areaContext]
-  );
 
   const mapClassName = [
     "fantasy-map-surface h-full w-full rounded-xl",
@@ -90,11 +77,6 @@ export default function GameMap({
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <FantasyGridOverlay
-        biome={surfaceBiome}
-        enabled={fantasyGridEnabled}
-        streetReference={streetReferenceMode}
       />
       <ExplorationFogOverlay
         enabled={fantasyGridEnabled && !streetReferenceMode}
@@ -133,7 +115,6 @@ export default function GameMap({
         );
         const isSelected = poi.id === selectedPoiId;
         const inRange = readout.status === "in_range";
-
         const markerConfig = createPoiMarkerConfig(poi, {
           selected: isSelected,
           visited,
@@ -147,9 +128,7 @@ export default function GameMap({
             icon={markerConfig.icon}
             accessibility={markerConfig.accessibility}
             onKeyboardActivate={() => onInteractPoi(poi)}
-            eventHandlers={{
-              click: () => onInteractPoi(poi),
-            }}
+            eventHandlers={{ click: () => onInteractPoi(poi) }}
           >
             <Popup closeButton={false}>
               <div className="max-w-52 text-sm">
