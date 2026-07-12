@@ -24,5 +24,24 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build production app
-        run: npm run build
+      - name: Capture production build
+        id: build
+        shell: bash
+        run: |
+          set +e
+          npm run build > build.log 2>&1
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          cat build.log
+          exit 0
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authored-map-build-log
+          path: build.log
+
+      - name: Fail when production build failed
+        if: steps.build.outputs.exit_code != '0'
+        run: exit 1
