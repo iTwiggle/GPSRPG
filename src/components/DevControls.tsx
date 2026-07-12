@@ -16,6 +16,7 @@ interface DevControlsProps {
 }
 
 const NUDGE_METERS = 40;
+const RANDOM_DEMO_RADIUS_METERS = 1_000;
 
 export default function DevControls({
   isDemo,
@@ -29,6 +30,19 @@ export default function DevControls({
   onReset,
   onRefreshTasks,
 }: DevControlsProps) {
+  const handleRandomNearby = () => {
+    const distance = Math.sqrt(Math.random()) * RANDOM_DEMO_RADIUS_METERS;
+    const bearing = Math.random() * Math.PI * 2;
+
+    // Reset to the fixed demo origin first so repeated random jumps stay inside
+    // the same 1 km testing radius instead of drifting farther on every tap.
+    onEnableDemo();
+    onNudge(
+      Math.cos(bearing) * distance,
+      Math.sin(bearing) * distance
+    );
+  };
+
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -46,6 +60,13 @@ export default function DevControls({
             className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100"
           >
             Switch to Demo Mode
+          </button>
+          <button
+            type="button"
+            onClick={handleRandomNearby}
+            className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100"
+          >
+            Random nearby
           </button>
           <button
             type="button"
@@ -142,7 +163,7 @@ export default function DevControls({
         <span />
       </div>
       <p className="mt-2 text-xs text-amber-800">
-        Nudge moves your position ~{NUDGE_METERS} m per tap. Use Simulate visit on a POI to bypass distance.
+        Nudge moves your position ~{NUDGE_METERS} m per tap. Random nearby jumps within {RANDOM_DEMO_RADIUS_METERS / 1_000} km of the fixed demo origin for terrain sampling. Use Simulate visit on a POI to bypass distance.
       </p>
     </div>
   );
