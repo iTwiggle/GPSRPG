@@ -6,15 +6,15 @@ import { useMap } from "react-leaflet";
 import {
   FANTASY_GRID_TILE_METERS,
   getBiomePalette,
-  snapToTileCell,
   tileVariationHash,
   type FantasySurfaceBiome,
 } from "@/lib/fantasy-grid-surface";
 
 const PANE_NAME = "fantasyGridPane";
 const PANE_Z_INDEX = "425";
-const SCREEN_PATCH_PX = 46;
-const MIN_WORLD_TILE_PX = 8;
+const TERRAIN_REGION_METERS = FANTASY_GRID_TILE_METERS * 3;
+const SCREEN_REGION_PX = 138;
+const MIN_WORLD_REGION_PX = 18;
 const FIELD_VEIL_METERS = 260;
 
 type BiomePalette = ReturnType<typeof getBiomePalette>;
@@ -35,10 +35,6 @@ function adjustColor(hex: string, delta: number): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function lngStepAtLat(lat: number): number {
-  return FANTASY_GRID_TILE_METERS / (111_320 * Math.cos((lat * Math.PI) / 180));
-}
-
 function layerToCanvasPoint(
   map: L.Map,
   latlng: L.LatLngExpression,
@@ -47,10 +43,14 @@ function layerToCanvasPoint(
   return map.latLngToLayerPoint(latlng).subtract(topLeft);
 }
 
-function estimateWorldTilePx(map: L.Map, topLeft: L.Point): number {
+function lngStepAtLat(lat: number, meters: number): number {
+  return meters / (111_320 * Math.cos((lat * Math.PI) / 180));
+}
+
+function estimateWorldRegionPx(map: L.Map, topLeft: L.Point): number {
   const center = map.getCenter();
-  const { latStep } = snapToTileCell(center.lat, center.lng);
-  const rowLngStep = lngStepAtLat(center.lat);
+  const latStep = TERRAIN_REGION_METERS / 111_320;
+  const lngStep = lngStepAtLat(center.lat, TERRAIN_REGION_METERS);
   const origin = layerToCanvasPoint(map, center, topLeft);
   const north = layerToCanvasPoint(
     map,
@@ -59,114 +59,41 @@ function estimateWorldTilePx(map: L.Map, topLeft: L.Point): number {
   );
   const east = layerToCanvasPoint(
     map,
-    L.latLng(center.lat, center.lng + rowLngStep),
+    L.latLng(center.lat, center.lng + lngStep),
     topLeft
   );
   return Math.min(Math.abs(north.y - origin.y), Math.abs(east.x - origin.x));
 }
 
-function pickTerrainFill(palette: BiomePalette, variation: number): string {
-  if (variation > 0.76) return palette.highlight;
+function pickTerrainWash(palette: BiomePalette, variation: number): string {
+  if (variation > 0.78) return palette.highlight;
   if (variation > 0.34) return palette.accent;
-  return adjustColor(palette.base, Math.round((variation - 0.5) * 16));
+  return adjustColor(palette.base, Math.round((variation - 0.5) * 12));
 }
 
-function drawTerrainMotif(
+function smoothClosedPath(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  palette: BiomePalette,
-  biome: FantasySurfaceBiome,
-  variation: number
+  points: Array<{ x: number; y: number }>
 ) {
-  const cx = x + w * (0.38 + variation * 0.24);
-  const cy = y + h * (0.36 + (1 - variation) * 0.24);
-  const size = Math.min(w, h);
-
-  ctx.save();
-  ctx.globalAlpha = 0.38;
-  ctx.strokeStyle = palette.rune;
-  ctx.fillStyle = palette.rune;
-  ctx.lineWidth = Math.max(0.65, size * 0.025);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-
-  if (biome === "water") {
-    for (let wave = 0; wave < 2; wave++) {
-      const wy = cy + wave * size * 0.15;
-      ctx.beginPath();
-      ctx.moveTo(cx - size * 0.28, wy);
-      ctx.bezierCurveTo(
-        cx - size * 0.12,
-        wy - size * 0.1,
-        cx + size * 0.08,
-        wy + size * 0.1,
-        cx + size * 0.28,
-        wy
-      );
-      ctx.stroke();
-    }
-  } else if (biome === "grove") {
-    ctx.beginPath();
-    ctx.arc(cx - size * 0.08, cy, size * 0.16, 0, Math.PI * 2);
-    ctx.arc(cx + size * 0.1, cy + size * 0.04, size * 0.13, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(cx, cy + size * 0.08);
-    ctx.lineTo(cx, cy + size * 0.3);
-    ctx.stroke();
-  } else if (biome === "settlement") {
-    ctx.beginPath();
-    ctx.moveTo(cx - size * 0.28, cy - size * 0.18);
-    ctx.lineTo(cx + size * 0.24, cy - size * 0.04);
-    ctx.moveTo(cx - size * 0.22, cy + size * 0.04);
-    ctx.lineTo(cx + size * 0.28, cy + size * 0.18);
-    ctx.moveTo(cx - size * 0.06, cy - size * 0.24);
-    ctx.lineTo(cx - size * 0.13, cy + size * 0.22);
-    ctx.moveTo(cx + size * 0.13, cy - size * 0.18);
-    ctx.lineTo(cx + size * 0.05, cy + size * 0.26);
-    ctx.stroke();
-  } else if (biome === "stone") {
-    ctx.beginPath();
-    ctx.moveTo(cx - size * 0.22, cy - size * 0.2);
-    ctx.lineTo(cx - size * 0.03, cy - size * 0.03);
-    ctx.lineTo(cx - size * 0.12, cy + size * 0.24);
-    ctx.moveTo(cx - size * 0.03, cy - size * 0.03);
-    ctx.lineTo(cx + size * 0.22, cy - size * 0.14);
-    ctx.moveTo(cx - size * 0.03, cy - size * 0.03);
-    ctx.lineTo(cx + size * 0.16, cy + size * 0.21);
-    ctx.stroke();
-  } else if (biome === "shrine") {
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - size * 0.27);
-    ctx.lineTo(cx + size * 0.24, cy + size * 0.2);
-    ctx.lineTo(cx - size * 0.24, cy + size * 0.2);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx, cy + size * 0.03, size * 0.06, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    for (let blade = -1; blade <= 1; blade++) {
-      const bx = cx + blade * size * 0.13;
-      ctx.beginPath();
-      ctx.moveTo(bx, cy + size * 0.22);
-      ctx.quadraticCurveTo(
-        bx + blade * size * 0.04,
-        cy,
-        bx + blade * size * 0.08,
-        cy - size * 0.18
-      );
-      ctx.stroke();
-    }
+  if (points.length < 3) return;
+  const first = points[0];
+  const last = points[points.length - 1];
+  ctx.beginPath();
+  ctx.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i];
+    const next = points[(i + 1) % points.length];
+    ctx.quadraticCurveTo(
+      point.x,
+      point.y,
+      (point.x + next.x) / 2,
+      (point.y + next.y) / 2
+    );
   }
-
-  ctx.restore();
+  ctx.closePath();
 }
 
-function drawTerrainPatch(
+function drawTerrainMass(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -178,52 +105,193 @@ function drawTerrainPatch(
 ) {
   if (w < 1 || h < 1) return;
 
-  const jitterX = (variation - 0.5) * w * 0.22;
-  const jitterY = (0.5 - variation) * h * 0.18;
-  const overlap = Math.min(w, h) * 0.12;
+  const cx = x + w * (0.46 + (variation - 0.5) * 0.18);
+  const cy = y + h * (0.5 + (0.5 - variation) * 0.14);
+  const rx = w * (0.72 + variation * 0.28);
+  const ry = h * (0.5 + (1 - variation) * 0.34);
+  const pointCount = 10;
+  const points: Array<{ x: number; y: number }> = [];
 
-  ctx.beginPath();
-  ctx.moveTo(x - overlap + jitterX * 0.2, y + h * 0.14);
-  ctx.quadraticCurveTo(
-    x + w * 0.3,
-    y - overlap + jitterY,
-    x + w * 0.78,
-    y + h * 0.04
-  );
-  ctx.quadraticCurveTo(
-    x + w + overlap + jitterX,
-    y + h * 0.28,
-    x + w * 0.94,
-    y + h * 0.76
-  );
-  ctx.quadraticCurveTo(
-    x + w * 0.72,
-    y + h + overlap - jitterY,
-    x + w * 0.22,
-    y + h * 0.93
-  );
-  ctx.quadraticCurveTo(
-    x - overlap - jitterX,
-    y + h * 0.7,
-    x - overlap + jitterX * 0.2,
-    y + h * 0.14
-  );
-  ctx.closePath();
+  for (let i = 0; i < pointCount; i++) {
+    const angle = (i / pointCount) * Math.PI * 2;
+    const jitter = tileVariationHash(variation + i * 0.137, variation - i * 0.193);
+    const radial = 0.76 + jitter * 0.38;
+    points.push({
+      x: cx + Math.cos(angle) * rx * radial,
+      y: cy + Math.sin(angle) * ry * radial,
+    });
+  }
 
-  const fill = pickTerrainFill(palette, variation);
-  ctx.fillStyle = fill;
-  ctx.globalAlpha = 0.78 + variation * 0.14;
+  ctx.save();
+  smoothClosedPath(ctx, points);
+  ctx.globalAlpha = 0.26 + variation * 0.16;
+  ctx.fillStyle = pickTerrainWash(palette, variation);
   ctx.fill();
 
-  ctx.globalAlpha = 0.2;
-  ctx.strokeStyle = palette.border;
-  ctx.lineWidth = Math.max(0.6, Math.min(w, h) * 0.018);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
+  ctx.translate(cx, cy);
+  ctx.rotate((variation - 0.5) * 0.42);
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = palette.highlight;
+  ctx.beginPath();
+  ctx.ellipse(-rx * 0.12, -ry * 0.08, rx * 0.56, ry * 0.42, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
-  if (variation > 0.2) {
-    drawTerrainMotif(ctx, x, y, w, h, palette, biome, variation);
+  if (variation > 0.48) {
+    drawBiomeInk(ctx, cx, cy, Math.min(w, h), palette, biome, variation);
   }
+}
+
+function drawBiomeInk(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  palette: BiomePalette,
+  biome: FantasySurfaceBiome,
+  variation: number
+) {
+  const scale = size * (0.2 + variation * 0.08);
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = palette.rune;
+  ctx.fillStyle = palette.rune;
+  ctx.lineWidth = Math.max(0.8, size * 0.012);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (biome === "water") {
+    for (let row = -1; row <= 1; row++) {
+      const y = cy + row * scale * 0.46;
+      ctx.beginPath();
+      ctx.moveTo(cx - scale, y);
+      ctx.bezierCurveTo(
+        cx - scale * 0.55,
+        y - scale * 0.28,
+        cx - scale * 0.1,
+        y + scale * 0.28,
+        cx + scale * 0.34,
+        y
+      );
+      ctx.bezierCurveTo(
+        cx + scale * 0.6,
+        y - scale * 0.18,
+        cx + scale * 0.82,
+        y - scale * 0.08,
+        cx + scale,
+        y
+      );
+      ctx.stroke();
+    }
+  } else if (biome === "grove") {
+    for (let tree = -1; tree <= 1; tree++) {
+      const tx = cx + tree * scale * 0.68;
+      const ty = cy + Math.abs(tree) * scale * 0.14;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - scale * 0.72);
+      ctx.lineTo(tx + scale * 0.38, ty - scale * 0.08);
+      ctx.lineTo(tx + scale * 0.16, ty - scale * 0.08);
+      ctx.lineTo(tx + scale * 0.46, ty + scale * 0.42);
+      ctx.lineTo(tx - scale * 0.46, ty + scale * 0.42);
+      ctx.lineTo(tx - scale * 0.16, ty - scale * 0.08);
+      ctx.lineTo(tx - scale * 0.38, ty - scale * 0.08);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(tx, ty + scale * 0.42);
+      ctx.lineTo(tx, ty + scale * 0.72);
+      ctx.stroke();
+    }
+  } else if (biome === "settlement") {
+    ctx.beginPath();
+    ctx.moveTo(cx - scale * 1.05, cy + scale * 0.46);
+    ctx.bezierCurveTo(
+      cx - scale * 0.45,
+      cy - scale * 0.38,
+      cx + scale * 0.26,
+      cy + scale * 0.18,
+      cx + scale * 1.08,
+      cy - scale * 0.5
+    );
+    ctx.stroke();
+    for (let i = -2; i <= 2; i++) {
+      const px = cx + i * scale * 0.34;
+      const py = cy + Math.sin(i * 1.7 + variation * 3) * scale * 0.23;
+      ctx.strokeRect(px - scale * 0.12, py - scale * 0.08, scale * 0.24, scale * 0.16);
+    }
+  } else if (biome === "stone") {
+    ctx.beginPath();
+    ctx.moveTo(cx - scale * 0.9, cy + scale * 0.65);
+    ctx.lineTo(cx - scale * 0.72, cy - scale * 0.48);
+    ctx.lineTo(cx - scale * 0.22, cy - scale * 0.18);
+    ctx.lineTo(cx + scale * 0.04, cy - scale * 0.72);
+    ctx.lineTo(cx + scale * 0.28, cy - scale * 0.12);
+    ctx.lineTo(cx + scale * 0.82, cy - scale * 0.38);
+    ctx.lineTo(cx + scale * 0.9, cy + scale * 0.65);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - scale * 0.22, cy - scale * 0.18);
+    ctx.lineTo(cx + scale * 0.18, cy + scale * 0.16);
+    ctx.lineTo(cx - scale * 0.04, cy + scale * 0.58);
+    ctx.stroke();
+  } else if (biome === "shrine") {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - scale * 0.9);
+    ctx.lineTo(cx + scale * 0.78, cy + scale * 0.62);
+    ctx.lineTo(cx - scale * 0.78, cy + scale * 0.62);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy + scale * 0.08, scale * 0.18, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - scale * 0.5);
+    ctx.lineTo(cx, cy + scale * 0.48);
+    ctx.stroke();
+  } else {
+    for (let tuft = -2; tuft <= 2; tuft++) {
+      const tx = cx + tuft * scale * 0.34;
+      const baseY = cy + Math.sin(tuft * 2.1 + variation * 5) * scale * 0.18;
+      ctx.beginPath();
+      ctx.moveTo(tx, baseY + scale * 0.42);
+      ctx.quadraticCurveTo(tx - scale * 0.12, baseY, tx - scale * 0.28, baseY - scale * 0.34);
+      ctx.moveTo(tx, baseY + scale * 0.42);
+      ctx.quadraticCurveTo(tx + scale * 0.06, baseY - scale * 0.08, tx + scale * 0.2, baseY - scale * 0.5);
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawContourInk(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  palette: BiomePalette,
+  center: L.LatLng
+) {
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.strokeStyle = palette.border;
+  ctx.lineWidth = 0.8;
+
+  const bands = Math.max(6, Math.ceil(height / 74));
+  for (let band = 0; band < bands; band++) {
+    const seed = tileVariationHash(center.lat + band * 0.173, center.lng - band * 0.119);
+    const baseY = ((band + 0.5) / bands) * height;
+    ctx.beginPath();
+    for (let x = -24; x <= width + 24; x += 24) {
+      const y =
+        baseY +
+        Math.sin(x * 0.015 + seed * Math.PI * 2) * (8 + seed * 10) +
+        Math.sin(x * 0.005 + band * 0.9) * 13;
+      if (x === -24) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function drawScreenSpaceTerrain(
@@ -235,23 +303,23 @@ function drawScreenSpaceTerrain(
   biome: FantasySurfaceBiome
 ) {
   const center = map.getCenter();
-  const cols = Math.ceil(width / SCREEN_PATCH_PX) + 2;
-  const rows = Math.ceil(height / SCREEN_PATCH_PX) + 2;
+  const cols = Math.ceil(width / SCREEN_REGION_PX) + 3;
+  const rows = Math.ceil(height / SCREEN_REGION_PX) + 3;
 
   for (let row = -1; row < rows; row++) {
     for (let col = -1; col < cols; col++) {
-      const x = col * SCREEN_PATCH_PX;
-      const y = row * SCREEN_PATCH_PX;
+      const x = col * SCREEN_REGION_PX;
+      const y = row * SCREEN_REGION_PX;
       const variation = tileVariationHash(
-        center.lat + col * 0.017,
-        center.lng + row * 0.023
+        center.lat + col * 0.041,
+        center.lng + row * 0.057
       );
-      drawTerrainPatch(
+      drawTerrainMass(
         ctx,
         x,
         y,
-        SCREEN_PATCH_PX,
-        SCREEN_PATCH_PX,
+        SCREEN_REGION_PX,
+        SCREEN_REGION_PX,
         palette,
         biome,
         variation
@@ -270,46 +338,38 @@ function drawWorldSpaceTerrain(
   biome: FantasySurfaceBiome
 ): number {
   const bounds = map.getBounds();
-  const pad = 0.003;
+  const pad = 0.004;
   const south = bounds.getSouth() - pad;
   const north = bounds.getNorth() + pad;
   const west = bounds.getWest() - pad;
   const east = bounds.getEast() + pad;
-  const latStep = FANTASY_GRID_TILE_METERS / 111_320;
+  const latStep = TERRAIN_REGION_METERS / 111_320;
   const startLat = Math.floor(south / latStep) * latStep;
   let drawn = 0;
 
   for (let lat = startLat; lat <= north; lat += latStep) {
-    const rowLngStep = lngStepAtLat(lat);
-    const startLng = Math.floor(west / rowLngStep) * rowLngStep;
+    const lngStep = lngStepAtLat(lat, TERRAIN_REGION_METERS);
+    const startLng = Math.floor(west / lngStep) * lngStep;
 
-    for (let lng = startLng; lng <= east; lng += rowLngStep) {
-      const nw = layerToCanvasPoint(
-        map,
-        L.latLng(lat + latStep, lng),
-        topLeft
-      );
-      const se = layerToCanvasPoint(
-        map,
-        L.latLng(lat, lng + rowLngStep),
-        topLeft
-      );
+    for (let lng = startLng; lng <= east; lng += lngStep) {
+      const nw = layerToCanvasPoint(map, L.latLng(lat + latStep, lng), topLeft);
+      const se = layerToCanvasPoint(map, L.latLng(lat, lng + lngStep), topLeft);
 
       if (
-        se.x < -36 ||
-        nw.x > width + 36 ||
-        se.y < -36 ||
-        nw.y > height + 36
+        se.x < -SCREEN_REGION_PX ||
+        nw.x > width + SCREEN_REGION_PX ||
+        se.y < -SCREEN_REGION_PX ||
+        nw.y > height + SCREEN_REGION_PX
       ) {
         continue;
       }
 
       const w = se.x - nw.x;
       const h = se.y - nw.y;
-      if (w < MIN_WORLD_TILE_PX || h < MIN_WORLD_TILE_PX) continue;
+      if (w < MIN_WORLD_REGION_PX || h < MIN_WORLD_REGION_PX) continue;
 
       const variation = tileVariationHash(lat, lng);
-      drawTerrainPatch(ctx, nw.x, nw.y, w, h, palette, biome, variation);
+      drawTerrainMass(ctx, nw.x, nw.y, w, h, palette, biome, variation);
       drawn++;
     }
   }
@@ -323,11 +383,7 @@ function revealRadiusPx(
   playerLat: number,
   playerLng: number
 ): number {
-  const player = layerToCanvasPoint(
-    map,
-    L.latLng(playerLat, playerLng),
-    topLeft
-  );
+  const player = layerToCanvasPoint(map, L.latLng(playerLat, playerLng), topLeft);
   const north = layerToCanvasPoint(
     map,
     L.latLng(playerLat + FIELD_VEIL_METERS / 111_320, playerLng),
@@ -346,40 +402,36 @@ function drawFieldVeil(
   playerLat: number,
   playerLng: number
 ) {
-  const player = layerToCanvasPoint(
-    map,
-    L.latLng(playerLat, playerLng),
-    topLeft
-  );
+  const player = layerToCanvasPoint(map, L.latLng(playerLat, playerLng), topLeft);
   const radius = revealRadiusPx(map, topLeft, playerLat, playerLng);
   const veil = ctx.createRadialGradient(
     player.x,
     player.y,
-    radius * 0.26,
+    radius * 0.28,
     player.x,
     player.y,
     radius
   );
-  veil.addColorStop(0, "rgba(3, 6, 10, 0)");
-  veil.addColorStop(0.42, "rgba(3, 6, 10, 0.03)");
-  veil.addColorStop(0.68, "rgba(3, 6, 10, 0.34)");
-  veil.addColorStop(0.86, "rgba(2, 5, 9, 0.72)");
-  veil.addColorStop(1, "rgba(1, 3, 7, 0.92)");
+  veil.addColorStop(0, "rgba(5, 6, 7, 0)");
+  veil.addColorStop(0.48, "rgba(5, 6, 7, 0.02)");
+  veil.addColorStop(0.7, "rgba(4, 5, 7, 0.3)");
+  veil.addColorStop(0.88, "rgba(2, 4, 6, 0.7)");
+  veil.addColorStop(1, "rgba(1, 2, 4, 0.93)");
 
   ctx.fillStyle = veil;
   ctx.fillRect(0, 0, width, height);
 
   const center = map.getCenter();
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 14; i++) {
     const variation = tileVariationHash(center.lat + i * 0.071, center.lng - i * 0.053);
     const angle = variation * Math.PI * 2 + i * 0.91;
-    const distance = radius * (0.72 + (i % 5) * 0.12);
+    const distance = radius * (0.76 + (i % 4) * 0.13);
     const x = player.x + Math.cos(angle) * distance;
-    const y = player.y + Math.sin(angle) * distance * 0.78;
-    const cloudRadius = radius * (0.12 + variation * 0.15);
+    const y = player.y + Math.sin(angle) * distance * 0.8;
+    const cloudRadius = radius * (0.11 + variation * 0.14);
     const cloud = ctx.createRadialGradient(x, y, 0, x, y, cloudRadius);
-    cloud.addColorStop(0, palette.border.replace(/0\.[0-9]+\)/, "0.08)"));
-    cloud.addColorStop(0.45, "rgba(10, 14, 18, 0.18)");
+    cloud.addColorStop(0, "rgba(20, 22, 20, 0.14)");
+    cloud.addColorStop(0.45, "rgba(8, 10, 12, 0.17)");
     cloud.addColorStop(1, "rgba(3, 5, 8, 0)");
     ctx.fillStyle = cloud;
     ctx.fillRect(
@@ -402,19 +454,20 @@ function drawFantasyCartography(
   const palette = getBiomePalette(biome);
   const size = map.getSize();
   const topLeft = map.containerPointToLayerPoint(L.point(0, 0));
+  const center = map.getCenter();
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, size.x, size.y);
 
   const wash = ctx.createLinearGradient(0, 0, size.x, size.y);
-  wash.addColorStop(0, adjustColor(palette.base, -8));
-  wash.addColorStop(0.55, palette.base);
-  wash.addColorStop(1, adjustColor(palette.base, 5));
+  wash.addColorStop(0, "#12110d");
+  wash.addColorStop(0.52, adjustColor(palette.base, -9));
+  wash.addColorStop(1, "#17150f");
   ctx.fillStyle = wash;
   ctx.fillRect(0, 0, size.x, size.y);
 
-  const worldTilePx = estimateWorldTilePx(map, topLeft);
-  const useScreenSpace = worldTilePx < MIN_WORLD_TILE_PX;
+  const worldRegionPx = estimateWorldRegionPx(map, topLeft);
+  const useScreenSpace = worldRegionPx < MIN_WORLD_REGION_PX;
 
   if (useScreenSpace) {
     drawScreenSpaceTerrain(ctx, map, size.x, size.y, palette, biome);
@@ -433,6 +486,7 @@ function drawFantasyCartography(
     }
   }
 
+  drawContourInk(ctx, size.x, size.y, palette, center);
   drawFieldVeil(
     ctx,
     map,
