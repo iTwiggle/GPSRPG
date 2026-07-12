@@ -125,10 +125,10 @@ export const HAPTICS = {
 
 export const SOUND = {
   /**
-   * Master toggle for audio. Off by default: no audio assets ship with the app,
-   * and the synth sink is opt-in so review/recording contexts stay silent unless
-   * explicitly enabled via `enableSynthSound()`.
+   * Pickup audio is enabled by default. The built-in WebAudio sink is zero-asset
+   * and rarity-aware; a future native/sample sink can replace it through the
+   * existing registerSoundSink() architecture without touching gameplay.
    */
-  enabled: false,
-  masterVolume: 0.25,
+  enabled: true,
+  masterVolume: 0.22,
 } as const;
