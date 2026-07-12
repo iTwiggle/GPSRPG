@@ -20,6 +20,14 @@ Validate that the overworld reads as fantasy terrain under a moving player inste
 6. Move in Live GPS or use Demo Mode nudges and confirm the readable field remains centered on the live player position.
 7. Pan / zoom and confirm the canvas redraws without obvious seams, blank areas, or stale veil positioning.
 
+## Random terrain sampling
+
+1. In Demo Mode open Dev tools.
+2. Tap **Random nearby** several times.
+3. Confirm each jump stays within roughly 1 km of the fixed demo origin rather than drifting farther on repeated taps.
+4. Use the jumps to sample different OSM context / fantasy biome classifications and compare whether their cartographic marks are visually distinct.
+5. Reset demo position and confirm the player returns to the fixed demo origin.
+
 ## Street reference
 
 1. In Demo Mode open Dev tools.
@@ -40,3 +48,5 @@ Validate that the overworld reads as fantasy terrain under a moving player inste
 ## Scope note
 
 This pass is a visual field veil, not persistent exploration-memory fog. The revealed area follows the player. Persisting revealed geography across sessions should be a separate gameplay/state iteration if the visual language passes field testing.
+
+The current POI field still regenerates wholesale after the anchor refresh threshold. That continuity problem is intentionally not hidden inside this visual PR; it should be addressed as a separate world-generation iteration.
