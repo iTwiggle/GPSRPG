@@ -59,7 +59,7 @@ export default function HomePage() {
 
   const areaContext =
     osmContext.status === "ready" ? osmContext.category : "generic";
-  const devToolsEnabled = DEV_TOOLS_ENABLED;
+  const devToolsEnabled = DEV_TOOLS_ENABLED || geo.isDemo;
 
   useEffect(() => {
     if (!devToolsEnabled && activeMobileSection === "dev") {
