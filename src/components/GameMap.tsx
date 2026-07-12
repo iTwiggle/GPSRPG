@@ -104,6 +104,8 @@ export default function GameMap({
       <Circle
         center={center}
         radius={EXPLORE_RADIUS_METERS}
+        pane="shadowPane"
+        interactive={false}
         pathOptions={{
           color: "#a78bfa",
           fillColor: "#7c3aed",
