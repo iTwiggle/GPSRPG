@@ -80,7 +80,7 @@ export default function DevControls({
                 : "border-amber-300 bg-white text-amber-950 hover:bg-amber-100"
             }`}
           >
-            Fantasy grid: {fantasyGridEnabled ? "On" : "Off"}
+            Fantasy atlas: {fantasyGridEnabled ? "On" : "Off"}
           </button>
           <button
             type="button"
@@ -96,7 +96,7 @@ export default function DevControls({
           </button>
         </div>
         <p className="mt-2 text-xs text-amber-800">
-          Fantasy grid draws biome tiles over OSM. Street reference fades the grid so roads remain visible for debug.
+          Fantasy atlas keeps OSM as subdued geographic structure and draws stable authored world motifs above it. Street reference exposes the underlying roads for debug.
         </p>
       </div>
 
