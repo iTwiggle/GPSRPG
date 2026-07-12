@@ -73,6 +73,13 @@ export default function FantasyAtlasOverlay({
       return;
     }
 
+    const mapFrame = map.getContainer().closest(".rpg-map-frame");
+    const scannerOverlay = mapFrame?.querySelector<HTMLElement>(
+      ".rpg-scanner-overlay"
+    );
+    const previousScannerDisplay = scannerOverlay?.style.display ?? "";
+    if (scannerOverlay) scannerOverlay.style.display = "none";
+
     let pane = map.getPane(PANE_NAME);
     if (!pane) {
       pane = map.createPane(PANE_NAME);
@@ -174,6 +181,7 @@ export default function FantasyAtlasOverlay({
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       pane?.replaceChildren();
       canvasRef.current = null;
+      if (scannerOverlay) scannerOverlay.style.display = previousScannerDisplay;
     };
   }, [enabled, map, streetReference]);
 
