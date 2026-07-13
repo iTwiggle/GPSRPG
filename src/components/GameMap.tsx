@@ -77,6 +77,9 @@ export default function GameMap({
       <FantasyAtlasOverlay
         enabled={fantasyGridEnabled}
         streetReference={streetReferenceMode}
+        playerLat={playerLat}
+        playerLng={playerLng}
+        revealedCellKeys={revealedCellKeys}
       />
       <ExplorationFogOverlay
         enabled={fantasyGridEnabled && !streetReferenceMode}
@@ -127,7 +130,6 @@ export default function GameMap({
           <AccessibleMarker
             key={poi.id}
             position={[poi.lat, poi.lng]}
-            pane="shadowPane"
             icon={markerConfig.icon}
             accessibility={markerConfig.accessibility}
             onKeyboardActivate={() => onInteractPoi(poi)}
@@ -144,7 +146,9 @@ export default function GameMap({
                   {formatDistance(readout.distanceMeters)} away
                 </p>
                 {visited ? (
-                  <p className="mt-1 font-medium text-emerald-400">Already explored</p>
+                  <p className="mt-1 font-medium text-emerald-400">
+                    Already explored
+                  </p>
                 ) : isSelected && inRange ? (
                   <p className="mt-1 font-semibold text-amber-300">
                     Tap again to explore
