@@ -36,6 +36,20 @@ export interface FantasyMapBounds {
   east: number;
 }
 
+export interface FantasyMapTerrainCell {
+  id: string;
+  row: number;
+  column: number;
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+  centerLat: number;
+  centerLng: number;
+  biome: FantasyMapBiome;
+  variation: number;
+}
+
 export const FANTASY_ATLAS_CHUNK_METERS = 180;
 const REGION_CHUNKS = 3;
 
@@ -67,13 +81,7 @@ const MOTIF_POOLS: Record<FantasyMapBiome, FantasyMapMotif[]> = {
     "dead-tree",
     "rock-cluster",
   ],
-  water: [
-    "wave-mark",
-    "wave-mark",
-    "reeds",
-    "reeds",
-    "rock-cluster",
-  ],
+  water: ["wave-mark", "wave-mark", "reeds", "reeds", "rock-cluster"],
   stone: [
     "ruin-wall",
     "ruin-wall",
@@ -119,11 +127,60 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-function getRegionBiome(chunkRow: number, chunkCol: number): FantasyMapBiome {
-  const regionRow = Math.floor(chunkRow / REGION_CHUNKS);
-  const regionCol = Math.floor(chunkCol / REGION_CHUNKS);
+function getRegionBiomeByIndex(
+  regionRow: number,
+  regionCol: number
+): FantasyMapBiome {
   const seed = hashInts(regionRow, regionCol, 0x4f524e41);
   return REGION_BIOMES[seed % REGION_BIOMES.length];
+}
+
+function getRegionBiome(chunkRow: number, chunkCol: number): FantasyMapBiome {
+  return getRegionBiomeByIndex(
+    Math.floor(chunkRow / REGION_CHUNKS),
+    Math.floor(chunkCol / REGION_CHUNKS)
+  );
+}
+
+export function getFantasyAtlasTerrainCells(
+  bounds: FantasyMapBounds
+): FantasyMapTerrainCell[] {
+  const latStep = FANTASY_ATLAS_CHUNK_METERS / 111_320;
+  const startRow = Math.floor(bounds.south / latStep) - 1;
+  const endRow = Math.floor(bounds.north / latStep) + 1;
+  const cells: FantasyMapTerrainCell[] = [];
+
+  for (let row = startRow; row <= endRow; row++) {
+    const south = row * latStep;
+    const north = south + latStep;
+    const centerLat = south + latStep / 2;
+    const lngStep =
+      FANTASY_ATLAS_CHUNK_METERS /
+      (111_320 * Math.cos((centerLat * Math.PI) / 180));
+    const startCol = Math.floor(bounds.west / lngStep) - 1;
+    const endCol = Math.floor(bounds.east / lngStep) + 1;
+
+    for (let column = startCol; column <= endCol; column++) {
+      const west = column * lngStep;
+      const east = west + lngStep;
+
+      cells.push({
+        id: `${row}:${column}`,
+        row,
+        column,
+        south,
+        west,
+        north,
+        east,
+        centerLat,
+        centerLng: west + lngStep / 2,
+        biome: getRegionBiome(row, column),
+        variation: hashInts(row, column, 0x54455252) / 4_294_967_296,
+      });
+    }
+  }
+
+  return cells;
 }
 
 export function getFantasyAtlasPlacements(

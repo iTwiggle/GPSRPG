@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Popup, Circle, useMap } from "react-leaflet";
 import AccessibleMarker from "@/components/AccessibleMarker";
 import ExplorationFogOverlay from "@/components/ExplorationFogOverlay";
 import FantasyAtlasOverlay from "@/components/FantasyAtlasOverlay";
+import FantasyTerrainOverlay from "@/components/FantasyTerrainOverlay";
 import surfaceStyles from "@/components/FantasyMapSurface.module.css";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
@@ -73,6 +74,10 @@ export default function GameMap({
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <FantasyTerrainOverlay
+        enabled={fantasyGridEnabled}
+        streetReference={streetReferenceMode}
       />
       <FantasyAtlasOverlay
         enabled={fantasyGridEnabled}
