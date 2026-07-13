@@ -6,7 +6,6 @@ import AccessibleMarker from "@/components/AccessibleMarker";
 import ExplorationFogOverlay from "@/components/ExplorationFogOverlay";
 import FantasyAtlasOverlay from "@/components/FantasyAtlasOverlay";
 import surfaceStyles from "@/components/FantasyMapSurface.module.css";
-import { useExplorationMemory } from "@/hooks/useExplorationMemory";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
@@ -14,7 +13,6 @@ import {
   createPoiMarkerConfig,
   playerMarkerConfig,
 } from "@/lib/poi-marker-icons";
-import type { OsmContextCategory } from "@/lib/osm-context";
 import type { POI } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
 
@@ -34,7 +32,7 @@ interface GameMapProps {
   pois: POI[];
   selectedPoiId: string | null;
   visitedPoiIds: string[];
-  areaContext: OsmContextCategory;
+  revealedCellKeys: string[];
   fantasyGridEnabled: boolean;
   streetReferenceMode: boolean;
   onInteractPoi: (poi: POI) => void;
@@ -46,7 +44,7 @@ export default function GameMap({
   pois,
   selectedPoiId,
   visitedPoiIds,
-  areaContext: _areaContext,
+  revealedCellKeys,
   fantasyGridEnabled,
   streetReferenceMode,
   onInteractPoi,
@@ -55,11 +53,6 @@ export default function GameMap({
     () => [playerLat, playerLng] as [number, number],
     [playerLat, playerLng]
   );
-  const playerPosition = useMemo(
-    () => ({ lat: playerLat, lng: playerLng }),
-    [playerLat, playerLng]
-  );
-  const explorationMemory = useExplorationMemory(playerPosition);
 
   const mapClassName = [
     "fantasy-map-surface h-full w-full rounded-xl",
@@ -89,7 +82,7 @@ export default function GameMap({
         enabled={fantasyGridEnabled && !streetReferenceMode}
         playerLat={playerLat}
         playerLng={playerLng}
-        revealedCellKeys={explorationMemory.revealedCellKeys}
+        revealedCellKeys={revealedCellKeys}
       />
       <RecenterMap lat={playerLat} lng={playerLng} />
 
@@ -104,12 +97,14 @@ export default function GameMap({
       <Circle
         center={center}
         radius={EXPLORE_RADIUS_METERS}
+        pane="markerPane"
+        interactive={false}
         pathOptions={{
-          color: "#a78bfa",
-          fillColor: "#7c3aed",
-          fillOpacity: 0.1,
-          weight: 1.5,
-          dashArray: "4 6",
+          stroke: false,
+          fill: true,
+          fillColor: "#60a5fa",
+          fillOpacity: 0.2,
+          className: surfaceStyles.exploreRadius,
         }}
       />
 
@@ -132,6 +127,7 @@ export default function GameMap({
           <AccessibleMarker
             key={poi.id}
             position={[poi.lat, poi.lng]}
+            pane="shadowPane"
             icon={markerConfig.icon}
             accessibility={markerConfig.accessibility}
             onKeyboardActivate={() => onInteractPoi(poi)}

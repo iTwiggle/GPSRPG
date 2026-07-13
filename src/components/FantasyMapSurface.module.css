@@ -51,3 +51,7 @@
   pointer-events: none;
   image-rendering: auto;
 }
+
+.exploreRadius {
+  filter: blur(9px);
+}

@@ -21,6 +21,7 @@ import POIPanel from "@/components/POIPanel";
 import SiteFooter from "@/components/SiteFooter";
 import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useExplorationMemory } from "@/hooks/useExplorationMemory";
 import { useOsmContext } from "@/hooks/useOsmContext";
 import { useStickyPois } from "@/hooks/useStickyPois";
 import { countReadyDepotDoors } from "@/lib/base-camp";
@@ -32,6 +33,7 @@ import {
   STREET_REF_SESSION_KEY,
 } from "@/lib/fantasy-grid-surface";
 import { getMapPoiTapAction } from "@/lib/map-poi-interaction";
+import { getDiscoverablePois } from "@/lib/poi-discovery";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
 
@@ -55,6 +57,7 @@ export default function HomePage() {
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
 
   const playerPosition = geo.position;
+  const explorationMemory = useExplorationMemory(playerPosition);
   const osmContext = useOsmContext(playerPosition?.lat, playerPosition?.lng);
 
   const areaContext =
@@ -98,13 +101,31 @@ export default function HomePage() {
     playerPosition,
     areaContext
   );
+  const fogOfWarEnabled = fantasyGridEnabled && !streetReferenceMode;
+  const discoverablePois = useMemo(
+    () =>
+      playerPosition
+        ? getDiscoverablePois({
+            pois,
+            playerPosition,
+            revealedCellKeys: explorationMemory.revealedCellKeys,
+            fogOfWarEnabled,
+          })
+        : [],
+    [
+      explorationMemory.revealedCellKeys,
+      fogOfWarEnabled,
+      playerPosition,
+      pois,
+    ]
+  );
 
   useEffect(() => {
     if (!selectedPoi) return;
-    if (!pois.some((poi) => poi.id === selectedPoi.id)) {
+    if (!discoverablePois.some((poi) => poi.id === selectedPoi.id)) {
       setSelectedPoi(null);
     }
-  }, [pois, selectedPoi]);
+  }, [discoverablePois, selectedPoi]);
 
   const gpsLabel = useMemo(() => {
     switch (geo.status) {
@@ -356,10 +377,10 @@ export default function HomePage() {
             <GameMap
               playerLat={playerPosition.lat}
               playerLng={playerPosition.lng}
-              pois={pois}
+              pois={discoverablePois}
               selectedPoiId={selectedPoi?.id ?? null}
               visitedPoiIds={gameState.visitedPOIIds}
-              areaContext={areaContext}
+              revealedCellKeys={explorationMemory.revealedCellKeys}
               fantasyGridEnabled={fantasyGridEnabled}
               streetReferenceMode={streetReferenceMode}
               onInteractPoi={handleMapPoiInteract}
@@ -387,7 +408,7 @@ export default function HomePage() {
               {activeMobileSection === "poi" && (
                 <POIPanel
                   poi={selectedPoi}
-                  pois={pois}
+                  pois={discoverablePois}
                   playerPosition={playerPosition}
                   visited={selectedPoi ? isVisited(selectedPoi.id) : false}
                   onExplore={handleExplore}
@@ -449,7 +470,7 @@ export default function HomePage() {
             <div className="hidden flex-col gap-4 lg:flex">
               <POIPanel
                 poi={selectedPoi}
-                pois={pois}
+                pois={discoverablePois}
                 playerPosition={playerPosition}
                 visited={selectedPoi ? isVisited(selectedPoi.id) : false}
                 onExplore={handleExplore}
