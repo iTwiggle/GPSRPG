@@ -100,11 +100,10 @@ export default function GameMap({
         pane="markerPane"
         interactive={false}
         pathOptions={{
-          color: "#c4b5fd",
-          fillColor: "#7c3aed",
-          fillOpacity: 0.055,
-          opacity: 0.48,
-          weight: 1.35,
+          stroke: false,
+          fill: true,
+          fillColor: "#60a5fa",
+          fillOpacity: 0.2,
           className: surfaceStyles.exploreRadius,
         }}
       />
