@@ -19,7 +19,7 @@ const MAX_RADIUS_METERS = 450;
 export const GUARANTEED_FIRST_POI_MIN_METERS = 70;
 export const GUARANTEED_FIRST_POI_MAX_METERS = 110;
 
-/** POIs regenerate only after crossing into a new ~400 m grid cell. */
+/** Seed deterministic POI identities and positions from stable ~400 m cells. */
 export const POI_CELL_SIZE_METERS = 400;
 
 export { getAreaCellKey };

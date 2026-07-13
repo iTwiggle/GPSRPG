@@ -144,8 +144,9 @@ export default function AboutPage() {
               No combat, multiplayer, AR, cloud saves, or real-money rewards.
             </li>
             <li>
-              Explore requires being within ~150 m of a site. POIs regenerate when
-              you cross ~400 m grid cells.
+              Explore requires being within ~150 m of a site. POIs are stable
+              world objects that enter and leave the nearby rolling field
+              individually as you move.
             </li>
             <li>
               Installed PWA mode uses a lightweight service worker for

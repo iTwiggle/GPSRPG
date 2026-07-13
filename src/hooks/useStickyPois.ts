@@ -14,8 +14,6 @@ const ONBOARDING_POI_STORAGE_KEY = "gpsrpg-onboarding-poi-v1";
 
 interface UseStickyPoisResult {
   pois: POI[];
-  /** Compatibility field for the retired anchor UI. Rolling fields do not refresh wholesale. */
-  metersUntilRefresh: null;
 }
 
 function isStoredPoi(value: unknown): value is POI {
@@ -106,8 +104,5 @@ export function useStickyPois(
     );
   }, [areaContext, onboardingPoi, playerPosition]);
 
-  return {
-    pois,
-    metersUntilRefresh: null,
-  };
+  return { pois };
 }

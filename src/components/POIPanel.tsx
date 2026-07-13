@@ -9,7 +9,6 @@ import {
   formatCardinalBearing,
   formatDistance,
 } from "@/lib/distance";
-import { POI_ANCHOR_REGENERATE_METERS } from "@/lib/poi-anchor";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { getPoiGlyphClassName, POI_TYPE_CHIP_BG } from "@/lib/poi-visual";
 import { EXPLORE_RADIUS_METERS, type POI, type Position } from "@/lib/types";
@@ -143,8 +142,8 @@ function NearestPoiEmptyState({
       <div className="rpg-panel border-dashed border-slate-600/50 p-4 text-sm text-slate-400">
         <p className="text-slate-300">Scan the overworld map for nearby sites.</p>
         <p className="mt-2 text-xs text-slate-500">
-          Tap a marker to inspect a point of interest. Sites stay stable until
-          you walk ~{POI_ANCHOR_REGENERATE_METERS} m from the field anchor.
+          Tap a marker to inspect a point of interest. Stable sites enter and
+          leave individually at the edge of the rolling field as you move.
         </p>
       </div>
     );
@@ -167,7 +166,8 @@ function NearestPoiEmptyState({
       <p className="text-slate-300">Scan the overworld map for nearby sites.</p>
       <p className="mt-2 text-xs text-slate-500">
         Tap a marker to inspect a point of interest, or track the nearest site
-        below. Sites refresh after ~{POI_ANCHOR_REGENERATE_METERS} m from anchor.
+        below. Site identities and world positions remain stable while the
+        nearby set streams at the field edge.
       </p>
 
       <div className="mt-4 rounded-lg border border-violet-500/25 bg-slate-950/45 p-3">
