@@ -11,11 +11,19 @@ import {
 } from "@/lib/exploration-memory";
 
 const PANE_NAME = "explorationFogPane";
-const PANE_Z_INDEX = "360";
+// Keep fog above POI markers (shadow pane: 500) while leaving the player,
+// explore radius, tooltips, and popups unobscured.
+const PANE_Z_INDEX = "550";
 const KNOWN_TERRITORY_CLEAR_ALPHA = 0.72;
 
 interface ExplorationFogOverlayProps {
   enabled: boolean;
+  playerLat: number;
+  playerLng: number;
+  revealedCellKeys: string[];
+}
+
+interface FogRenderState {
   playerLat: number;
   playerLng: number;
   revealedCellKeys: string[];
@@ -144,72 +152,103 @@ export default function ExplorationFogOverlay({
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
+  const redrawRef = useRef<(() => void) | null>(null);
+  const renderStateRef = useRef<FogRenderState>({
+    playerLat,
+    playerLng,
+    revealedCellKeys,
+  });
+
+  renderStateRef.current = { playerLat, playerLng, revealedCellKeys };
 
   useEffect(() => {
     if (!enabled) {
       const existing = map.getPane(PANE_NAME);
       if (existing) existing.replaceChildren();
       canvasRef.current = null;
+      redrawRef.current = null;
       return;
     }
 
     let pane = map.getPane(PANE_NAME);
     if (!pane) {
       pane = map.createPane(PANE_NAME);
-      pane.style.zIndex = PANE_Z_INDEX;
-      pane.style.pointerEvents = "none";
     }
+    pane.style.zIndex = PANE_Z_INDEX;
+    pane.style.pointerEvents = "none";
 
     const canvas = document.createElement("canvas");
     canvas.className = "exploration-fog-canvas";
     canvas.setAttribute("aria-hidden", "true");
-    pane.replaceChildren(canvas);
+    canvas.style.position = "absolute";
+    canvas.style.pointerEvents = "none";
     canvasRef.current = canvas;
+
+    let active = true;
+
+    const drawNow = () => {
+      const el = canvasRef.current;
+      if (!active || !el) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      positionCanvas(map, el, dpr);
+      const ctx = el.getContext("2d");
+      if (!ctx) return;
+
+      const state = renderStateRef.current;
+      drawExplorationFog(
+        ctx,
+        map,
+        dpr,
+        state.playerLat,
+        state.playerLng,
+        state.revealedCellKeys
+      );
+    };
 
     const redraw = () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
-        const el = canvasRef.current;
-        if (!el) return;
-
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        positionCanvas(map, el, dpr);
-        const ctx = el.getContext("2d");
-        if (!ctx) return;
-
-        drawExplorationFog(
-          ctx,
-          map,
-          dpr,
-          playerLat,
-          playerLng,
-          revealedCellKeys
-        );
+        rafRef.current = null;
+        drawNow();
       });
     };
 
-    redraw();
+    redrawRef.current = redraw;
+
+    // Paint before attaching the canvas so enabling fog never exposes a blank
+    // map frame. Subsequent GPS/memory updates repaint this same canvas.
+    drawNow();
+    pane.replaceChildren(canvas);
+
     map.on("move", redraw);
     map.on("moveend", redraw);
-    map.on("zoom", redraw);
     map.on("zoomend", redraw);
-    map.on("zoomanim", redraw);
     map.on("viewreset", redraw);
     map.on("resize", redraw);
 
     return () => {
+      active = false;
       map.off("move", redraw);
       map.off("moveend", redraw);
-      map.off("zoom", redraw);
       map.off("zoomend", redraw);
-      map.off("zoomanim", redraw);
       map.off("viewreset", redraw);
       map.off("resize", redraw);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      pane?.replaceChildren();
-      canvasRef.current = null;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      if (redrawRef.current === redraw) redrawRef.current = null;
+      if (canvasRef.current === canvas) {
+        pane?.replaceChildren();
+        canvasRef.current = null;
+      }
     };
-  }, [map, enabled, playerLat, playerLng, revealedCellKeys]);
+  }, [map, enabled]);
+
+  useEffect(() => {
+    if (enabled) redrawRef.current?.();
+  }, [enabled, playerLat, playerLng, revealedCellKeys]);
 
   return null;
 }

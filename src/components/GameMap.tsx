@@ -97,12 +97,15 @@ export default function GameMap({
       <Circle
         center={center}
         radius={EXPLORE_RADIUS_METERS}
+        pane="markerPane"
+        interactive={false}
         pathOptions={{
-          color: "#a78bfa",
+          color: "#c4b5fd",
           fillColor: "#7c3aed",
-          fillOpacity: 0.1,
-          weight: 1.5,
-          dashArray: "4 6",
+          fillOpacity: 0.055,
+          opacity: 0.48,
+          weight: 1.35,
+          className: surfaceStyles.exploreRadius,
         }}
       />
 
@@ -125,6 +128,7 @@ export default function GameMap({
           <AccessibleMarker
             key={poi.id}
             position={[poi.lat, poi.lng]}
+            pane="shadowPane"
             icon={markerConfig.icon}
             accessibility={markerConfig.accessibility}
             onKeyboardActivate={() => onInteractPoi(poi)}
