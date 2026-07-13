@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import ItemIcon from "@/components/ItemIcon";
+import type { PendingEncounter } from "@/lib/encounter";
 import { getCatalogEntry, getItemSet } from "@/lib/item-catalog";
 import {
   ITEM_TYPE_LABEL,
@@ -7,17 +9,33 @@ import {
   itemCatalogKey,
   lootRevealClass,
 } from "@/lib/item-visual";
-import type { EncounterResult } from "@/lib/types";
+import type { EncounterApproachId, EncounterResult } from "@/lib/types";
 
 interface EncounterModalProps {
+  pendingEncounter: PendingEncounter | null;
   encounter: EncounterResult | null;
+  onChoose: (approachId: EncounterApproachId) => void;
+  onCancel: () => void;
   onClose: () => void;
 }
 
 export default function EncounterModal({
+  pendingEncounter,
   encounter,
+  onChoose,
+  onCancel,
   onClose,
 }: EncounterModalProps) {
+  if (pendingEncounter) {
+    return (
+      <EncounterChoiceView
+        pendingEncounter={pendingEncounter}
+        onChoose={onChoose}
+        onCancel={onCancel}
+      />
+    );
+  }
+
   if (!encounter) return null;
 
   const newKeys = new Set(encounter.newCodexItemKeys ?? []);
@@ -28,9 +46,9 @@ export default function EncounterModal({
   const hasRareLoot = encounter.loot.some((item) => item.rarity === "rare");
 
   return (
-    <div className="app-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-black/60">
+    <div className="app-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 p-3">
       <div
-        className={`rpg-panel w-full max-w-md border-amber-500/25 p-6 ${hasRareLoot ? "rpg-encounter--rare-pull" : ""}`}
+        className={`rpg-panel max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto border-amber-500/25 p-6 ${hasRareLoot ? "rpg-encounter--rare-pull" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="encounter-title"
@@ -44,6 +62,20 @@ export default function EncounterModal({
         >
           {encounter.title}
         </h2>
+        {encounter.approachLabel && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-violet-400/35 bg-violet-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-violet-100">
+              Approach · {encounter.approachLabel}
+            </span>
+            <span className="text-xs text-slate-500">
+              {encounter.approachOutcome === "payoff"
+                ? "The gamble paid off"
+                : encounter.approachOutcome === "setback"
+                  ? "The gamble came up thin"
+                  : "A steady result"}
+            </span>
+          </div>
+        )}
         <p className="mt-2 text-sm leading-relaxed text-slate-400">
           {encounter.description}
         </p>
@@ -172,6 +204,112 @@ export default function EncounterModal({
           className="mt-5 w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_16px_rgba(124,58,237,0.3)] hover:bg-violet-500"
         >
           Continue
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EncounterChoiceView({
+  pendingEncounter,
+  onChoose,
+  onCancel,
+}: {
+  pendingEncounter: PendingEncounter;
+  onChoose: (approachId: EncounterApproachId) => void;
+  onCancel: () => void;
+}) {
+  const firstChoiceRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    firstChoiceRef.current?.focus();
+  }, [pendingEncounter.poi.id]);
+
+  return (
+    <div className="app-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-black/70 p-3">
+      <div
+        className="rpg-panel max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto border-violet-400/30 p-5 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="encounter-choice-title"
+        aria-describedby="encounter-choice-description"
+      >
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-300/90">
+          A decision at the site
+        </p>
+        <h2
+          id="encounter-choice-title"
+          className="mt-1 text-xl font-bold text-slate-50"
+        >
+          {pendingEncounter.poi.name}
+        </h2>
+        <p
+          id="encounter-choice-description"
+          className="mt-2 text-sm italic leading-relaxed text-slate-400"
+        >
+          {pendingEncounter.poi.flavor}
+        </p>
+
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-300">
+          Choose your approach
+        </p>
+        <div
+          className="mt-2 grid gap-3"
+          role="group"
+          aria-label="Site approaches"
+        >
+          {pendingEncounter.approaches.map((approach, index) => {
+            const safe = approach.tone === "safe";
+            return (
+              <button
+                key={approach.id}
+                ref={index === 0 ? firstChoiceRef : undefined}
+                type="button"
+                onClick={() => onChoose(approach.id)}
+                className={`rounded-xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                  safe
+                    ? "border-sky-400/35 bg-sky-500/10 hover:border-sky-300/60 hover:bg-sky-500/15 focus-visible:ring-sky-300"
+                    : "border-amber-400/40 bg-amber-500/10 hover:border-amber-300/65 hover:bg-amber-500/15 focus-visible:ring-amber-300"
+                }`}
+                aria-label={`${approach.label}. ${approach.tradeoff}`}
+              >
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-[0.14em] ${
+                    safe ? "text-sky-200" : "text-amber-200"
+                  }`}
+                >
+                  {approach.kicker}
+                </span>
+                <span className="mt-1 block text-base font-semibold text-slate-50">
+                  {approach.label}
+                </span>
+                <span className="mt-1 block text-sm leading-relaxed text-slate-300/80">
+                  {approach.description}
+                </span>
+                <span
+                  className={`mt-3 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                    safe
+                      ? "border-sky-400/30 bg-sky-500/10 text-sky-100"
+                      : "border-amber-400/30 bg-amber-500/10 text-amber-100"
+                  }`}
+                >
+                  {approach.tradeoff}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="mt-4 text-xs leading-relaxed text-slate-500">
+          The site and your choice lock the outcome. Backing out does not spend
+          the site or consume a Camp perk.
+        </p>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="mt-4 w-full rounded-lg border border-slate-600 bg-slate-900/70 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-500 hover:bg-slate-800"
+        >
+          Back to map
         </button>
       </div>
     </div>

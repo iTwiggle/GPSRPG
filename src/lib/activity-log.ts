@@ -57,7 +57,9 @@ function buildExploreEvents(
     id: makeId(timestamp, "encounter", index++),
     timestamp,
     type: "encounter",
-    message: `Encountered ${encounter.title}`,
+    message: encounter.approachLabel
+      ? `Encountered ${encounter.title} · ${encounter.approachLabel}`
+      : `Encountered ${encounter.title}`,
   });
 
   if (encounter.xpGained > 0) {

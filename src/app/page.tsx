@@ -46,8 +46,24 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
-    useGameState();
+  const {
+    gameState,
+    saveWarning,
+    pendingEncounter,
+    lastEncounter,
+    explorePoi,
+    resolveEncounter,
+    cancelPendingEncounter,
+    refreshFieldTasks,
+    salvageCommonTriplet,
+    claimDepotDoor,
+    markBaseCampVisit,
+    resetFieldReport,
+    clearEncounter,
+    clearSaveWarning,
+    reset,
+    isVisited,
+  } = useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activeMobileSection, setActiveMobileSection] =
     useState<MobilePanelSection>("poi");
@@ -509,7 +525,13 @@ export default function HomePage() {
         <SiteFooter />
       </div>
 
-      <EncounterModal encounter={lastEncounter} onClose={clearEncounter} />
+      <EncounterModal
+        pendingEncounter={pendingEncounter}
+        encounter={lastEncounter}
+        onChoose={resolveEncounter}
+        onCancel={cancelPendingEncounter}
+        onClose={clearEncounter}
+      />
       <FeedbackProvider />
     </main>
   );
