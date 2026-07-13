@@ -25,8 +25,6 @@ import { useExplorationMemory } from "@/hooks/useExplorationMemory";
 import { useOsmContext } from "@/hooks/useOsmContext";
 import { useStickyPois } from "@/hooks/useStickyPois";
 import { countReadyDepotDoors } from "@/lib/base-camp";
-import { POI_ANCHOR_REGENERATE_METERS } from "@/lib/poi-anchor";
-import { formatDistance } from "@/lib/distance";
 import { canExplorePoi } from "@/lib/explore-validation";
 import {
   FANTASY_GRID_SESSION_KEY,
@@ -97,10 +95,7 @@ export default function HomePage() {
     sessionStorage.setItem(STREET_REF_SESSION_KEY, enabled ? "1" : "0");
   }, []);
 
-  const { pois, metersUntilRefresh } = useStickyPois(
-    playerPosition,
-    areaContext
-  );
+  const { pois } = useStickyPois(playerPosition, areaContext);
   const fogOfWarEnabled = fantasyGridEnabled && !streetReferenceMode;
   const discoverablePois = useMemo(
     () =>
@@ -278,13 +273,6 @@ export default function HomePage() {
             Overworld companion — explore nearby fantasy sites from your
             real-world position, roll encounters, and track loot locally.
           </p>
-          {playerPosition && metersUntilRefresh !== null && (
-            <p className="text-xs text-slate-500" role="status">
-              Sites locked to field anchor · refresh in{" "}
-              {formatDistance(metersUntilRefresh)} (or after{" "}
-              {POI_ANCHOR_REGENERATE_METERS} m walked)
-            </p>
-          )}
         </header>
 
         <PwaInstallPrompt />
@@ -319,9 +307,9 @@ export default function HomePage() {
           >
             <p>
               <span className="font-medium text-slate-200">Live GPS.</span> Sites
-              refresh as you move. At highway speeds (passenger testing only),
-              markers may pass quickly — stop or walk to explore safely. Do not
-              use the app while driving.
+              stream into and out of the rolling field as you move. At highway
+              speeds (passenger testing only), markers may pass quickly — stop
+              or walk to explore safely. Do not use the app while driving.
             </p>
           </div>
         )}
