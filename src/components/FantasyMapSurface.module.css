@@ -26,7 +26,7 @@
 }
 
 .atlasActive :global(.leaflet-tile-pane img) {
-  opacity: 0.24;
+  opacity: 0.08;
 }
 
 .streetReference :global(.leaflet-tile-pane img) {

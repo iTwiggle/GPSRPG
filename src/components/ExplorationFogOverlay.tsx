@@ -1,7 +1,7 @@
 "use client";
 
 import L from "leaflet";
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import {
   EXPLORATION_CELL_METERS,
@@ -11,10 +11,13 @@ import {
 } from "@/lib/exploration-memory";
 
 const PANE_NAME = "explorationFogPane";
-// Keep fog above POI markers (shadow pane: 500) while leaving the player,
-// explore radius, tooltips, and popups unobscured.
+// Conceal base tiles below authored biome motifs and the already-filtered
+// discovered POIs, Wayfarer, explore radius, tooltips, and popups.
 const PANE_Z_INDEX = "550";
 const KNOWN_TERRITORY_CLEAR_ALPHA = 0.72;
+// Leave painted fog beyond every viewport edge so Leaflet's animated pane
+// transform cannot expose base tiles between move events and our next redraw.
+const FOG_CANVAS_OVERSCAN_PX = 96;
 
 interface ExplorationFogOverlayProps {
   enabled: boolean;
@@ -29,6 +32,21 @@ interface FogRenderState {
   revealedCellKeys: string[];
 }
 
+interface FogCanvasViewport {
+  size: L.Point;
+  topLeft: L.Point;
+}
+
+function getFogCanvasViewport(map: L.Map): FogCanvasViewport {
+  const mapSize = map.getSize();
+  const padding = FOG_CANVAS_OVERSCAN_PX;
+
+  return {
+    size: L.point(mapSize.x + padding * 2, mapSize.y + padding * 2),
+    topLeft: map.containerPointToLayerPoint(L.point(-padding, -padding)),
+  };
+}
+
 function layerToCanvasPoint(
   map: L.Map,
   latlng: L.LatLngExpression,
@@ -38,8 +56,7 @@ function layerToCanvasPoint(
 }
 
 function positionCanvas(map: L.Map, canvas: HTMLCanvasElement, dpr: number) {
-  const size = map.getSize();
-  const topLeft = map.containerPointToLayerPoint(L.point(0, 0));
+  const { size, topLeft } = getFogCanvasViewport(map);
 
   canvas.width = Math.max(1, Math.floor(size.x * dpr));
   canvas.height = Math.max(1, Math.floor(size.y * dpr));
@@ -87,13 +104,12 @@ function drawExplorationFog(
   playerLng: number,
   revealedCellKeys: string[]
 ) {
-  const size = map.getSize();
-  const topLeft = map.containerPointToLayerPoint(L.point(0, 0));
+  const { size, topLeft } = getFogCanvasViewport(map);
   const bounds = map.getBounds().pad(0.35);
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, size.x, size.y);
-  ctx.fillStyle = "rgba(1, 3, 7, 0.9)";
+  ctx.fillStyle = "rgb(1, 3, 7)";
   ctx.fillRect(0, 0, size.x, size.y);
 
   ctx.save();
@@ -161,7 +177,7 @@ export default function ExplorationFogOverlay({
 
   renderStateRef.current = { playerLat, playerLng, revealedCellKeys };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!enabled) {
       const existing = map.getPane(PANE_NAME);
       if (existing) existing.replaceChildren();
@@ -246,7 +262,7 @@ export default function ExplorationFogOverlay({
     };
   }, [map, enabled]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (enabled) redrawRef.current?.();
   }, [enabled, playerLat, playerLng, revealedCellKeys]);
 
