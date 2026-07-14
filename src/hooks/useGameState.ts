@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   appendExploreEvents,
   appendSetCompleteEvents,
@@ -29,6 +29,7 @@ import {
   saveGameState,
 } from "@/lib/storage";
 import type {
+  EncounterApproachId,
   EncounterResult,
   GameState,
   Item,
@@ -36,7 +37,11 @@ import type {
   POI,
   Position,
 } from "@/lib/types";
-import { rollEncounter } from "@/lib/encounter";
+import {
+  getEncounterApproaches,
+  rollEncounter,
+  type PendingEncounter,
+} from "@/lib/encounter";
 import { canExplorePoi } from "@/lib/explore-validation";
 import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
 import { feedback } from "@/lib/feedback/manager";
@@ -61,6 +66,9 @@ export function useGameState() {
   const [lastEncounter, setLastEncounter] = useState<EncounterResult | null>(
     null
   );
+  const [pendingEncounter, setPendingEncounter] =
+    useState<PendingEncounter | null>(null);
+  const pendingEncounterRef = useRef<PendingEncounter | null>(null);
 
   useEffect(() => {
     const result = loadGameState();
@@ -86,14 +94,48 @@ export function useGameState() {
       );
       if (!validation.ok) return null;
 
-      const rollSeed = options?.simulate ? Date.now() : undefined;
-      let encounter = rollEncounter(poi, rollSeed);
+      const pending: PendingEncounter = {
+        poi,
+        approaches: getEncounterApproaches(poi),
+        simulate: options?.simulate === true,
+      };
+
+      pendingEncounterRef.current = pending;
+      setPendingEncounter(pending);
+      setLastEncounter(null);
+      return pending;
+    },
+    [gameState]
+  );
+
+  const resolveEncounter = useCallback(
+    (approachId: EncounterApproachId) => {
+      const pending = pendingEncounterRef.current;
+      if (
+        !gameState ||
+        !pending ||
+        !pending.approaches.some((approach) => approach.id === approachId)
+      ) {
+        return null;
+      }
+
+      // Consume the pending encounter synchronously before any state writes.
+      // A double tap therefore cannot resolve or reward the same site twice.
+      pendingEncounterRef.current = null;
+      setPendingEncounter(null);
+
+      const { poi } = pending;
+      if (!pending.simulate && gameState.visitedPOIIds.includes(poi.id)) {
+        return null;
+      }
+
+      let encounter = rollEncounter(poi, approachId);
 
       const perkResult = applyActivePerksToEncounter(
         encounter,
         poi,
         gameState.baseCamp,
-        rollSeed ?? poi.id
+        `${poi.id}:${approachId}`
       );
       encounter = perkResult.encounter;
       const baseCamp = perkResult.baseCamp;
@@ -224,6 +266,11 @@ export function useGameState() {
     [gameState, persist]
   );
 
+  const cancelPendingEncounter = useCallback(() => {
+    pendingEncounterRef.current = null;
+    setPendingEncounter(null);
+  }, []);
+
   const refreshFieldTasks = useCallback(() => {
     if (!gameState) return;
     persist({
@@ -350,7 +397,9 @@ export function useGameState() {
 
   const reset = useCallback(() => {
     const fresh = resetGameState();
+    pendingEncounterRef.current = null;
     setGameState(fresh);
+    setPendingEncounter(null);
     setLastEncounter(null);
     setSaveWarning(null);
   }, []);
@@ -362,8 +411,11 @@ export function useGameState() {
   return {
     gameState,
     saveWarning,
+    pendingEncounter,
     lastEncounter,
     explorePoi,
+    resolveEncounter,
+    cancelPendingEncounter,
     refreshFieldTasks,
     salvageCommonTriplet,
     claimDepotDoor,

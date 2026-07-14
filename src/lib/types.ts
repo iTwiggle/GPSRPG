@@ -38,11 +38,20 @@ export interface Position {
   lng: number;
 }
 
+export type EncounterApproachId = "survey" | "delve";
+export type EncounterApproachOutcome = "steady" | "payoff" | "setback";
+
 export interface EncounterResult {
   title: string;
   description: string;
   xpGained: number;
   loot: Item[];
+  /** Player-selected approach that produced this result. */
+  approachId?: EncounterApproachId;
+  /** Site-specific label shown in the encounter report and activity log. */
+  approachLabel?: string;
+  /** Whether the selected approach resolved steadily, paid off, or came up thin. */
+  approachOutcome?: EncounterApproachOutcome;
   /** Catalog keys (`name|type`) logged to the codex for the first time this explore. */
   newCodexItemKeys?: string[];
   /** Album set IDs completed on this explore. */
