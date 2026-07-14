@@ -9,6 +9,7 @@ import {
   getExplorationCellCenter,
   parseExplorationCellKey,
 } from "@/lib/exploration-memory";
+import { positionOverlayCanvas } from "@/lib/map-overlay-canvas";
 
 const PANE_NAME = "explorationFogPane";
 // Conceal base tiles below authored biome motifs and the already-filtered
@@ -57,12 +58,7 @@ function layerToCanvasPoint(
 
 function positionCanvas(map: L.Map, canvas: HTMLCanvasElement, dpr: number) {
   const { size, topLeft } = getFogCanvasViewport(map);
-
-  canvas.width = Math.max(1, Math.floor(size.x * dpr));
-  canvas.height = Math.max(1, Math.floor(size.y * dpr));
-  canvas.style.width = `${size.x}px`;
-  canvas.style.height = `${size.y}px`;
-  L.DomUtil.setPosition(canvas, topLeft);
+  positionOverlayCanvas(canvas, size, topLeft, dpr);
 }
 
 function metersToPixels(

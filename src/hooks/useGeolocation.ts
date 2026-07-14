@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type GeolocationSnapshot,
   watchPlayerPosition,
@@ -42,6 +42,21 @@ export function useGeolocation(): UseGeolocationResult {
   const [hasLocationConsent, setHasLocationConsent] = useState(false);
   const [liveGpsEnabled, setLiveGpsEnabled] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
+  const nudgeQueueRef = useRef({ north: 0, east: 0 });
+  const nudgeFrameRef = useRef<number | null>(null);
+  const isDemoRef = useRef(false);
+
+  useEffect(() => {
+    isDemoRef.current = isDemo;
+  }, [isDemo]);
+
+  useEffect(() => {
+    return () => {
+      if (nudgeFrameRef.current !== null) {
+        cancelAnimationFrame(nudgeFrameRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const consent = readLocationConsent() ?? (inferLegacyLiveConsent() ? "live" : null);
@@ -118,12 +133,8 @@ export function useGeolocation(): UseGeolocationResult {
     });
   }, []);
 
-  const nudgePosition = useCallback(
+  const applyPositionDelta = useCallback(
     (northMeters: number, eastMeters: number) => {
-      writeLocationConsent("demo");
-      setHasLocationConsent(true);
-      setIsDemo(true);
-      setLiveGpsEnabled(false);
       setSnapshot((prev) => {
         if (!prev.position) {
           const base = DEMO_POSITION;
@@ -158,6 +169,33 @@ export function useGeolocation(): UseGeolocationResult {
       });
     },
     []
+  );
+
+  const flushNudgeQueue = useCallback(() => {
+    nudgeFrameRef.current = null;
+    const { north, east } = nudgeQueueRef.current;
+    if (north === 0 && east === 0) return;
+
+    nudgeQueueRef.current = { north: 0, east: 0 };
+
+    if (!isDemoRef.current) {
+      writeLocationConsent("demo");
+      setHasLocationConsent(true);
+      setIsDemo(true);
+      setLiveGpsEnabled(false);
+    }
+
+    applyPositionDelta(north, east);
+  }, [applyPositionDelta]);
+
+  const nudgePosition = useCallback(
+    (northMeters: number, eastMeters: number) => {
+      nudgeQueueRef.current.north += northMeters;
+      nudgeQueueRef.current.east += eastMeters;
+      if (nudgeFrameRef.current !== null) return;
+      nudgeFrameRef.current = requestAnimationFrame(flushNudgeQueue);
+    },
+    [flushNudgeQueue]
   );
 
   return {

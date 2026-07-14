@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { distanceMeters } from "@/lib/distance";
-import { cellKeyToString, getAreaCellKey, type OsmContextCategory } from "@/lib/osm-context";
+import { cellKeyToString, getAreaCellCenter, getAreaCellKey, type OsmContextCategory } from "@/lib/osm-context";
 import { generateNearbyPOIs } from "@/lib/poi-generator";
 import type { POI, Position } from "@/lib/types";
 import {
-  buildWorldPoiField,
+  filterActiveWorldPois,
+  generateWorldFieldPois,
   WORLD_POI_ACTIVE_RADIUS_METERS,
 } from "@/lib/world-poi-field";
 import { getStorageAdapter } from "@/lib/platform/storage-adapter";
@@ -86,10 +87,26 @@ export function useStickyPois(
     writeOnboardingPoi(next);
   }, [areaContext, onboardingPoi, playerPosition]);
 
+  const playerLat = playerPosition?.lat;
+  const playerLng = playerPosition?.lng;
+
+  const areaCellKeyString = useMemo(() => {
+    if (playerLat === undefined || playerLng === undefined) return null;
+    return cellKeyToString(getAreaCellKey(playerLat, playerLng));
+  }, [playerLat, playerLng]);
+
+  const generatedWorldPois = useMemo(() => {
+    if (!areaCellKeyString || playerLat === undefined || playerLng === undefined) {
+      return [];
+    }
+    const areaCell = getAreaCellKey(playerLat, playerLng);
+    return generateWorldFieldPois(getAreaCellCenter(areaCell), areaContext);
+  }, [areaCellKeyString, areaContext, playerLat, playerLng]);
+
   const pois = useMemo(() => {
     if (!playerPosition) return [];
 
-    const worldPois = buildWorldPoiField(playerPosition, areaContext);
+    const worldPois = filterActiveWorldPois(generatedWorldPois, playerPosition);
     if (
       !onboardingPoi ||
       distanceMeters(playerPosition, onboardingPoi) >
@@ -104,7 +121,7 @@ export function useStickyPois(
         distanceMeters(playerPosition, a) -
         distanceMeters(playerPosition, b)
     );
-  }, [areaContext, onboardingPoi, playerPosition]);
+  }, [generatedWorldPois, onboardingPoi, playerPosition]);
 
   return { pois };
 }

@@ -17,17 +17,20 @@ export function useExplorationMemory(
   const [memory, setMemory] = useState<ExplorationMemory>(
     readExplorationMemory
   );
+  const playerLat = playerPosition?.lat;
+  const playerLng = playerPosition?.lng;
 
   useEffect(() => {
-    if (!playerPosition) return;
+    if (playerLat === undefined || playerLng === undefined) return;
 
+    const position = { lat: playerLat, lng: playerLng };
     setMemory((previous) => {
-      const next = revealExplorationPosition(previous, playerPosition);
+      const next = revealExplorationPosition(previous, position);
       if (next === previous) return previous;
       writeExplorationMemory(next);
       return next;
     });
-  }, [playerPosition]);
+  }, [playerLat, playerLng]);
 
   useEffect(() => {
     const handleReset = () => setMemory(createEmptyExplorationMemory());
