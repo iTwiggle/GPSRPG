@@ -1,4 +1,4 @@
-import { itemCatalogKey } from "./item-visual";
+import { itemCatalogKey } from "@/lib/companion/catalog-registry";
 import type { Item, Player } from "./types";
 
 export const SALVAGE_COMMON_COUNT = 3;

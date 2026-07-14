@@ -175,6 +175,24 @@ export interface BaseCampState {
   lastCampVisitAt?: string;
 }
 
+export interface VisitedPoiState {
+  lastExploredAt: string;
+  exploreCount: number;
+  poiType: POIType;
+}
+
+export interface MovementLedger {
+  totalMeters: number;
+  todayMeters: number;
+  todayDate: string;
+  totalMinutesInMotion: number;
+  todayMinutesInMotion: number;
+  outingsCompleted: number;
+  lastOutdoorSessionAt: string | null;
+  lastPosition?: Position;
+  lastSampleAt?: string;
+}
+
 /** Cross-session companion metadata (sync, daily gates, UE5 handoff). */
 export interface CompanionMeta {
   /** Local calendar date (YYYY-MM-DD) of the last manual contract refresh. */
@@ -184,7 +202,8 @@ export interface CompanionMeta {
 export interface GameState {
   schemaVersion: number;
   player: Player;
-  visitedPOIIds: string[];
+  visitedPois: Record<string, VisitedPoiState>;
+  movementLedger: MovementLedger;
   codex: Codex;
   activityLog: ActivityEvent[];
   fieldTasks: FieldTask[];

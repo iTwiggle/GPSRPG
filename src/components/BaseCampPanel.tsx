@@ -7,12 +7,14 @@ import {
   getSetNameForDoor,
   type DepotDoorStatus,
 } from "@/lib/base-camp";
-import type { BaseCampState, Codex } from "@/lib/types";
+import type { BaseCampState, Codex, GameState } from "@/lib/types";
+import CompanionExportPanel from "@/components/CompanionExportPanel";
 
 interface BaseCampPanelProps {
   codex: Codex;
   baseCamp: BaseCampState;
   fieldReportSites: number;
+  gameState: GameState;
   onClaimDoor: (doorId: string) => boolean;
   onMarkVisit?: () => void;
 }
@@ -33,6 +35,7 @@ export default function BaseCampPanel({
   codex,
   baseCamp,
   fieldReportSites,
+  gameState,
   onClaimDoor,
   onMarkVisit,
 }: BaseCampPanelProps) {
@@ -150,6 +153,8 @@ export default function BaseCampPanel({
           </ul>
         )}
       </section>
+
+      <CompanionExportPanel gameState={gameState} embedded />
     </div>
   );
 }

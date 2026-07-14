@@ -6,13 +6,19 @@ import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { createPoiMarkerConfig } from "@/lib/poi-marker-icons";
-import type { POI } from "@/lib/types";
+import {
+  formatCooldownRemaining,
+  getCooldownRemainingMs,
+  type PoiVisitUiStatus,
+} from "@/lib/temporal/poi-cooldowns";
+import type { POI, VisitedPoiState } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
 import { Popup } from "react-leaflet";
 
 interface PoiMapMarkerProps {
   poi: POI;
-  visited: boolean;
+  visit?: VisitedPoiState;
+  visitStatus: PoiVisitUiStatus;
   isSelected: boolean;
   playerLat: number;
   playerLng: number;
@@ -21,7 +27,8 @@ interface PoiMapMarkerProps {
 
 const PoiMapMarker = memo(function PoiMapMarker({
   poi,
-  visited,
+  visit,
+  visitStatus,
   isSelected,
   playerLat,
   playerLng,
@@ -37,15 +44,22 @@ const PoiMapMarker = memo(function PoiMapMarker({
     [playerLat, playerLng, poi]
   );
   const inRange = readout.status === "in_range";
+  const visited =
+    visitStatus === "landmark_done" || visitStatus === "cooldown";
   const markerConfig = useMemo(
     () =>
       createPoiMarkerConfig(poi, {
         selected: isSelected,
         visited,
-        inRange: isSelected && inRange,
+        inRange: isSelected && inRange && visitStatus !== "cooldown",
       }),
-    [poi, isSelected, visited, inRange]
+    [poi, isSelected, visited, inRange, visitStatus]
   );
+
+  const cooldownMs =
+    visitStatus === "cooldown" && visit
+      ? getCooldownRemainingMs(visit, poi.type)
+      : 0;
 
   return (
     <AccessibleMarker
@@ -61,8 +75,14 @@ const PoiMapMarker = memo(function PoiMapMarker({
           <p className="rpg-poi-bubble__meta">
             {getPoiTypeLabel(poi.type)} · {formatDistance(readout.distanceMeters)}
           </p>
-          {visited ? (
+          {visitStatus === "landmark_done" ? (
             <p className="rpg-poi-bubble__prompt text-emerald-300">Explored</p>
+          ) : visitStatus === "cooldown" ? (
+            <p className="rpg-poi-bubble__prompt text-slate-400">
+              Resets in {formatCooldownRemaining(cooldownMs)}
+            </p>
+          ) : visitStatus === "ready" ? (
+            <p className="rpg-poi-bubble__prompt text-amber-200">Ready to explore again</p>
           ) : isSelected && inRange ? (
             <p className="rpg-poi-bubble__prompt text-amber-200">Tap marker again</p>
           ) : isSelected ? (

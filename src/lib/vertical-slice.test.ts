@@ -8,7 +8,7 @@ import {
   generateNearbyPOIs,
 } from "./poi-generator";
 import { getAreaCellCenter, getAreaCellKey } from "./osm-context";
-import { EXPLORE_RADIUS_METERS, type POI } from "./types";
+import { EXPLORE_RADIUS_METERS, type POI, type VisitedPoiState } from "./types";
 
 function makePoi(overrides: Partial<POI> = {}): POI {
   return {
@@ -18,6 +18,18 @@ function makePoi(overrides: Partial<POI> = {}): POI {
     flavor: "A test site.",
     lat: 37.775,
     lng: -122.4194,
+    ...overrides,
+  };
+}
+
+function makeVisit(
+  poi: POI,
+  overrides: Partial<VisitedPoiState> = {}
+): VisitedPoiState {
+  return {
+    lastExploredAt: new Date().toISOString(),
+    exploreCount: 1,
+    poiType: poi.type,
     ...overrides,
   };
 }
@@ -45,29 +57,52 @@ describe("canExplorePoi", () => {
   const player = { lat: 37.7749, lng: -122.4194 };
   const inRangePoi = makePoi({ lat: 37.7755, lng: -122.4194 });
   const farPoi = makePoi({ id: "poi-far", lat: 37.78, lng: -122.4194 });
+  const landmarkPoi = makePoi({ id: "poi-tower", type: "tower" });
+  const dailyPoi = makePoi({ id: "poi-cache", type: "cache" });
 
   it("allows explore when in range and unvisited", () => {
-    expect(canExplorePoi(player, inRangePoi, []).ok).toBe(true);
+    expect(canExplorePoi(player, inRangePoi, {}).ok).toBe(true);
   });
 
   it("blocks explore when out of range", () => {
-    const result = canExplorePoi(player, farPoi, []);
+    const result = canExplorePoi(player, farPoi, {});
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("out_of_range");
   });
 
-  it("blocks repeat explore for visited POIs", () => {
-    const result = canExplorePoi(player, inRangePoi, [inRangePoi.id]);
+  it("blocks repeat explore for landmarks", () => {
+    const visited = { [landmarkPoi.id]: makeVisit(landmarkPoi) };
+    const result = canExplorePoi(player, landmarkPoi, visited);
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("already_visited");
   });
 
+  it("blocks repeat explore while a daily POI is on cooldown", () => {
+    const visited = { [dailyPoi.id]: makeVisit(dailyPoi) };
+    const result = canExplorePoi(player, dailyPoi, visited);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("on_cooldown");
+  });
+
+  it("allows repeat explore after cooldown expires", () => {
+    const visited = {
+      [dailyPoi.id]: makeVisit(dailyPoi, {
+        lastExploredAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      }),
+    };
+    expect(canExplorePoi(player, dailyPoi, visited).ok).toBe(true);
+  });
+
   it("allows simulate to bypass range and visited checks", () => {
+    const visited = {
+      [inRangePoi.id]: makeVisit(inRangePoi),
+      [landmarkPoi.id]: makeVisit(landmarkPoi),
+    };
+    expect(canExplorePoi(player, farPoi, visited, { simulate: true }).ok).toBe(
+      true
+    );
     expect(
-      canExplorePoi(player, farPoi, [], { simulate: true }).ok
-    ).toBe(true);
-    expect(
-      canExplorePoi(player, inRangePoi, [inRangePoi.id], { simulate: true }).ok
+      canExplorePoi(player, landmarkPoi, visited, { simulate: true }).ok
     ).toBe(true);
   });
 });

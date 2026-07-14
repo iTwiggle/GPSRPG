@@ -10,6 +10,7 @@ interface CharacterHUDProps {
   gpsLabel: string;
   gpsAccuracyMeters?: number | null;
   showGpsAccuracy?: boolean;
+  leaguesToday?: number;
 }
 
 export default function CharacterHUD({
@@ -17,6 +18,7 @@ export default function CharacterHUD({
   gpsLabel,
   gpsAccuracyMeters = null,
   showGpsAccuracy = false,
+  leaguesToday = 0,
 }: CharacterHUDProps) {
   const progress = xpProgress(player.xp);
   const toNext = xpToNextLevel(player.xp);
@@ -62,6 +64,11 @@ export default function CharacterHUD({
       <div className="rpg-viewfinder-hud__gps">
         <span className="rpg-viewfinder-hud__gps-dot" aria-hidden="true" />
         <span>{gpsLabel}</span>
+        {leaguesToday > 0 && (
+          <span className="text-[9px] text-emerald-300/90">
+            · {leaguesToday} league{leaguesToday === 1 ? "" : "s"} today
+          </span>
+        )}
         {accuracyLabel && (
           <span
             className="text-[9px] text-slate-400/80"

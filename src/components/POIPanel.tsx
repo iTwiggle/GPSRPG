@@ -12,13 +12,20 @@ import {
 import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import { getPoiGlyphClassName, POI_TYPE_CHIP_BG } from "@/lib/poi-visual";
 import { EXPLORE_RADIUS_METERS, type POI, type Position } from "@/lib/types";
+import {
+  formatCooldownRemaining,
+  getCooldownRemainingMs,
+  type PoiVisitUiStatus,
+} from "@/lib/temporal/poi-cooldowns";
+import type { VisitedPoiState } from "@/lib/types";
 import SiteApproachHUD from "@/components/SiteApproachHUD";
 
 interface POIPanelProps {
   poi: POI | null;
   pois: POI[];
   playerPosition: Position;
-  visited: boolean;
+  visitStatus: PoiVisitUiStatus;
+  visit?: VisitedPoiState;
   onExplore: () => void;
   onSelectPoi?: (poi: POI) => void;
   onSimulateVisit?: () => void;
@@ -28,7 +35,8 @@ export default function POIPanel({
   poi,
   pois,
   playerPosition,
-  visited,
+  visitStatus,
+  visit,
   onExplore,
   onSelectPoi,
   onSimulateVisit,
@@ -47,6 +55,20 @@ export default function POIPanel({
   const inRange = readout.status === "in_range";
   const typeChip = POI_TYPE_CHIP_BG[poi.type];
   const canSimulateVisit = Boolean(onSimulateVisit);
+  const canExplore =
+    visitStatus === "fresh" || visitStatus === "ready";
+  const cooldownMs =
+    visitStatus === "cooldown" && visit
+      ? getCooldownRemainingMs(visit, poi.type)
+      : 0;
+  const statusLabel =
+    visitStatus === "landmark_done"
+      ? "Landmark cleared"
+      : visitStatus === "cooldown"
+        ? `Resets in ${formatCooldownRemaining(cooldownMs)}`
+        : visitStatus === "ready"
+          ? "Ready again"
+          : "Tracking site";
 
   return (
     <div className="rpg-panel overflow-hidden p-0">
@@ -62,7 +84,7 @@ export default function POIPanel({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200/80">
-                  {visited ? "Discovered site" : "Tracking site"}
+                  {statusLabel}
                 </p>
                 <span
                   className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${typeChip}`}
@@ -76,7 +98,7 @@ export default function POIPanel({
               </p>
             </div>
           </div>
-          {visited && (
+          {visitStatus === "landmark_done" && (
             <span className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-1 text-xs font-medium text-emerald-300">
               Visited
             </span>
@@ -89,17 +111,19 @@ export default function POIPanel({
           <button
             type="button"
             onClick={onExplore}
-            disabled={visited || !inRange}
+            disabled={!canExplore || !inRange}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-              visited
+              !canExplore
                 ? "cursor-not-allowed bg-slate-700 text-slate-500"
                 : inRange
                   ? "bg-violet-600 text-white shadow-[0_0_16px_rgba(124,58,237,0.35)] hover:bg-violet-500"
                   : "cursor-not-allowed border border-slate-600 bg-slate-800/90 text-slate-400"
             }`}
           >
-            {visited
-              ? "Already explored"
+            {!canExplore
+              ? visitStatus === "cooldown"
+                ? `On cooldown (${formatCooldownRemaining(cooldownMs)})`
+                : "Already explored"
               : inRange
                 ? "Explore"
                 : `Out of range (${formatDistance(readout.distanceMeters)})`}
@@ -108,14 +132,14 @@ export default function POIPanel({
             <button
               type="button"
               onClick={onSimulateVisit}
-              disabled={visited}
+              disabled={!canExplore && visitStatus === "landmark_done"}
               className="rounded-lg border border-slate-600 bg-slate-800/80 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Simulate visit
             </button>
           )}
         </div>
-        {!visited && !inRange && (
+        {canExplore && !inRange && (
           <p className="mt-2 text-xs text-slate-500">
             Move within {EXPLORE_RADIUS_METERS} m to unlock Explore
             {canSimulateVisit ? ", or use Simulate visit for testing." : "."}

@@ -11,6 +11,7 @@ import DevControls from "@/components/DevControls";
 import EncounterModal from "@/components/EncounterModal";
 import ExpeditionPanel from "@/components/ExpeditionPanel";
 import InventoryPanel from "@/components/InventoryPanel";
+import OpenLoopBanner from "@/components/OpenLoopBanner";
 import MobilePanelNav, {
   type MobilePanelSection,
 } from "@/components/MobilePanelNav";
@@ -29,6 +30,8 @@ import {
 } from "@/lib/fantasy-grid-surface";
 import { getMapPoiTapAction } from "@/lib/map-poi-interaction";
 import { getDiscoverablePois } from "@/lib/poi-discovery";
+import { getTopOpenLoopNudge } from "@/lib/open-loops";
+import { metersToLeagues } from "@/lib/movement/movement-ledger";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import {
   canRefreshFieldTasks,
@@ -56,7 +59,7 @@ const PANEL_TITLES: Record<MobilePanelSection, string> = {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
+  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, resetFieldReport, clearEncounter, clearSaveWarning, reset, getPoiVisitStatus, samplePlayerMovement } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activePanel, setActivePanel] =
@@ -152,9 +155,31 @@ export default function HomePage() {
     }
   }, [geo.status]);
 
+  useEffect(() => {
+    if (!playerPosition || !gameState) return;
+    samplePlayerMovement(playerPosition);
+  }, [gameState, playerPosition, samplePlayerMovement]);
+
+  const openLoopNudge = useMemo(
+    () =>
+      gameState
+        ? getTopOpenLoopNudge({
+            codex: gameState.codex,
+            baseCamp: gameState.baseCamp,
+            pois: discoverablePois,
+            playerPosition,
+            visitedPois: gameState.visitedPois,
+          })
+        : null,
+    [discoverablePois, gameState, playerPosition]
+  );
+
   const inventoryCount = gameState?.player.inventory.length ?? 0;
   const codexUniqueItems = gameState
     ? Object.keys(gameState.codex.items).length
+    : 0;
+  const leaguesToday = gameState
+    ? metersToLeagues(gameState.movementLedger.todayMeters)
     : 0;
   const readyDepotDoors =
     gameState != null
@@ -185,7 +210,7 @@ export default function HomePage() {
       const validation = canExplorePoi(
         playerPosition,
         poi,
-        gameState.visitedPOIIds
+        gameState.visitedPois
       );
       const action = getMapPoiTapAction(
         selectedPoi?.id ?? null,
@@ -323,7 +348,7 @@ export default function HomePage() {
           playerLng={playerPosition.lng}
           pois={discoverablePois}
           selectedPoiId={selectedPoi?.id ?? null}
-          visitedPoiIds={gameState.visitedPOIIds}
+          visitedPois={gameState.visitedPois}
           revealedCellKeys={explorationMemory.revealedCellKeys}
           fantasyGridEnabled={fantasyGridEnabled}
           streetReferenceMode={streetReferenceMode}
@@ -337,7 +362,9 @@ export default function HomePage() {
           gpsLabel={gpsLabel}
           gpsAccuracyMeters={geo.accuracy}
           showGpsAccuracy={geo.status === "active"}
+          leaguesToday={leaguesToday}
         />
+        <OpenLoopBanner nudge={openLoopNudge} />
         <Link
           href="/about"
           className="rpg-viewfinder__about"
@@ -400,7 +427,16 @@ export default function HomePage() {
                 poi={selectedPoi}
                 pois={discoverablePois}
                 playerPosition={playerPosition}
-                visited={selectedPoi ? isVisited(selectedPoi.id) : false}
+                visitStatus={
+                  selectedPoi
+                    ? getPoiVisitStatus(selectedPoi)
+                    : "fresh"
+                }
+                visit={
+                  selectedPoi
+                    ? gameState.visitedPois[selectedPoi.id]
+                    : undefined
+                }
                 onExplore={handleExplore}
                 onSelectPoi={setSelectedPoi}
                 onSimulateVisit={
@@ -433,6 +469,7 @@ export default function HomePage() {
                 codex={gameState.codex}
                 baseCamp={gameState.baseCamp}
                 fieldReportSites={gameState.fieldReport.sitesExplored}
+                gameState={gameState}
                 onClaimDoor={claimDepotDoor}
                 onMarkVisit={markBaseCampVisit}
               />

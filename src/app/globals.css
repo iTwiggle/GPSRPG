@@ -102,6 +102,33 @@ body {
   gap: 0.45rem;
 }
 
+.rpg-open-loop {
+  pointer-events: auto;
+  display: flex;
+  min-width: 0;
+  max-width: 11rem;
+  flex: 1;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  padding: 0.45rem 0.55rem;
+  font-size: 0.62rem;
+  line-height: 1.25;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.rpg-open-loop__glyph {
+  flex: none;
+  font-size: 0.7rem;
+  opacity: 0.9;
+}
+
+.rpg-open-loop__text {
+  min-width: 0;
+}
+
 .rpg-viewfinder-hud {
   pointer-events: auto;
   display: grid;
