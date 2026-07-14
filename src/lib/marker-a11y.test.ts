@@ -118,5 +118,6 @@ describe("marker configs", () => {
     expect(config.icon.options.className).toContain("poi-marker--tower");
     expect(config.icon.options.className).toContain("poi-marker--selected");
     expect(config.icon.options.className).toContain("poi-marker--visited");
+    expect(config.icon.options.popupAnchor).toEqual([0, -48]);
   });
 });

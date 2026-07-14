@@ -247,6 +247,10 @@ export function createPoiMarkerIcon(
     html: buildPoiWorldObjectHtml(type, options),
     iconSize: [POI_MARKER_SIZE, POI_MARKER_SIZE],
     iconAnchor: [POI_MARKER_SIZE / 2, POI_MARKER_ANCHOR_Y],
+    // Keep the interaction bubble completely above the authored world object.
+    // Without an explicit anchor Leaflet places the popup tip at ground level,
+    // causing the panel to cover the marker that needs a second tap.
+    popupAnchor: [0, -POI_MARKER_ANCHOR_Y - 8],
   });
 }
 

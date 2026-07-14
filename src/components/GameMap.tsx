@@ -56,7 +56,7 @@ export default function GameMap({
   );
 
   const mapClassName = [
-    "fantasy-map-surface h-full w-full rounded-xl",
+    "fantasy-map-surface h-full w-full",
     surfaceStyles.atlasSurface,
     fantasyGridEnabled && surfaceStyles.atlasActive,
     streetReferenceMode && surfaceStyles.streetReference,
@@ -140,27 +140,19 @@ export default function GameMap({
             onKeyboardActivate={() => onInteractPoi(poi)}
             eventHandlers={{ click: () => onInteractPoi(poi) }}
           >
-            <Popup closeButton={false}>
-              <div className="max-w-52 text-sm">
-                <p className="font-semibold text-slate-100">{poi.name}</p>
-                <p className="text-violet-300">{getPoiTypeLabel(poi.type)}</p>
-                <p className="mt-1 text-xs italic leading-relaxed text-slate-300/85">
-                  {poi.flavor}
-                </p>
-                <p className="mt-1 text-slate-400">
-                  {formatDistance(readout.distanceMeters)} away
+            <Popup className="rpg-poi-bubble" closeButton={false} offset={[0, -4]}>
+              <div className="rpg-poi-bubble__content">
+                <p className="rpg-poi-bubble__name">{poi.name}</p>
+                <p className="rpg-poi-bubble__meta">
+                  {getPoiTypeLabel(poi.type)} · {formatDistance(readout.distanceMeters)}
                 </p>
                 {visited ? (
-                  <p className="mt-1 font-medium text-emerald-400">
-                    Already explored
-                  </p>
+                  <p className="rpg-poi-bubble__prompt text-emerald-300">Explored</p>
                 ) : isSelected && inRange ? (
-                  <p className="mt-1 font-semibold text-amber-300">
-                    Tap again to explore
-                  </p>
+                  <p className="rpg-poi-bubble__prompt text-amber-200">Tap marker again</p>
                 ) : isSelected ? (
-                  <p className="mt-1 text-violet-200/85">
-                    Get within {EXPLORE_RADIUS_METERS} m to explore
+                  <p className="rpg-poi-bubble__prompt text-violet-100/85">
+                    {formatDistance(readout.distanceMeters)} · move closer
                   </p>
                 ) : null}
               </div>

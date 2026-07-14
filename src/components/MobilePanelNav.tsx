@@ -9,18 +9,22 @@ export type MobilePanelSection =
   | "journey"
   | "dev";
 
-const SECTIONS: { id: MobilePanelSection; label: string }[] = [
-  { id: "poi", label: "Sites" },
-  { id: "tasks", label: "Tasks" },
-  { id: "bag", label: "Bag" },
-  { id: "codex", label: "Codex" },
-  { id: "camp", label: "Camp" },
-  { id: "journey", label: "Journey" },
-  { id: "dev", label: "Dev" },
+const SECTIONS: {
+  id: MobilePanelSection;
+  label: string;
+  glyph: string;
+}[] = [
+  { id: "poi", label: "Sites", glyph: "⌖" },
+  { id: "tasks", label: "Tasks", glyph: "◆" },
+  { id: "bag", label: "Bag", glyph: "▣" },
+  { id: "codex", label: "Codex", glyph: "✦" },
+  { id: "camp", label: "Camp", glyph: "⌂" },
+  { id: "journey", label: "Journey", glyph: "≡" },
+  { id: "dev", label: "Dev", glyph: "⚙" },
 ];
 
 interface MobilePanelNavProps {
-  activeSection: MobilePanelSection;
+  activeSection: MobilePanelSection | null;
   devToolsEnabled: boolean;
   inventoryCount?: number;
   codexUniqueItems?: number;
@@ -54,11 +58,11 @@ export default function MobilePanelNav({
 
   return (
     <nav
-      className="rpg-panel sticky top-0 z-10 -mx-1 px-2 py-2 lg:hidden"
-      aria-label="Panel sections"
+      className="rpg-viewfinder-dock"
+      aria-label="Game panels"
     >
-      <div className="flex flex-wrap gap-1.5">
-        {visibleSections.map(({ id, label }) => {
+      <div className="rpg-viewfinder-dock__rail">
+        {visibleSections.map(({ id, label, glyph }) => {
           const isActive = activeSection === id;
           const badge = sectionBadge(id, inventoryCount, codexUniqueItems, readyDepotDoors);
           return (
@@ -67,20 +71,21 @@ export default function MobilePanelNav({
               type="button"
               onClick={() => onSectionChange(id)}
               aria-current={isActive ? "true" : undefined}
-              className={`relative min-h-11 rounded-full px-3.5 py-2 text-xs font-semibold tracking-wide transition ${
+              aria-expanded={isActive}
+              aria-controls="viewfinder-panel"
+              className={`rpg-viewfinder-dock__button ${
                 isActive
-                  ? "bg-violet-600 text-white shadow-[0_0_14px_rgba(124,58,237,0.45)]"
-                  : "border border-slate-600/60 bg-slate-800/80 text-slate-300 hover:border-slate-500 hover:bg-slate-800"
+                  ? "rpg-viewfinder-dock__button--active"
+                  : ""
               }`}
             >
-              {label}
+              <span className="rpg-viewfinder-dock__glyph" aria-hidden="true">
+                {glyph}
+              </span>
+              <span className="rpg-viewfinder-dock__label">{label}</span>
               {badge !== null && (
                 <span
-                  className={`ml-1.5 inline-flex min-w-[1.1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold ${
-                    isActive
-                      ? "bg-white/20 text-white"
-                      : "bg-violet-500/20 text-violet-200"
-                  }`}
+                  className="rpg-viewfinder-dock__badge"
                   aria-label={`${badge} items`}
                 >
                   {badge > 99 ? "99+" : badge}
