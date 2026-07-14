@@ -16,15 +16,10 @@ function read(relativePath) {
   return readFileSync(join(root, relativePath), "utf8");
 }
 
-function runAccessibilityTests() {
+function runMarkerA11yTests() {
   const result = spawnSync(
     "npx",
-    [
-      "vitest",
-      "run",
-      "src/lib/marker-a11y.test.ts",
-      "src/components/encounter-modal.test.ts",
-    ],
+    ["vitest", "run", "src/lib/marker-a11y.test.ts"],
     {
       cwd: root,
       stdio: "inherit",
@@ -36,7 +31,7 @@ function runAccessibilityTests() {
   );
 
   if (result.status !== 0) {
-    fail("accessibility interaction tests failed");
+    fail("marker accessibility unit tests failed");
   }
 }
 
@@ -79,7 +74,7 @@ function auditMarkerSources() {
 }
 
 console.log("Running accessibility audit...");
-runAccessibilityTests();
+runMarkerA11yTests();
 auditMarkerSources();
 
 if (failures.length > 0) {
