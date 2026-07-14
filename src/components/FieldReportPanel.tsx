@@ -8,6 +8,7 @@ import {
 interface FieldReportPanelProps {
   report: FieldReport;
   onReset: () => void;
+  embedded?: boolean;
 }
 
 const RARITY_COLORS: Record<ItemRarity, string> = {
@@ -28,6 +29,7 @@ function StatRow({ label, value }: { label: string; value: string }) {
 export default function FieldReportPanel({
   report,
   onReset,
+  embedded = false,
 }: FieldReportPanelProps) {
   const bestFindText = formatBestFind(report.bestFind);
   const bestFindClass =
@@ -36,7 +38,7 @@ export default function FieldReportPanel({
       : "text-slate-400";
 
   return (
-    <div className="rpg-panel p-4">
+    <section className={embedded ? "rpg-expedition-section" : "rpg-panel p-4"}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-slate-100">Field Report</h2>
@@ -49,7 +51,7 @@ export default function FieldReportPanel({
           onClick={onReset}
           className="shrink-0 rounded-lg border border-teal-500/40 bg-teal-500/15 px-3 py-1.5 text-xs font-medium text-teal-200 hover:bg-teal-500/25"
         >
-          Start New Report
+          New outing
         </button>
       </div>
 
@@ -79,6 +81,6 @@ export default function FieldReportPanel({
           value={String(report.tasksCompleted)}
         />
       </dl>
-    </div>
+    </section>
   );
 }

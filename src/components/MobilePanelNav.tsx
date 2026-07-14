@@ -2,11 +2,10 @@
 
 export type MobilePanelSection =
   | "poi"
-  | "tasks"
+  | "expedition"
   | "bag"
   | "codex"
   | "camp"
-  | "journey"
   | "dev";
 
 const SECTIONS: {
@@ -15,11 +14,10 @@ const SECTIONS: {
   glyph: string;
 }[] = [
   { id: "poi", label: "Sites", glyph: "⌖" },
-  { id: "tasks", label: "Tasks", glyph: "◆" },
+  { id: "expedition", label: "Expedition", glyph: "⚑" },
   { id: "bag", label: "Bag", glyph: "▣" },
   { id: "codex", label: "Codex", glyph: "✦" },
   { id: "camp", label: "Camp", glyph: "⌂" },
-  { id: "journey", label: "Journey", glyph: "≡" },
   { id: "dev", label: "Dev", glyph: "⚙" },
 ];
 

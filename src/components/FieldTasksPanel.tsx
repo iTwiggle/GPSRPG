@@ -3,6 +3,7 @@ import type { FieldTask } from "@/lib/types";
 interface FieldTasksPanelProps {
   tasks: FieldTask[];
   onRefresh?: () => void;
+  embedded?: boolean;
 }
 
 function progressPercent(task: FieldTask): number {
@@ -13,12 +14,13 @@ function progressPercent(task: FieldTask): number {
 export default function FieldTasksPanel({
   tasks,
   onRefresh,
+  embedded = false,
 }: FieldTasksPanelProps) {
   const activeCount = tasks.filter((task) => task.status === "active").length;
   const completedCount = tasks.length - activeCount;
 
   return (
-    <div className="rpg-panel p-4">
+    <section className={embedded ? "rpg-expedition-section" : "rpg-panel p-4"}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-slate-100">Field Contracts</h2>
@@ -100,6 +102,6 @@ export default function FieldTasksPanel({
           );
         })}
       </ul>
-    </div>
+    </section>
   );
 }
