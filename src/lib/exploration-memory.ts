@@ -1,7 +1,10 @@
 import { distanceMeters } from "./distance";
 import type { Position } from "./types";
 
-export const EXPLORATION_MEMORY_STORAGE_KEY = "gpsrpg-exploration-memory-v1";
+import { getStorageAdapter } from "./platform/storage-adapter";
+import { STORAGE_KEYS } from "./platform/storage-keys";
+
+export const EXPLORATION_MEMORY_STORAGE_KEY = STORAGE_KEYS.explorationMemory;
 export const EXPLORATION_CELL_METERS = 80;
 export const EXPLORATION_REVEAL_RADIUS_METERS = 120;
 export const EXPLORATION_RESET_EVENT = "gpsrpg:exploration-memory-reset";
@@ -128,8 +131,9 @@ export function normalizeExplorationMemory(
 
 export function readExplorationMemory(): ExplorationMemory {
   if (typeof window === "undefined") return createEmptyExplorationMemory();
+  const storage = getStorageAdapter();
   try {
-    const raw = localStorage.getItem(EXPLORATION_MEMORY_STORAGE_KEY);
+    const raw = storage.getItem(EXPLORATION_MEMORY_STORAGE_KEY);
     if (!raw) return createEmptyExplorationMemory();
     return normalizeExplorationMemory(JSON.parse(raw) as unknown);
   } catch {
@@ -139,8 +143,9 @@ export function readExplorationMemory(): ExplorationMemory {
 
 export function writeExplorationMemory(memory: ExplorationMemory): void {
   if (typeof window === "undefined") return;
+  const storage = getStorageAdapter();
   try {
-    localStorage.setItem(
+    storage.setItem(
       EXPLORATION_MEMORY_STORAGE_KEY,
       JSON.stringify(memory)
     );
@@ -151,8 +156,9 @@ export function writeExplorationMemory(memory: ExplorationMemory): void {
 
 export function clearExplorationMemory(): void {
   if (typeof window === "undefined") return;
+  const storage = getStorageAdapter();
   try {
-    localStorage.removeItem(EXPLORATION_MEMORY_STORAGE_KEY);
+    storage.removeItem(EXPLORATION_MEMORY_STORAGE_KEY);
   } catch {
     // The reset signal still clears in-memory reveal state.
   }

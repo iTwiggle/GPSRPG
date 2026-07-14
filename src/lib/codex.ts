@@ -6,6 +6,41 @@ import type {
   ItemRarity,
   POI,
 } from "./types";
+import {
+  itemCatalogKey,
+  migrateLegacyCodexKey,
+} from "./companion/catalog-registry";
+
+export { itemCatalogKey as codexItemKey };
+
+function migrateCodexItemKeys(
+  items: Codex["items"]
+): Codex["items"] {
+  const migrated: Codex["items"] = {};
+
+  for (const [key, entry] of Object.entries(items)) {
+    const catalogKey = migrateLegacyCodexKey(key);
+    const existing = migrated[catalogKey];
+    if (!existing) {
+      migrated[catalogKey] = entry;
+      continue;
+    }
+    migrated[catalogKey] = {
+      ...existing,
+      countFound: existing.countFound + entry.countFound,
+      firstFoundAt:
+        entry.firstFoundAt < existing.firstFoundAt
+          ? entry.firstFoundAt
+          : existing.firstFoundAt,
+      lastFoundAt:
+        entry.lastFoundAt > existing.lastFoundAt
+          ? entry.lastFoundAt
+          : existing.lastFoundAt,
+    };
+  }
+
+  return migrated;
+}
 
 function emptyRarityCounts(): Record<ItemRarity, number> {
   return { common: 0, uncommon: 0, rare: 0 };
@@ -31,7 +66,7 @@ export function normalizeCodex(codex: Partial<Codex> | undefined): Codex {
   if (!codex) return empty;
 
   return {
-    items: codex.items ?? empty.items,
+    items: migrateCodexItemKeys(codex.items ?? empty.items),
     pois: codex.pois ?? empty.pois,
     encounters: codex.encounters ?? empty.encounters,
     stats: codex.stats ?? empty.stats,
@@ -39,18 +74,12 @@ export function normalizeCodex(codex: Partial<Codex> | undefined): Codex {
   };
 }
 
-function itemKey(item: Pick<Item, "name" | "type">): string {
-  return `${item.name}|${item.type}`;
-}
-
-export { itemKey as codexItemKey };
-
 function recordItem(
   codex: Codex,
   item: Item,
   timestamp: string
 ): Codex["items"] {
-  const key = itemKey(item);
+  const key = itemCatalogKey(item);
   const existing = codex.items[key];
 
   if (existing) {

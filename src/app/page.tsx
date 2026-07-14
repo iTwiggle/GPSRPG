@@ -30,6 +30,10 @@ import {
 import { getMapPoiTapAction } from "@/lib/map-poi-interaction";
 import { getDiscoverablePois } from "@/lib/poi-discovery";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
+import {
+  canRefreshFieldTasks,
+  isExpeditionComplete,
+} from "@/lib/tasks";
 import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
 
 const GameMap = dynamic(() => import("@/components/GameMap"), {
@@ -153,6 +157,23 @@ export default function HomePage() {
     gameState != null
       ? countReadyDepotDoors(gameState.codex, gameState.baseCamp)
       : 0;
+
+  const expeditionComplete = gameState
+    ? isExpeditionComplete(gameState.fieldTasks)
+    : false;
+  const contractRefreshCheck = gameState
+    ? canRefreshFieldTasks(gameState, { bypassDailyLimit: devToolsEnabled })
+    : { ok: false as const };
+  const contractRefreshDisabled =
+    expeditionComplete && !contractRefreshCheck.ok;
+  const contractRefreshHint =
+    contractRefreshCheck.reason === "already_refreshed_today"
+      ? "You already rolled new contracts today. Try again tomorrow, or use field controls in demo/dev."
+      : undefined;
+
+  const handleRefreshFieldTasks = useCallback(() => {
+    refreshFieldTasks({ bypassDailyLimit: devToolsEnabled });
+  }, [devToolsEnabled, refreshFieldTasks]);
 
   const handleMapPoiInteract = useCallback(
     (poi: POI) => {
@@ -391,8 +412,10 @@ export default function HomePage() {
                 events={gameState.activityLog}
                 onResetReport={resetFieldReport}
                 onRefreshTasks={
-                  devToolsEnabled ? refreshFieldTasks : undefined
+                  expeditionComplete ? handleRefreshFieldTasks : undefined
                 }
+                contractRefreshDisabled={contractRefreshDisabled}
+                contractRefreshHint={contractRefreshHint}
               />
             )}
             {activePanel === "bag" && (
@@ -422,7 +445,9 @@ export default function HomePage() {
                 onEnableDemo={geo.enableDemoMode}
                 onNudge={geo.nudgePosition}
                 onReset={reset}
-                onRefreshTasks={refreshFieldTasks}
+                onRefreshTasks={() =>
+                  refreshFieldTasks({ bypassDailyLimit: true })
+                }
               />
             )}
           </div>

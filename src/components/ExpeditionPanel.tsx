@@ -10,6 +10,8 @@ interface ExpeditionPanelProps {
   events: ActivityEvent[];
   onResetReport: () => void;
   onRefreshTasks?: () => void;
+  contractRefreshDisabled?: boolean;
+  contractRefreshHint?: string;
 }
 
 export default function ExpeditionPanel({
@@ -18,6 +20,8 @@ export default function ExpeditionPanel({
   events,
   onResetReport,
   onRefreshTasks,
+  contractRefreshDisabled = false,
+  contractRefreshHint,
 }: ExpeditionPanelProps) {
   const fulfilled = tasks.filter((task) => task.status === "completed").length;
   const active = tasks.length - fulfilled;
@@ -38,7 +42,9 @@ export default function ExpeditionPanel({
             </h3>
             <p className="rpg-expedition__subtitle">
               {complete
-                ? "Every field contract is fulfilled. Close out the outing when you are ready."
+                ? contractRefreshDisabled
+                  ? "Every field contract is fulfilled. New contracts unlock tomorrow."
+                  : "Every field contract is fulfilled. Roll new contracts when you are ready."
                 : `${active} contract${active === 1 ? "" : "s"} still active · ${fulfilled} fulfilled`}
             </p>
           </div>
@@ -78,7 +84,13 @@ export default function ExpeditionPanel({
         </dl>
       </section>
 
-      <FieldTasksPanel tasks={tasks} onRefresh={onRefreshTasks} embedded />
+      <FieldTasksPanel
+        tasks={tasks}
+        onRefresh={onRefreshTasks}
+        refreshDisabled={contractRefreshDisabled}
+        refreshHint={contractRefreshHint}
+        embedded
+      />
       <FieldReportPanel report={report} onReset={onResetReport} embedded />
       <ActivityLogPanel events={events} embedded />
     </div>

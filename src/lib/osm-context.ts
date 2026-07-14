@@ -1,3 +1,6 @@
+import { getStorageAdapter } from "./platform/storage-adapter";
+import { STORAGE_KEYS } from "./platform/storage-keys";
+
 /** Matches poi-generator grid — kept here to avoid circular imports. */
 const POI_CELL_SIZE_METERS = 400;
 
@@ -24,7 +27,7 @@ export interface OsmContextResult {
 
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 const FETCH_TIMEOUT_MS = 8_000;
-const CACHE_KEY = "gpsrpg-osm-context-v1";
+const CACHE_KEY = STORAGE_KEYS.osmContext;
 const SUCCESS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const FAILURE_TTL_MS = 15 * 60 * 1000;
 const MAX_CACHED_CELLS = 30;
@@ -133,8 +136,9 @@ interface StoredCache {
 
 function readStorageCache(): StoredCache {
   if (typeof window === "undefined") return {};
+  const storage = getStorageAdapter();
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = storage.getItem(CACHE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as StoredCache;
     return parsed && typeof parsed === "object" ? parsed : {};
@@ -145,12 +149,13 @@ function readStorageCache(): StoredCache {
 
 function writeStorageCache(cache: StoredCache): void {
   if (typeof window === "undefined") return;
+  const storage = getStorageAdapter();
   try {
     const entries = Object.entries(cache).sort(
       ([, a], [, b]) => b.fetchedAt - a.fetchedAt
     );
     const trimmed = Object.fromEntries(entries.slice(0, MAX_CACHED_CELLS));
-    localStorage.setItem(CACHE_KEY, JSON.stringify(trimmed));
+    storage.setItem(CACHE_KEY, JSON.stringify(trimmed));
   } catch {
     // Ignore quota or privacy errors.
   }
