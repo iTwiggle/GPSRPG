@@ -64,6 +64,7 @@ function normalizeCompanionMeta(
 ): CompanionMeta {
   return {
     lastContractRefreshDate: meta?.lastContractRefreshDate,
+    lastBriefingSeenDate: meta?.lastBriefingSeenDate,
   };
 }
 

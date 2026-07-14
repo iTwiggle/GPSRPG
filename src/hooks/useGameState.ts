@@ -31,6 +31,12 @@ import {
 } from "@/lib/storage";
 import { sampleMovementLedger, recordOutingCompleted } from "@/lib/movement/movement-ledger";
 import { getPoiVisitUiStatus } from "@/lib/temporal/poi-cooldowns";
+import { markDailyBriefingSeen } from "@/lib/temporal/daily-briefing";
+import {
+  applyWorldModifierToEncounter,
+  getTodayCooldownOptions,
+  getWorldModifierForDate,
+} from "@/lib/temporal/world-modifier";
 import type {
   EncounterResult,
   GameState,
@@ -43,6 +49,10 @@ import { rollEncounter } from "@/lib/encounter";
 import { canExplorePoi } from "@/lib/explore-validation";
 import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
 import { feedback } from "@/lib/feedback/manager";
+
+function getModifierCooldownOptions(poiType: POI["type"]) {
+  return getTodayCooldownOptions(poiType);
+}
 
 const RARITY_RANK: Record<ItemRarity, number> = {
   common: 0,
@@ -85,7 +95,10 @@ export function useGameState() {
         playerPosition,
         poi,
         gameState.visitedPois,
-        options
+        {
+          ...options,
+          cooldown: getModifierCooldownOptions(poi.type),
+        }
       );
       if (!validation.ok) return null;
 
@@ -100,6 +113,19 @@ export function useGameState() {
       );
       encounter = perkResult.encounter;
       const baseCamp = perkResult.baseCamp;
+      let perkMessages = [...perkResult.perkMessages];
+
+      const worldModifier = getWorldModifierForDate();
+      const worldResult = applyWorldModifierToEncounter(
+        encounter,
+        poi,
+        worldModifier,
+        rollSeed ?? poi.id
+      );
+      encounter = worldResult.encounter;
+      if (worldResult.modifierMessage) {
+        perkMessages = [...perkMessages, worldResult.modifierMessage];
+      }
 
       const newCodexItemKeys = encounter.loot
         .filter((item) => !gameState.codex.items[codexItemKey(item)])
@@ -134,9 +160,7 @@ export function useGameState() {
         perkBonusXp:
           perkResult.perkBonusXp > 0 ? perkResult.perkBonusXp : undefined,
         perkMessages:
-          perkResult.perkMessages.length > 0
-            ? perkResult.perkMessages
-            : undefined,
+          perkMessages.length > 0 ? perkMessages : undefined,
       };
 
       let activityLog = appendExploreEvents(gameState.activityLog, {
@@ -387,6 +411,11 @@ export function useGameState() {
     [gameState, persist]
   );
 
+  const dismissDailyBriefing = useCallback(() => {
+    if (!gameState) return;
+    persist(markDailyBriefingSeen(gameState));
+  }, [gameState, persist]);
+
   const reset = useCallback(() => {
     const fresh = resetGameState();
     setGameState(fresh);
@@ -412,11 +441,14 @@ export function useGameState() {
     clearSaveWarning,
     reset,
     samplePlayerMovement,
+    dismissDailyBriefing,
     getPoiVisitStatus: (poi: POI) =>
       gameState
         ? getPoiVisitUiStatus(
             gameState.visitedPois[poi.id],
-            poi.type
+            poi.type,
+            Date.now(),
+            getModifierCooldownOptions(poi.type)
           )
         : "fresh",
     isVisited: (poiId: string) => Boolean(gameState?.visitedPois[poiId]),
