@@ -23,11 +23,14 @@ import { applyXp } from "@/lib/xp";
 import {
   addLootToPlayer,
   loadGameState,
-  markPoiVisited,
+  recordPoiExplore,
   resetFieldReportInState,
   resetGameState,
   saveGameState,
+  updateMovementLedger,
 } from "@/lib/storage";
+import { sampleMovementLedger, recordOutingCompleted } from "@/lib/movement/movement-ledger";
+import { getPoiVisitUiStatus } from "@/lib/temporal/poi-cooldowns";
 import type {
   EncounterResult,
   GameState,
@@ -81,7 +84,7 @@ export function useGameState() {
       const validation = canExplorePoi(
         playerPosition,
         poi,
-        gameState.visitedPOIIds,
+        gameState.visitedPois,
         options
       );
       if (!validation.ok) return null;
@@ -189,7 +192,7 @@ export function useGameState() {
         tasksCompleted: completions.length,
       });
 
-      const nextState = markPoiVisited(
+      const nextState = recordPoiExplore(
         {
           ...gameState,
           player,
@@ -199,7 +202,7 @@ export function useGameState() {
           fieldTasks: withTasks,
           fieldReport: withFieldReport,
         },
-        poi.id
+        poi
       );
 
       persist(nextState);
@@ -356,8 +359,33 @@ export function useGameState() {
 
   const resetFieldReport = useCallback(() => {
     if (!gameState) return;
-    persist(resetFieldReportInState(gameState));
+    const hadProgress = gameState.fieldReport.sitesExplored > 0;
+    let next = resetFieldReportInState(gameState);
+    if (hadProgress) {
+      next = updateMovementLedger(
+        next,
+        recordOutingCompleted(next.movementLedger)
+      );
+    }
+    persist(next);
   }, [gameState, persist]);
+
+  const samplePlayerMovement = useCallback(
+    (position: Position) => {
+      if (!gameState) return;
+      const nextLedger = sampleMovementLedger(
+        gameState.movementLedger,
+        position
+      );
+      const next = updateMovementLedger(gameState, nextLedger);
+      if (nextLedger.totalMeters > gameState.movementLedger.totalMeters) {
+        persist(next);
+        return;
+      }
+      setGameState(next);
+    },
+    [gameState, persist]
+  );
 
   const reset = useCallback(() => {
     const fresh = resetGameState();
@@ -383,7 +411,14 @@ export function useGameState() {
     clearEncounter,
     clearSaveWarning,
     reset,
-    isVisited: (poiId: string) =>
-      gameState?.visitedPOIIds.includes(poiId) ?? false,
+    samplePlayerMovement,
+    getPoiVisitStatus: (poi: POI) =>
+      gameState
+        ? getPoiVisitUiStatus(
+            gameState.visitedPois[poi.id],
+            poi.type
+          )
+        : "fresh",
+    isVisited: (poiId: string) => Boolean(gameState?.visitedPois[poiId]),
   };
 }

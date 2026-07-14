@@ -11,8 +11,9 @@ import surfaceStyles from "@/components/FantasyMapSurface.module.css";
 import {
   playerMarkerConfig,
 } from "@/lib/poi-marker-icons";
-import type { POI } from "@/lib/types";
+import type { POI, VisitedPoiState } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
+import { getPoiVisitUiStatus } from "@/lib/temporal/poi-cooldowns";
 
 /**
  * Pan only when the player drifts toward the viewport edge. Small demo nudges
@@ -47,7 +48,7 @@ interface GameMapProps {
   playerLng: number;
   pois: POI[];
   selectedPoiId: string | null;
-  visitedPoiIds: string[];
+  visitedPois: Record<string, VisitedPoiState>;
   revealedCellKeys: string[];
   fantasyGridEnabled: boolean;
   streetReferenceMode: boolean;
@@ -59,7 +60,7 @@ function GameMap({
   playerLng,
   pois,
   selectedPoiId,
-  visitedPoiIds,
+  visitedPois,
   revealedCellKeys,
   fantasyGridEnabled,
   streetReferenceMode,
@@ -78,8 +79,6 @@ function GameMap({
   ]
     .filter(Boolean)
     .join(" ");
-
-  const visitedSet = useMemo(() => new Set(visitedPoiIds), [visitedPoiIds]);
 
   return (
     <MapContainer
@@ -137,7 +136,8 @@ function GameMap({
         <PoiMapMarker
           key={poi.id}
           poi={poi}
-          visited={visitedSet.has(poi.id)}
+          visit={visitedPois[poi.id]}
+          visitStatus={getPoiVisitUiStatus(visitedPois[poi.id], poi.type)}
           isSelected={poi.id === selectedPoiId}
           playerLat={playerLat}
           playerLng={playerLng}

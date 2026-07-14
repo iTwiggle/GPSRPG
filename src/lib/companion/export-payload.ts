@@ -2,8 +2,8 @@ import type { GameState } from "@/lib/types";
 import {
   buildBoards,
   buildInventoryExport,
+  buildOutdoorEffortFromLedger,
   buildUnlockTokens,
-  createEmptyOutdoorEffort,
 } from "./unlock-tokens";
 import {
   COMPANION_EXPORT_SCHEMA_VERSION,
@@ -30,7 +30,9 @@ export function buildExportPayload(
     },
     inventory: buildInventoryExport(state),
     boards: buildBoards(state),
-    outdoorEffort: options.outdoorEffort ?? createEmptyOutdoorEffort(),
+    outdoorEffort:
+      options.outdoorEffort ??
+      buildOutdoorEffortFromLedger(state.movementLedger),
     unlockTokens: buildUnlockTokens(state),
   };
 }

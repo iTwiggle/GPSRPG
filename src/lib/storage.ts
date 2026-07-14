@@ -7,6 +7,10 @@ import {
   createEmptyFieldReport,
   normalizeFieldReport,
 } from "./field-report";
+import {
+  createEmptyMovementLedger,
+  normalizeMovementLedger,
+} from "./movement/movement-ledger";
 import { getStorageAdapter } from "./platform/storage-adapter";
 import {
   CORRUPT_SAVE_BACKUP_PREFIX,
@@ -15,9 +19,16 @@ import {
 } from "./platform/storage-keys";
 import { generateFieldTasks, normalizeFieldTasks } from "./tasks";
 import { createDefaultPlayer } from "./xp";
-import type { CompanionMeta, GameState, Item, Player } from "./types";
+import type {
+  CompanionMeta,
+  GameState,
+  Item,
+  Player,
+  POI,
+  VisitedPoiState,
+} from "./types";
 
-export const STORAGE_SCHEMA_VERSION = 2;
+export const STORAGE_SCHEMA_VERSION = 3;
 
 export interface LoadGameStateResult {
   state: GameState;
@@ -31,6 +42,7 @@ export interface SaveGameStateResult {
 
 type StoredGameState = Partial<GameState> & {
   schemaVersion?: number;
+  visitedPOIIds?: string[];
 };
 
 function backupCorruptSave(raw: string): string | null {
@@ -63,6 +75,27 @@ function normalizeInventoryItem(item: Item): Item {
   return { ...item, catalogId };
 }
 
+function migrateVisitedPois(parsed: StoredGameState): Record<string, VisitedPoiState> {
+  if (parsed.visitedPois && typeof parsed.visitedPois === "object") {
+    return parsed.visitedPois;
+  }
+
+  const migrated: Record<string, VisitedPoiState> = {};
+  const legacyIds = parsed.visitedPOIIds ?? [];
+  const codexPois = parsed.codex?.pois ?? {};
+
+  for (const poiId of legacyIds) {
+    const entry = codexPois[poiId];
+    migrated[poiId] = {
+      lastExploredAt: entry?.lastVisitedAt ?? new Date(0).toISOString(),
+      exploreCount: entry?.visitCount ?? 1,
+      poiType: entry?.type ?? "camp",
+    };
+  }
+
+  return migrated;
+}
+
 function normalizeGameState(parsed: StoredGameState): GameState {
   const fallbackPlayer = createDefaultPlayer();
   const savedPlayer = parsed.player ?? fallbackPlayer;
@@ -74,7 +107,8 @@ function normalizeGameState(parsed: StoredGameState): GameState {
       ...savedPlayer,
       inventory: (savedPlayer.inventory ?? []).map(normalizeInventoryItem),
     },
-    visitedPOIIds: parsed.visitedPOIIds ?? [],
+    visitedPois: migrateVisitedPois(parsed),
+    movementLedger: normalizeMovementLedger(parsed.movementLedger),
     codex: normalizeCodex(parsed.codex),
     activityLog: parsed.activityLog ?? [],
     fieldTasks: normalizeFieldTasks(parsed.fieldTasks),
@@ -88,7 +122,8 @@ export function createInitialState(): GameState {
   return {
     schemaVersion: STORAGE_SCHEMA_VERSION,
     player: createDefaultPlayer(),
-    visitedPOIIds: [],
+    visitedPois: {},
+    movementLedger: createEmptyMovementLedger(),
     codex: createEmptyCodex(),
     activityLog: [],
     fieldTasks: generateFieldTasks(),
@@ -162,13 +197,34 @@ export function saveGameState(state: GameState): SaveGameStateResult {
   }
 }
 
-export function markPoiVisited(state: GameState, poiId: string): GameState {
-  if (state.visitedPOIIds.includes(poiId)) {
-    return state;
-  }
+export function recordPoiExplore(
+  state: GameState,
+  poi: Pick<POI, "id" | "type">,
+  timestamp: string = new Date().toISOString()
+): GameState {
+  const existing = state.visitedPois[poi.id];
+  const nextVisit: VisitedPoiState = {
+    lastExploredAt: timestamp,
+    exploreCount: (existing?.exploreCount ?? 0) + 1,
+    poiType: poi.type,
+  };
+
   return {
     ...state,
-    visitedPOIIds: [...state.visitedPOIIds, poiId],
+    visitedPois: {
+      ...state.visitedPois,
+      [poi.id]: nextVisit,
+    },
+  };
+}
+
+export function updateMovementLedger(
+  state: GameState,
+  ledger: GameState["movementLedger"]
+): GameState {
+  return {
+    ...state,
+    movementLedger: ledger,
   };
 }
 
@@ -201,12 +257,17 @@ export function clearAllCompanionStorage(): void {
   for (const key of RESETTABLE_STORAGE_KEYS) {
     storage.removeItem(key);
   }
+  clearExplorationMemory();
 }
 
 export function resetGameState(): GameState {
   if (typeof window !== "undefined") {
     clearAllCompanionStorage();
-    clearExplorationMemory();
   }
   return createInitialState();
+}
+
+/** @deprecated Use recordPoiExplore */
+export function markPoiVisited(state: GameState, poiId: string): GameState {
+  return recordPoiExplore(state, { id: poiId, type: "camp" });
 }

@@ -37,7 +37,7 @@ describe("storage vertical slice", () => {
     vi.stubGlobal("localStorage", testStorage.api);
   });
 
-  it("persists visited POI ids and inventory across reload", () => {
+  it("persists visited POI state and inventory across reload", () => {
     const initial = createInitialState();
     const explored = markPoiVisited(
       {
@@ -62,7 +62,8 @@ describe("storage vertical slice", () => {
     const loaded = loadGameState();
 
     expect(loaded.warning).toBeNull();
-    expect(loaded.state.visitedPOIIds).toContain("poi-1-2-3-0");
+    expect(loaded.state.visitedPois["poi-1-2-3-0"]?.exploreCount).toBe(1);
+    expect(loaded.state.movementLedger.totalMeters).toBe(0);
     expect(loaded.state.player.inventory).toHaveLength(1);
     expect(loaded.state.schemaVersion).toBe(STORAGE_SCHEMA_VERSION);
     expect(loaded.state.player.inventory[0]?.catalogId).toBe(
@@ -84,7 +85,8 @@ describe("storage vertical slice", () => {
 
     expect(loaded.warning).toBeNull();
     expect(loaded.state.schemaVersion).toBe(STORAGE_SCHEMA_VERSION);
-    expect(loaded.state.visitedPOIIds).toEqual(["poi-legacy"]);
+    expect(loaded.state.visitedPois["poi-legacy"]?.exploreCount).toBe(1);
+    expect(loaded.state.visitedPois["poi-legacy"]?.poiType).toBe("camp");
   });
 
   it("recovers from corrupt JSON and backs up the raw save", () => {
@@ -151,7 +153,7 @@ describe("storage vertical slice", () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
     const loaded = loadGameState();
 
-    expect(loaded.state.schemaVersion).toBe(2);
+    expect(loaded.state.schemaVersion).toBe(STORAGE_SCHEMA_VERSION);
     expect(loaded.state.codex.items[CATALOG_IDS.rustyDagger]?.countFound).toBe(1);
   });
 });

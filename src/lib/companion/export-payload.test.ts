@@ -34,5 +34,7 @@ describe("companion export payload", () => {
       )
     ).toBe(true);
     expect(payload.boards.setProgress.length).toBeGreaterThan(0);
+    expect(payload.outdoorEffort.totalLeaguesCharted).toBe(0);
+    expect(payload.outdoorEffort.todayLeaguesCharted).toBe(0);
   });
 });
