@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import BaseCampPanel from "@/components/BaseCampPanel";
 import FeedbackProvider from "@/components/feedback/FeedbackProvider";
 import CharacterHUD from "@/components/CharacterHUD";
+import TravelerSynopsisCard from "@/components/TravelerSynopsisCard";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
 import EncounterModal from "@/components/EncounterModal";
@@ -31,6 +32,7 @@ import {
 import { getMapPoiTapAction } from "@/lib/map-poi-interaction";
 import { getDiscoverablePois } from "@/lib/poi-discovery";
 import { getTopOpenLoopNudge } from "@/lib/open-loops";
+import { buildTravelerSynopsis } from "@/lib/companion/traveler-synopsis";
 import { metersToLeagues } from "@/lib/movement/movement-ledger";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import {
@@ -64,6 +66,7 @@ export default function HomePage() {
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activePanel, setActivePanel] =
     useState<MobilePanelSection | null>(null);
+  const [synopsisOpen, setSynopsisOpen] = useState(false);
   const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
 
@@ -173,6 +176,10 @@ export default function HomePage() {
         : null,
     [discoverablePois, gameState, playerPosition]
   );
+  const travelerSynopsis = useMemo(
+    () => (gameState ? buildTravelerSynopsis(gameState) : null),
+    [gameState]
+  );
 
   const inventoryCount = gameState?.player.inventory.length ?? 0;
   const codexUniqueItems = gameState
@@ -241,8 +248,33 @@ export default function HomePage() {
   }, [explorePoi, playerPosition, selectedPoi]);
 
   const handlePanelChange = useCallback((section: MobilePanelSection) => {
+    setSynopsisOpen(false);
     setActivePanel((current) => (current === section ? null : section));
   }, []);
+
+  const closeActivePanel = useCallback(() => {
+    setActivePanel(null);
+    setSelectedPoi(null);
+  }, []);
+
+  const handleSynopsisOpenChange = useCallback((open: boolean) => {
+    setSynopsisOpen(open);
+    if (open) {
+      setActivePanel(null);
+      setSelectedPoi(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!activePanel) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeActivePanel();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activePanel, closeActivePanel]);
 
   if (!gameState) {
     return (
@@ -359,6 +391,8 @@ export default function HomePage() {
       <div className="rpg-viewfinder__hud-row">
         <CharacterHUD
           player={gameState.player}
+          synopsisOpen={synopsisOpen}
+          onSynopsisOpenChange={handleSynopsisOpenChange}
           gpsLabel={gpsLabel}
           gpsAccuracyMeters={geo.accuracy}
           showGpsAccuracy={geo.status === "active"}
@@ -405,6 +439,23 @@ export default function HomePage() {
       )}
 
       {activePanel && (
+        <button
+          type="button"
+          className="rpg-viewfinder__sheet-backdrop"
+          aria-label="Close panel and return to map"
+          onClick={closeActivePanel}
+        />
+      )}
+
+      {synopsisOpen && travelerSynopsis && (
+        <TravelerSynopsisCard
+          synopsis={travelerSynopsis}
+          open={synopsisOpen}
+          onClose={() => setSynopsisOpen(false)}
+        />
+      )}
+
+      {activePanel && (
         <aside
           id="viewfinder-panel"
           className="rpg-viewfinder__sheet"
@@ -415,7 +466,7 @@ export default function HomePage() {
             <h2 id="viewfinder-panel-title">{PANEL_TITLES[activePanel]}</h2>
             <button
               type="button"
-              onClick={() => setActivePanel(null)}
+              onClick={closeActivePanel}
               aria-label={`Close ${PANEL_TITLES[activePanel]}`}
             >
               ×

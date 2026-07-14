@@ -34,6 +34,27 @@ export interface CompanionUnlockToken {
   at: string;
 }
 
+export interface CompanionSanctumGearSlot {
+  slotId: string;
+  catalogId: string | null;
+  source: "empty" | "ue5" | "companion-inferred";
+}
+
+export interface CompanionSanctumCraftingNudge {
+  recipeId: string;
+  outputCatalogId: string;
+  readyInSanctum: boolean;
+  missing: Array<{
+    catalogId: string;
+    shortfall: number;
+  }>;
+}
+
+export interface CompanionSanctumScaffold {
+  gearSlots: CompanionSanctumGearSlot[];
+  craftingNudges: CompanionSanctumCraftingNudge[];
+}
+
 export interface CompanionExportV1 {
   schemaVersion: typeof COMPANION_EXPORT_SCHEMA_VERSION;
   exportedAt: string;
@@ -47,4 +68,6 @@ export interface CompanionExportV1 {
   boards: CompanionExportBoards;
   outdoorEffort: CompanionOutdoorEffort;
   unlockTokens: CompanionUnlockToken[];
+  /** UE5 sanctum handoff scaffold — gear slots + crafting proximity. */
+  sanctum?: CompanionSanctumScaffold;
 }

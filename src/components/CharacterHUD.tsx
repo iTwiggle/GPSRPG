@@ -1,12 +1,15 @@
 "use client";
 
 import AnimatedNumber from "@/components/AnimatedNumber";
+import LevelMedallion from "@/components/LevelMedallion";
 import { formatGpsAccuracy } from "@/lib/distance";
 import { xpProgress, xpToNextLevel } from "@/lib/xp";
 import type { Player } from "@/lib/types";
 
 interface CharacterHUDProps {
   player: Player;
+  synopsisOpen: boolean;
+  onSynopsisOpenChange: (open: boolean) => void;
   gpsLabel: string;
   gpsAccuracyMeters?: number | null;
   showGpsAccuracy?: boolean;
@@ -15,6 +18,8 @@ interface CharacterHUDProps {
 
 export default function CharacterHUD({
   player,
+  synopsisOpen,
+  onSynopsisOpenChange,
   gpsLabel,
   gpsAccuracyMeters = null,
   showGpsAccuracy = false,
@@ -31,6 +36,13 @@ export default function CharacterHUD({
 
   return (
     <section className="rpg-viewfinder-hud" aria-label="Player status">
+      <LevelMedallion
+        level={player.level}
+        progress={progress}
+        expanded={synopsisOpen}
+        onToggle={() => onSynopsisOpenChange(!synopsisOpen)}
+      />
+
       <div className="rpg-viewfinder-hud__identity">
         <span className="rpg-viewfinder-hud__brand">GPSRPG</span>
         <span className="rpg-viewfinder-hud__divider" aria-hidden="true" />
@@ -38,6 +50,7 @@ export default function CharacterHUD({
           {player.name}
         </span>
       </div>
+
       <div className="rpg-viewfinder-hud__progress">
         <div className="flex items-baseline gap-1.5 whitespace-nowrap">
           <span className="text-xs font-bold text-amber-200">
@@ -61,6 +74,7 @@ export default function CharacterHUD({
           />
         </div>
       </div>
+
       <div className="rpg-viewfinder-hud__gps">
         <span className="rpg-viewfinder-hud__gps-dot" aria-hidden="true" />
         <span>{gpsLabel}</span>
