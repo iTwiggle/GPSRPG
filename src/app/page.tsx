@@ -65,8 +65,10 @@ export default function HomePage() {
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
 
   const playerPosition = geo.position;
+  const playerLat = playerPosition?.lat;
+  const playerLng = playerPosition?.lng;
   const explorationMemory = useExplorationMemory(playerPosition);
-  const osmContext = useOsmContext(playerPosition?.lat, playerPosition?.lng);
+  const osmContext = useOsmContext(playerLat, playerLng);
 
   const areaContext =
     osmContext.status === "ready" ? osmContext.category : "generic";
@@ -109,10 +111,10 @@ export default function HomePage() {
   const fogOfWarEnabled = fantasyGridEnabled && !streetReferenceMode;
   const discoverablePois = useMemo(
     () =>
-      playerPosition
+      playerLat !== undefined && playerLng !== undefined
         ? getDiscoverablePois({
             pois,
-            playerPosition,
+            playerPosition: { lat: playerLat, lng: playerLng },
             revealedCellKeys: explorationMemory.revealedCellKeys,
             fogOfWarEnabled,
           })
@@ -120,7 +122,8 @@ export default function HomePage() {
     [
       explorationMemory.revealedCellKeys,
       fogOfWarEnabled,
-      playerPosition,
+      playerLat,
+      playerLng,
       pois,
     ]
   );

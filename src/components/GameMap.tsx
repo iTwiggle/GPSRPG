@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Popup, Circle, useMap } from "react-leaflet";
 import AccessibleMarker from "@/components/AccessibleMarker";
 import ExplorationFogOverlay from "@/components/ExplorationFogOverlay";
@@ -14,15 +14,28 @@ import {
 import type { POI } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
 
-function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
+/**
+ * Pan only when the player drifts toward the viewport edge. Small demo nudges
+ * update the marker without moving the map — avoiding canvas redraw storms.
+ */
+function FollowPlayerViewport({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
-  const lastCenterRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    const last = lastCenterRef.current;
-    if (last && last.lat === lat && last.lng === lng) return;
+    const size = map.getSize();
+    const point = map.latLngToContainerPoint([lat, lng]);
+    const marginX = size.x * 0.2;
+    const marginY = size.y * 0.2;
 
-    lastCenterRef.current = { lat, lng };
+    if (
+      point.x >= marginX &&
+      point.x <= size.x - marginX &&
+      point.y >= marginY &&
+      point.y <= size.y - marginY
+    ) {
+      return;
+    }
+
     map.setView([lat, lng], map.getZoom(), { animate: false });
   }, [lat, lng, map]);
 
@@ -41,7 +54,7 @@ interface GameMapProps {
   onInteractPoi: (poi: POI) => void;
 }
 
-export default function GameMap({
+function GameMap({
   playerLat,
   playerLng,
   pois,
@@ -96,7 +109,7 @@ export default function GameMap({
         playerLng={playerLng}
         revealedCellKeys={revealedCellKeys}
       />
-      <RecenterMap lat={playerLat} lng={playerLng} />
+      <FollowPlayerViewport lat={playerLat} lng={playerLng} />
 
       <AccessibleMarker
         position={center}
@@ -134,3 +147,5 @@ export default function GameMap({
     </MapContainer>
   );
 }
+
+export default memo(GameMap);

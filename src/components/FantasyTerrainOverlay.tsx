@@ -14,6 +14,7 @@ import {
   type FantasyMapTerrainCell,
 } from "@/lib/fantasy-map-art";
 import { positionOverlayCanvas } from "@/lib/map-overlay-canvas";
+import { createOverlayRedrawScheduler } from "@/lib/map-overlay-scheduler";
 
 const PANE_NAME = "fantasyTerrainPane";
 // Base tiles sit at 200, terrain at 325, atlas detail at 350, and fog at 550.
@@ -454,19 +455,13 @@ export default function FantasyTerrainOverlay({
       drawFantasyTerrain(ctx, map, dpr);
     };
 
-    const redraw = () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        drawNow();
-      });
-    };
+    const scheduler = createOverlayRedrawScheduler(drawNow);
+    const redraw = () => scheduler.paintNow();
 
     redrawRef.current = redraw;
     drawNow();
     pane.replaceChildren(canvas);
 
-    map.on("move", redraw);
     map.on("moveend", redraw);
     map.on("zoomend", redraw);
     map.on("viewreset", redraw);
@@ -474,7 +469,7 @@ export default function FantasyTerrainOverlay({
 
     return () => {
       active = false;
-      map.off("move", redraw);
+      scheduler.cancel();
       map.off("moveend", redraw);
       map.off("zoomend", redraw);
       map.off("viewreset", redraw);

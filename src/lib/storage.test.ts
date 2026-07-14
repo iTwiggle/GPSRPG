@@ -7,6 +7,7 @@ import {
   STORAGE_SCHEMA_VERSION,
 } from "./storage";
 import { STORAGE_KEYS } from "./platform/storage-keys";
+import { resetStorageAdapter, setStorageAdapter } from "./platform/storage-adapter";
 import { CATALOG_IDS } from "./companion/catalog-registry";
 
 const STORAGE_KEY = STORAGE_KEYS.gameState;
@@ -101,7 +102,7 @@ describe("storage vertical slice", () => {
   });
 
   it("surfaces a warning when save writes fail", () => {
-    vi.stubGlobal("localStorage", {
+    setStorageAdapter({
       getItem: () => null,
       setItem: () => {
         throw new Error("test quota");
@@ -109,11 +110,15 @@ describe("storage vertical slice", () => {
       removeItem: () => {},
     });
 
-    const result = saveGameState(createInitialState());
+    try {
+      const result = saveGameState(createInitialState());
 
-    expect(result.ok).toBe(false);
-    expect(result.warning).toContain("could not be saved");
-    expect(result.warning).toContain("test quota");
+      expect(result.ok).toBe(false);
+      expect(result.warning).toContain("could not be saved");
+      expect(result.warning).toContain("test quota");
+    } finally {
+      resetStorageAdapter();
+    }
   });
 
   it("migrates legacy v1 codex keys to catalog ids", () => {

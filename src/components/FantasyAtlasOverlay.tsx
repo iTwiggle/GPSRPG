@@ -15,6 +15,7 @@ import {
   type FantasyMapPlacement,
 } from "@/lib/fantasy-map-art";
 import { positionOverlayCanvas } from "@/lib/map-overlay-canvas";
+import { createOverlayRedrawScheduler } from "@/lib/map-overlay-scheduler";
 
 const DETAIL_PANE_NAME = "fantasyAtlasPane";
 const DETAIL_PANE_Z_INDEX = "350";
@@ -118,6 +119,9 @@ export default function FantasyAtlasOverlay({
     playerLng,
     revealedCellKeys,
   });
+  const positionSchedulerRef = useRef<ReturnType<
+    typeof createOverlayRedrawScheduler
+  > | null>(null);
 
   visibilityRef.current = { playerLat, playerLng, revealedCellKeys };
 
@@ -240,14 +244,9 @@ export default function FantasyAtlasOverlay({
       }
     };
 
-    const redraw = () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        drawNow();
-      });
-    };
-
+    const scheduler = createOverlayRedrawScheduler(drawNow);
+    positionSchedulerRef.current = scheduler;
+    const redraw = () => scheduler.paintNow();
     redrawRef.current = redraw;
 
     for (const [motif, src] of Object.entries(MOTIF_ASSETS) as Array<
@@ -260,7 +259,6 @@ export default function FantasyAtlasOverlay({
     }
 
     redraw();
-    map.on("move", redraw);
     map.on("moveend", redraw);
     map.on("zoomend", redraw);
     map.on("viewreset", redraw);
@@ -268,7 +266,7 @@ export default function FantasyAtlasOverlay({
 
     return () => {
       active = false;
-      map.off("move", redraw);
+      scheduler.cancel();
       map.off("moveend", redraw);
       map.off("zoomend", redraw);
       map.off("viewreset", redraw);
@@ -288,7 +286,12 @@ export default function FantasyAtlasOverlay({
 
   useLayoutEffect(() => {
     if (enabled) redrawRef.current?.();
-  }, [enabled, playerLat, playerLng, revealedCellKeys]);
+  }, [enabled, revealedCellKeys]);
+
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    positionSchedulerRef.current?.paintDebounced();
+  }, [enabled, playerLat, playerLng]);
 
   return null;
 }

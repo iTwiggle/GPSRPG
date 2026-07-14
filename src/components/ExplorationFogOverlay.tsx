@@ -10,6 +10,7 @@ import {
   parseExplorationCellKey,
 } from "@/lib/exploration-memory";
 import { positionOverlayCanvas } from "@/lib/map-overlay-canvas";
+import { createOverlayRedrawScheduler } from "@/lib/map-overlay-scheduler";
 
 const PANE_NAME = "explorationFogPane";
 // Conceal base tiles below authored biome motifs and the already-filtered
@@ -170,6 +171,9 @@ export default function ExplorationFogOverlay({
     playerLng,
     revealedCellKeys,
   });
+  const positionSchedulerRef = useRef<ReturnType<
+    typeof createOverlayRedrawScheduler
+  > | null>(null);
 
   renderStateRef.current = { playerLat, playerLng, revealedCellKeys };
 
@@ -218,14 +222,9 @@ export default function ExplorationFogOverlay({
       );
     };
 
-    const redraw = () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        drawNow();
-      });
-    };
-
+    const scheduler = createOverlayRedrawScheduler(drawNow);
+    positionSchedulerRef.current = scheduler;
+    const redraw = () => scheduler.paintNow();
     redrawRef.current = redraw;
 
     // Paint before attaching the canvas so enabling fog never exposes a blank
@@ -233,7 +232,6 @@ export default function ExplorationFogOverlay({
     drawNow();
     pane.replaceChildren(canvas);
 
-    map.on("move", redraw);
     map.on("moveend", redraw);
     map.on("zoomend", redraw);
     map.on("viewreset", redraw);
@@ -241,7 +239,7 @@ export default function ExplorationFogOverlay({
 
     return () => {
       active = false;
-      map.off("move", redraw);
+      scheduler.cancel();
       map.off("moveend", redraw);
       map.off("zoomend", redraw);
       map.off("viewreset", redraw);
@@ -260,7 +258,12 @@ export default function ExplorationFogOverlay({
 
   useLayoutEffect(() => {
     if (enabled) redrawRef.current?.();
-  }, [enabled, playerLat, playerLng, revealedCellKeys]);
+  }, [enabled, revealedCellKeys]);
+
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    positionSchedulerRef.current?.paintDebounced();
+  }, [enabled, playerLat, playerLng]);
 
   return null;
 }
