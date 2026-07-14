@@ -2,6 +2,8 @@ export type ItemRarity = "common" | "uncommon" | "rare";
 
 export interface Item {
   id: string;
+  /** Stable slug shared with UE5 — see companion/catalog-registry.ts */
+  catalogId?: string;
   name: string;
   type: "weapon" | "armor" | "consumable" | "treasure";
   rarity: ItemRarity;
@@ -173,6 +175,12 @@ export interface BaseCampState {
   lastCampVisitAt?: string;
 }
 
+/** Cross-session companion metadata (sync, daily gates, UE5 handoff). */
+export interface CompanionMeta {
+  /** Local calendar date (YYYY-MM-DD) of the last manual contract refresh. */
+  lastContractRefreshDate?: string;
+}
+
 export interface GameState {
   schemaVersion: number;
   player: Player;
@@ -182,6 +190,7 @@ export interface GameState {
   fieldTasks: FieldTask[];
   fieldReport: FieldReport;
   baseCamp: BaseCampState;
+  companionMeta?: CompanionMeta;
 }
 
 export const EXPLORE_RADIUS_METERS = 150;

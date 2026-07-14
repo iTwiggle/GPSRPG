@@ -1,4 +1,5 @@
 import { applyEncounterFlavor, type EncounterKind } from "./poi-flavor";
+import { hashSeed, seededRandom } from "./prng";
 import { rollLoot } from "./loot";
 import type { EncounterResult, POI, POIType } from "./types";
 
@@ -64,26 +65,6 @@ const POI_BONUS: Partial<Record<POIType, { xp: number; lootRolls: number }>> = {
   quarry: { xp: 4, lootRolls: 1 },
   well: { xp: 6, lootRolls: 1 },
 };
-
-function hashSeed(...values: (string | number)[]): number {
-  let hash = 2166136261;
-  for (const value of values) {
-    const str = String(value);
-    for (let i = 0; i < str.length; i += 1) {
-      hash ^= str.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
-  }
-  return hash >>> 0;
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0x100000000;
-  };
-}
 
 function pickEncounter(rand: () => number): EncounterTemplate {
   const total = BASE_ENCOUNTERS.reduce((sum, e) => sum + e.weight, 0);

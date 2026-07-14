@@ -12,29 +12,12 @@ import {
   type OsmContextCategory,
 } from "./osm-context";
 import { POI_CELL_SIZE_METERS } from "./poi-generator";
+import { hashSeedNumeric, seededRandom } from "./prng";
 import type { POI, Position } from "./types";
 
 export const WORLD_POI_ACTIVE_RADIUS_METERS = 520;
 export const WORLD_POIS_PER_CELL = 2;
 const WORLD_FIELD_CELL_RADIUS = 2;
-
-function hashSeed(...values: number[]): number {
-  let hash = 2166136261;
-  for (const value of values) {
-    const int = Math.floor(value * 1000);
-    hash ^= int;
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0x100000000;
-  };
-}
 
 function metersToLatLngOffset(
   originLat: number,
@@ -95,7 +78,7 @@ export function generateWorldCellPois(
 
   for (let index = 0; index < count; index++) {
     const placementRand = seededRandom(
-      hashSeed(cell.cellLat, cell.cellLng, index, 991)
+      hashSeedNumeric(cell.cellLat, cell.cellLng, index, 991)
     );
     const northMeters =
       (placementRand() - 0.5) * POI_CELL_SIZE_METERS * 0.76;
@@ -108,14 +91,14 @@ export function generateWorldCellPois(
     );
 
     const typeRand = seededRandom(
-      hashSeed(cell.cellLat, cell.cellLng, index, 17)
+      hashSeedNumeric(cell.cellLat, cell.cellLng, index, 17)
     );
     const type = pickPoiType("generic", typeRand);
     const nameRand = seededRandom(
-      hashSeed(cell.cellLat, cell.cellLng, index, 31)
+      hashSeedNumeric(cell.cellLat, cell.cellLng, index, 31)
     );
     const flavorRand = seededRandom(
-      hashSeed(cell.cellLat, cell.cellLng, index, 47)
+      hashSeedNumeric(cell.cellLat, cell.cellLng, index, 47)
     );
 
     pois.push({

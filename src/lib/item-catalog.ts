@@ -1,7 +1,8 @@
-import { itemCatalogKey } from "./item-visual";
+import { CATALOG_IDS, itemCatalogKey } from "./companion/catalog-registry";
 import type { Codex, Item, ItemRarity, POIType } from "./types";
 
 export interface ItemCatalogEntry {
+  catalogId: string;
   name: string;
   type: Item["type"];
   rarity: ItemRarity;
@@ -90,6 +91,7 @@ export const ITEM_SETS: ItemSetDefinition[] = [
 
 export const ITEM_CATALOG: ItemCatalogEntry[] = [
   {
+    catalogId: CATALOG_IDS.rustyDagger,
     name: "Rusty Dagger",
     type: "weapon",
     rarity: "common",
@@ -99,6 +101,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "general",
   },
   {
+    catalogId: CATALOG_IDS.travelersCloak,
     name: "Traveler's Cloak",
     type: "armor",
     rarity: "common",
@@ -108,6 +111,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "general",
   },
   {
+    catalogId: CATALOG_IDS.healingDraught,
     name: "Healing Draught",
     type: "consumable",
     rarity: "common",
@@ -117,6 +121,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "general",
   },
   {
+    catalogId: CATALOG_IDS.silverCoinPouch,
     name: "Silver Coin Pouch",
     type: "treasure",
     rarity: "common",
@@ -126,6 +131,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "general",
   },
   {
+    catalogId: CATALOG_IDS.enchantedShortbow,
     name: "Enchanted Shortbow",
     type: "weapon",
     rarity: "uncommon",
@@ -135,6 +141,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "general",
   },
   {
+    catalogId: CATALOG_IDS.chainVest,
     name: "Chain Vest",
     type: "armor",
     rarity: "uncommon",
@@ -144,6 +151,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "general",
   },
   {
+    catalogId: CATALOG_IDS.phoenixFeather,
     name: "Phoenix Feather",
     type: "consumable",
     rarity: "rare",
@@ -153,6 +161,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "general",
   },
   {
+    catalogId: CATALOG_IDS.dragonScale,
     name: "Dragon Scale",
     type: "treasure",
     rarity: "rare",
@@ -162,6 +171,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "general",
   },
   {
+    catalogId: CATALOG_IDS.offeringBowl,
     name: "Offering Bowl",
     type: "treasure",
     rarity: "common",
@@ -171,6 +181,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "shrine",
   },
   {
+    catalogId: CATALOG_IDS.spiritCharm,
     name: "Spirit Charm",
     type: "consumable",
     rarity: "uncommon",
@@ -180,6 +191,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "shrine",
   },
   {
+    catalogId: CATALOG_IDS.scoutsKnife,
     name: "Scout's Knife",
     type: "weapon",
     rarity: "common",
@@ -189,6 +201,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "camp",
   },
   {
+    catalogId: CATALOG_IDS.banditSatchel,
     name: "Bandit Satchel",
     type: "treasure",
     rarity: "common",
@@ -198,6 +211,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "camp",
   },
   {
+    catalogId: CATALOG_IDS.signalFlare,
     name: "Signal Flare",
     type: "consumable",
     rarity: "common",
@@ -207,6 +221,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "tower",
   },
   {
+    catalogId: CATALOG_IDS.lookoutLens,
     name: "Lookout Lens",
     type: "treasure",
     rarity: "uncommon",
@@ -216,6 +231,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "tower",
   },
   {
+    catalogId: CATALOG_IDS.rustyGateKey,
     name: "Rusty Gate Key",
     type: "treasure",
     rarity: "common",
@@ -225,6 +241,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "gate",
   },
   {
+    catalogId: CATALOG_IDS.patrolBadge,
     name: "Patrol Badge",
     type: "armor",
     rarity: "common",
@@ -234,6 +251,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "gate",
   },
   {
+    catalogId: CATALOG_IDS.herbBundle,
     name: "Herb Bundle",
     type: "consumable",
     rarity: "common",
@@ -243,6 +261,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "grove",
   },
   {
+    catalogId: CATALOG_IDS.beastFang,
     name: "Beast Fang",
     type: "weapon",
     rarity: "common",
@@ -252,6 +271,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "grove",
   },
   {
+    catalogId: CATALOG_IDS.smugglersPouch,
     name: "Smuggler's Pouch",
     type: "treasure",
     rarity: "common",
@@ -261,6 +281,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "cache",
   },
   {
+    catalogId: CATALOG_IDS.roadRunnerBlade,
     name: "Road Runner Blade",
     type: "weapon",
     rarity: "uncommon",
@@ -270,6 +291,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "cache",
   },
   {
+    catalogId: CATALOG_IDS.stoneChisel,
     name: "Stone Chisel",
     type: "weapon",
     rarity: "common",
@@ -279,6 +301,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "quarry",
   },
   {
+    catalogId: CATALOG_IDS.minersToken,
     name: "Miner's Token",
     type: "treasure",
     rarity: "common",
@@ -288,6 +311,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "quarry",
   },
   {
+    catalogId: CATALOG_IDS.wellCoin,
     name: "Well Coin",
     type: "treasure",
     rarity: "common",
@@ -297,6 +321,7 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "well",
   },
   {
+    catalogId: CATALOG_IDS.drownedLocket,
     name: "Drowned Locket",
     type: "treasure",
     rarity: "uncommon",
@@ -311,11 +336,18 @@ const catalogByKey = new Map(
   ITEM_CATALOG.map((entry) => [itemCatalogKey(entry), entry])
 );
 
+const catalogById = new Map(
+  ITEM_CATALOG.map((entry) => [entry.catalogId, entry])
+);
+
 const setsById = new Map(ITEM_SETS.map((set) => [set.id, set]));
 
 export function getCatalogEntry(
-  item: Pick<Item, "name" | "type">
+  item: Pick<Item, "name" | "type" | "catalogId">
 ): ItemCatalogEntry | undefined {
+  if (item.catalogId) {
+    return catalogById.get(item.catalogId);
+  }
   return catalogByKey.get(itemCatalogKey(item));
 }
 

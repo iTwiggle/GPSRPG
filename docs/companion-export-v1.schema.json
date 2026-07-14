@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GPSRPG Companion Export V1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "exportedAt",
+    "platform",
+    "player",
+    "inventory",
+    "boards",
+    "outdoorEffort",
+    "unlockTokens"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "exportedAt": { "type": "string", "format": "date-time" },
+    "platform": { "enum": ["web", "android"] },
+    "player": {
+      "type": "object",
+      "required": ["name", "level", "xp"],
+      "properties": {
+        "name": { "type": "string" },
+        "level": { "type": "integer", "minimum": 1 },
+        "xp": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "inventory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["catalogId", "rarity", "acquiredAt"],
+        "properties": {
+          "catalogId": { "type": "string" },
+          "rarity": { "enum": ["common", "uncommon", "rare"] },
+          "acquiredAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "boards": { "type": "object" },
+    "outdoorEffort": { "type": "object" },
+    "unlockTokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["token", "at"],
+        "properties": {
+          "token": { "type": "string" },
+          "at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

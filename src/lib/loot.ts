@@ -22,7 +22,8 @@ function pickWeighted(
 
 function createItem(template: ItemCatalogEntry, suffix: string): Item {
   return {
-    id: `item-${template.name.toLowerCase().replace(/\s+/g, "-")}-${suffix}`,
+    id: `item-${template.catalogId}-${suffix}`,
+    catalogId: template.catalogId,
     name: template.name,
     type: template.type,
     rarity: template.rarity,

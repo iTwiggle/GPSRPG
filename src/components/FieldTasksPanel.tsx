@@ -3,6 +3,8 @@ import type { FieldTask } from "@/lib/types";
 interface FieldTasksPanelProps {
   tasks: FieldTask[];
   onRefresh?: () => void;
+  refreshDisabled?: boolean;
+  refreshHint?: string;
   embedded?: boolean;
 }
 
@@ -14,6 +16,8 @@ function progressPercent(task: FieldTask): number {
 export default function FieldTasksPanel({
   tasks,
   onRefresh,
+  refreshDisabled = false,
+  refreshHint,
   embedded = false,
 }: FieldTasksPanelProps) {
   const activeCount = tasks.filter((task) => task.status === "active").length;
@@ -37,12 +41,16 @@ export default function FieldTasksPanel({
           <button
             type="button"
             onClick={onRefresh}
-            className="shrink-0 rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-500/25"
+            disabled={refreshDisabled}
+            className="shrink-0 rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
             New Contracts
           </button>
         )}
       </div>
+      {refreshHint && (
+        <p className="mt-2 text-[11px] text-slate-500">{refreshHint}</p>
+      )}
 
       <ul className="mt-3 space-y-2" aria-live="polite" aria-relevant="additions">
         {tasks.map((task) => {
