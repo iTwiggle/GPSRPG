@@ -13,6 +13,8 @@ import {
   getFantasyAtlasTerrainCells,
   type FantasyMapTerrainCell,
 } from "@/lib/fantasy-map-art";
+import { positionOverlayCanvas } from "@/lib/map-overlay-canvas";
+import { createOverlayRedrawScheduler } from "@/lib/map-overlay-scheduler";
 
 const PANE_NAME = "fantasyTerrainPane";
 // Base tiles sit at 200, terrain at 325, atlas detail at 350, and fog at 550.
@@ -59,12 +61,7 @@ function layerToCanvasPoint(
 
 function positionCanvas(map: L.Map, canvas: HTMLCanvasElement, dpr: number) {
   const { size, topLeft } = getCanvasViewport(map);
-
-  canvas.width = Math.max(1, Math.floor(size.x * dpr));
-  canvas.height = Math.max(1, Math.floor(size.y * dpr));
-  canvas.style.width = `${size.x}px`;
-  canvas.style.height = `${size.y}px`;
-  L.DomUtil.setPosition(canvas, topLeft);
+  positionOverlayCanvas(canvas, size, topLeft, dpr);
 }
 
 function projectRegion(
@@ -458,33 +455,23 @@ export default function FantasyTerrainOverlay({
       drawFantasyTerrain(ctx, map, dpr);
     };
 
-    const redraw = () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        drawNow();
-      });
-    };
+    const scheduler = createOverlayRedrawScheduler(drawNow);
+    const redraw = () => scheduler.paintNow();
 
     redrawRef.current = redraw;
     drawNow();
     pane.replaceChildren(canvas);
 
-    map.on("move", redraw);
     map.on("moveend", redraw);
-    map.on("zoom", redraw);
     map.on("zoomend", redraw);
-    map.on("zoomanim", redraw);
     map.on("viewreset", redraw);
     map.on("resize", redraw);
 
     return () => {
       active = false;
-      map.off("move", redraw);
+      scheduler.cancel();
       map.off("moveend", redraw);
-      map.off("zoom", redraw);
       map.off("zoomend", redraw);
-      map.off("zoomanim", redraw);
       map.off("viewreset", redraw);
       map.off("resize", redraw);
       if (rafRef.current !== null) {

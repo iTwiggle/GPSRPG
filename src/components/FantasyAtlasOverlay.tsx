@@ -14,6 +14,8 @@ import {
   type FantasyMapMotif,
   type FantasyMapPlacement,
 } from "@/lib/fantasy-map-art";
+import { positionOverlayCanvas } from "@/lib/map-overlay-canvas";
+import { createOverlayRedrawScheduler } from "@/lib/map-overlay-scheduler";
 
 const DETAIL_PANE_NAME = "fantasyAtlasPane";
 const DETAIL_PANE_Z_INDEX = "350";
@@ -59,12 +61,7 @@ interface AtlasVisibilityState {
 function positionCanvas(map: L.Map, canvas: HTMLCanvasElement, dpr: number) {
   const size = map.getSize();
   const topLeft = map.containerPointToLayerPoint(L.point(0, 0));
-
-  canvas.width = Math.max(1, Math.floor(size.x * dpr));
-  canvas.height = Math.max(1, Math.floor(size.y * dpr));
-  canvas.style.width = `${size.x}px`;
-  canvas.style.height = `${size.y}px`;
-  L.DomUtil.setPosition(canvas, topLeft);
+  positionOverlayCanvas(canvas, size, topLeft, dpr);
 }
 
 function zoomScale(zoom: number): number {
@@ -122,6 +119,9 @@ export default function FantasyAtlasOverlay({
     playerLng,
     revealedCellKeys,
   });
+  const positionSchedulerRef = useRef<ReturnType<
+    typeof createOverlayRedrawScheduler
+  > | null>(null);
 
   visibilityRef.current = { playerLat, playerLng, revealedCellKeys };
 
@@ -244,14 +244,9 @@ export default function FantasyAtlasOverlay({
       }
     };
 
-    const redraw = () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        drawNow();
-      });
-    };
-
+    const scheduler = createOverlayRedrawScheduler(drawNow);
+    positionSchedulerRef.current = scheduler;
+    const redraw = () => scheduler.paintNow();
     redrawRef.current = redraw;
 
     for (const [motif, src] of Object.entries(MOTIF_ASSETS) as Array<
@@ -264,21 +259,16 @@ export default function FantasyAtlasOverlay({
     }
 
     redraw();
-    map.on("move", redraw);
     map.on("moveend", redraw);
-    map.on("zoom", redraw);
     map.on("zoomend", redraw);
-    map.on("zoomanim", redraw);
     map.on("viewreset", redraw);
     map.on("resize", redraw);
 
     return () => {
       active = false;
-      map.off("move", redraw);
+      scheduler.cancel();
       map.off("moveend", redraw);
-      map.off("zoom", redraw);
       map.off("zoomend", redraw);
-      map.off("zoomanim", redraw);
       map.off("viewreset", redraw);
       map.off("resize", redraw);
       if (rafRef.current !== null) {
@@ -296,7 +286,12 @@ export default function FantasyAtlasOverlay({
 
   useLayoutEffect(() => {
     if (enabled) redrawRef.current?.();
-  }, [enabled, playerLat, playerLng, revealedCellKeys]);
+  }, [enabled, revealedCellKeys]);
+
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    positionSchedulerRef.current?.paintDebounced();
+  }, [enabled, playerLat, playerLng]);
 
   return null;
 }

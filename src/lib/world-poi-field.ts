@@ -115,10 +115,10 @@ export function generateWorldCellPois(
 }
 
 /**
- * Build the active rolling POI field. POIs are owned by stable world cells and
- * enter/leave only when their own distance crosses the active radius.
+ * Generate all stable POIs for the world-cell neighborhood around the player.
+ * This only changes when the player crosses into a new ~400 m area cell.
  */
-export function buildWorldPoiField(
+export function generateWorldFieldPois(
   player: Position,
   currentAreaContext: OsmContextCategory = "generic"
 ): POI[] {
@@ -126,15 +126,22 @@ export function buildWorldPoiField(
     getAreaCellKey(player.lat, player.lng)
   );
 
-  return getWorldFieldCells(player)
-    .flatMap((cell) =>
-      generateWorldCellPois(
-        cell,
-        cellKeyToString(cell) === currentCellKey
-          ? currentAreaContext
-          : "generic"
-      )
+  return getWorldFieldCells(player).flatMap((cell) =>
+    generateWorldCellPois(
+      cell,
+      cellKeyToString(cell) === currentCellKey
+        ? currentAreaContext
+        : "generic"
     )
+  );
+}
+
+/** Keep POIs inside the active radius and sort by distance from the player. */
+export function filterActiveWorldPois(
+  pois: POI[],
+  player: Position
+): POI[] {
+  return pois
     .filter(
       (poi) =>
         distanceMeters(player, poi) <= WORLD_POI_ACTIVE_RADIUS_METERS
@@ -142,4 +149,18 @@ export function buildWorldPoiField(
     .sort(
       (a, b) => distanceMeters(player, a) - distanceMeters(player, b)
     );
+}
+
+/**
+ * Build the active rolling POI field. POIs are owned by stable world cells and
+ * enter/leave only when their own distance crosses the active radius.
+ */
+export function buildWorldPoiField(
+  player: Position,
+  currentAreaContext: OsmContextCategory = "generic"
+): POI[] {
+  return filterActiveWorldPois(
+    generateWorldFieldPois(player, currentAreaContext),
+    player
+  );
 }

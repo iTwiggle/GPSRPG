@@ -1,27 +1,42 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Popup, Circle, useMap } from "react-leaflet";
 import AccessibleMarker from "@/components/AccessibleMarker";
 import ExplorationFogOverlay from "@/components/ExplorationFogOverlay";
 import FantasyAtlasOverlay from "@/components/FantasyAtlasOverlay";
 import FantasyTerrainOverlay from "@/components/FantasyTerrainOverlay";
+import PoiMapMarker from "@/components/PoiMapMarker";
 import surfaceStyles from "@/components/FantasyMapSurface.module.css";
-import { getApproachReadout } from "@/lib/approach";
-import { formatDistance } from "@/lib/distance";
-import { getPoiTypeLabel } from "@/lib/poi-flavor";
 import {
-  createPoiMarkerConfig,
   playerMarkerConfig,
 } from "@/lib/poi-marker-icons";
 import type { POI } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
 
-function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
+/**
+ * Pan only when the player drifts toward the viewport edge. Small demo nudges
+ * update the marker without moving the map — avoiding canvas redraw storms.
+ */
+function FollowPlayerViewport({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
 
   useEffect(() => {
-    map.setView([lat, lng], map.getZoom(), { animate: true });
+    const size = map.getSize();
+    const point = map.latLngToContainerPoint([lat, lng]);
+    const marginX = size.x * 0.2;
+    const marginY = size.y * 0.2;
+
+    if (
+      point.x >= marginX &&
+      point.x <= size.x - marginX &&
+      point.y >= marginY &&
+      point.y <= size.y - marginY
+    ) {
+      return;
+    }
+
+    map.setView([lat, lng], map.getZoom(), { animate: false });
   }, [lat, lng, map]);
 
   return null;
@@ -39,7 +54,7 @@ interface GameMapProps {
   onInteractPoi: (poi: POI) => void;
 }
 
-export default function GameMap({
+function GameMap({
   playerLat,
   playerLng,
   pois,
@@ -63,6 +78,8 @@ export default function GameMap({
   ]
     .filter(Boolean)
     .join(" ");
+
+  const visitedSet = useMemo(() => new Set(visitedPoiIds), [visitedPoiIds]);
 
   return (
     <MapContainer
@@ -92,7 +109,7 @@ export default function GameMap({
         playerLng={playerLng}
         revealedCellKeys={revealedCellKeys}
       />
-      <RecenterMap lat={playerLat} lng={playerLng} />
+      <FollowPlayerViewport lat={playerLat} lng={playerLng} />
 
       <AccessibleMarker
         position={center}
@@ -116,50 +133,19 @@ export default function GameMap({
         }}
       />
 
-      {pois.map((poi) => {
-        const visited = visitedPoiIds.includes(poi.id);
-        const readout = getApproachReadout(
-          { lat: playerLat, lng: playerLng },
-          poi,
-          EXPLORE_RADIUS_METERS
-        );
-        const isSelected = poi.id === selectedPoiId;
-        const inRange = readout.status === "in_range";
-        const markerConfig = createPoiMarkerConfig(poi, {
-          selected: isSelected,
-          visited,
-          inRange: isSelected && inRange,
-        });
-
-        return (
-          <AccessibleMarker
-            key={poi.id}
-            position={[poi.lat, poi.lng]}
-            icon={markerConfig.icon}
-            accessibility={markerConfig.accessibility}
-            onKeyboardActivate={() => onInteractPoi(poi)}
-            eventHandlers={{ click: () => onInteractPoi(poi) }}
-          >
-            <Popup className="rpg-poi-bubble" closeButton={false} offset={[0, -4]}>
-              <div className="rpg-poi-bubble__content">
-                <p className="rpg-poi-bubble__name">{poi.name}</p>
-                <p className="rpg-poi-bubble__meta">
-                  {getPoiTypeLabel(poi.type)} · {formatDistance(readout.distanceMeters)}
-                </p>
-                {visited ? (
-                  <p className="rpg-poi-bubble__prompt text-emerald-300">Explored</p>
-                ) : isSelected && inRange ? (
-                  <p className="rpg-poi-bubble__prompt text-amber-200">Tap marker again</p>
-                ) : isSelected ? (
-                  <p className="rpg-poi-bubble__prompt text-violet-100/85">
-                    {formatDistance(readout.distanceMeters)} · move closer
-                  </p>
-                ) : null}
-              </div>
-            </Popup>
-          </AccessibleMarker>
-        );
-      })}
+      {pois.map((poi) => (
+        <PoiMapMarker
+          key={poi.id}
+          poi={poi}
+          visited={visitedSet.has(poi.id)}
+          isSelected={poi.id === selectedPoiId}
+          playerLat={playerLat}
+          playerLng={playerLng}
+          onInteractPoi={onInteractPoi}
+        />
+      ))}
     </MapContainer>
   );
 }
+
+export default memo(GameMap);
