@@ -38,8 +38,8 @@ export default function AboutPage() {
           </p>
           <p>
             The core loop: your GPS position → procedural nearby fantasy sites
-            → explore when in range → choose a measured or bold approach →
-            encounter rewards → XP and loot stored locally on this device.
+            → explore when in range → encounter rewards → XP and loot stored
+            locally on this device.
           </p>
         </section>
 
