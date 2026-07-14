@@ -2,6 +2,7 @@ import type { ActivityEvent, ActivityEventType, ItemRarity } from "@/lib/types";
 
 interface ActivityLogPanelProps {
   events: ActivityEvent[];
+  embedded?: boolean;
 }
 
 const RARITY_COLORS: Record<ItemRarity, string> = {
@@ -69,10 +70,13 @@ function messageClass(event: ActivityEvent): string {
   return "text-slate-200";
 }
 
-export default function ActivityLogPanel({ events }: ActivityLogPanelProps) {
+export default function ActivityLogPanel({
+  events,
+  embedded = false,
+}: ActivityLogPanelProps) {
   return (
-    <div className="rpg-panel p-4">
-      <h2 className="text-sm font-semibold text-slate-100">Activity Log</h2>
+    <section className={embedded ? "rpg-expedition-section" : "rpg-panel p-4"}>
+      <h2 className="text-sm font-semibold text-slate-100">Trail Log</h2>
       <p className="mt-0.5 text-xs text-slate-500">
         Recent journey entries — newest first.
       </p>
@@ -80,7 +84,11 @@ export default function ActivityLogPanel({ events }: ActivityLogPanelProps) {
       {events.length === 0 ? (
         <p className="mt-3 text-sm text-slate-500">No journey entries yet.</p>
       ) : (
-        <ul className="mt-3 max-h-48 space-y-1.5 overflow-y-auto">
+        <ul
+          className={`mt-3 space-y-1.5 ${
+            embedded ? "" : "max-h-48 overflow-y-auto"
+          }`}
+        >
           {events.map((event) => (
             <li
               key={event.id}
@@ -101,6 +109,6 @@ export default function ActivityLogPanel({ events }: ActivityLogPanelProps) {
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

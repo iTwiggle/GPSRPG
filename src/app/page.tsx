@@ -5,13 +5,11 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import BaseCampPanel from "@/components/BaseCampPanel";
 import FeedbackProvider from "@/components/feedback/FeedbackProvider";
-import ActivityLogPanel from "@/components/ActivityLogPanel";
 import CharacterHUD from "@/components/CharacterHUD";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
 import EncounterModal from "@/components/EncounterModal";
-import FieldReportPanel from "@/components/FieldReportPanel";
-import FieldTasksPanel from "@/components/FieldTasksPanel";
+import ExpeditionPanel from "@/components/ExpeditionPanel";
 import InventoryPanel from "@/components/InventoryPanel";
 import MobilePanelNav, {
   type MobilePanelSection,
@@ -45,11 +43,10 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
 
 const PANEL_TITLES: Record<MobilePanelSection, string> = {
   poi: "Nearby sites",
-  tasks: "Field tasks",
+  expedition: "Expedition",
   bag: "Inventory",
   codex: "Codex",
   camp: "Base camp",
-  journey: "Journey",
   dev: "Field controls",
 };
 
@@ -387,10 +384,15 @@ export default function HomePage() {
                 }
               />
             )}
-            {activePanel === "tasks" && (
-              <FieldTasksPanel
+            {activePanel === "expedition" && (
+              <ExpeditionPanel
                 tasks={gameState.fieldTasks}
-                onRefresh={devToolsEnabled ? refreshFieldTasks : undefined}
+                report={gameState.fieldReport}
+                events={gameState.activityLog}
+                onResetReport={resetFieldReport}
+                onRefreshTasks={
+                  devToolsEnabled ? refreshFieldTasks : undefined
+                }
               />
             )}
             {activePanel === "bag" && (
@@ -408,15 +410,6 @@ export default function HomePage() {
                 onClaimDoor={claimDepotDoor}
                 onMarkVisit={markBaseCampVisit}
               />
-            )}
-            {activePanel === "journey" && (
-              <>
-                <FieldReportPanel
-                  report={gameState.fieldReport}
-                  onReset={resetFieldReport}
-                />
-                <ActivityLogPanel events={gameState.activityLog} />
-              </>
             )}
             {devToolsEnabled && activePanel === "dev" && (
               <DevControls
