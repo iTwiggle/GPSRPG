@@ -28,48 +28,49 @@ export default function CharacterHUD({
       : null;
 
   return (
-    <div className="rpg-panel p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-300/80">
-            Adventurer
-          </p>
-          <h1 className="text-lg font-bold text-slate-50">{player.name}</h1>
-          <p className="text-sm text-slate-400">
-            <span className="font-semibold text-amber-300">
-              Level <AnimatedNumber value={player.level} />
-            </span>
-            {" · "}
-            <AnimatedNumber value={player.xp} /> XP
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className="rounded-full border border-violet-500/35 bg-violet-500/15 px-2.5 py-1 text-xs font-medium text-violet-200">
-            {gpsLabel}
-          </span>
-          {accuracyLabel && (
-            <span
-              className="text-[10px] font-medium text-slate-500"
-              title="Estimated horizontal GPS accuracy from your device"
-            >
-              {accuracyLabel}
-            </span>
-          )}
-        </div>
+    <section className="rpg-viewfinder-hud" aria-label="Player status">
+      <div className="rpg-viewfinder-hud__identity">
+        <span className="rpg-viewfinder-hud__brand">GPSRPG</span>
+        <span className="rpg-viewfinder-hud__divider" aria-hidden="true" />
+        <span className="truncate text-xs font-semibold text-slate-100">
+          {player.name}
+        </span>
       </div>
-
-      <div className="mt-3">
-        <div className="mb-1 flex justify-between text-xs text-slate-500">
-          <span>Quest progress</span>
-          <span>{toNext} XP to next level</span>
+      <div className="rpg-viewfinder-hud__progress">
+        <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+          <span className="text-xs font-bold text-amber-200">
+            Lv <AnimatedNumber value={player.level} />
+          </span>
+          <span className="text-[10px] text-slate-300/75">
+            <AnimatedNumber value={player.xp} /> XP
+          </span>
         </div>
-        <div className="h-2.5 overflow-hidden rounded-full border border-slate-700/60 bg-slate-900">
+        <div
+          className="rpg-viewfinder-hud__xp-track"
+          role="progressbar"
+          aria-label={`${toNext} XP to next level`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress * 100)}
+        >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-violet-600 via-amber-500 to-violet-500 transition-all"
+            className="rpg-viewfinder-hud__xp-fill"
             style={{ width: `${Math.round(progress * 100)}%` }}
           />
         </div>
       </div>
-    </div>
+      <div className="rpg-viewfinder-hud__gps">
+        <span className="rpg-viewfinder-hud__gps-dot" aria-hidden="true" />
+        <span>{gpsLabel}</span>
+        {accuracyLabel && (
+          <span
+            className="text-[9px] text-slate-400/80"
+            title="Estimated horizontal GPS accuracy from your device"
+          >
+            · {accuracyLabel}
+          </span>
+        )}
+      </div>
+    </section>
   );
 }

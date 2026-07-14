@@ -18,7 +18,6 @@ import MobilePanelNav, {
 } from "@/components/MobilePanelNav";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import POIPanel from "@/components/POIPanel";
-import SiteFooter from "@/components/SiteFooter";
 import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useExplorationMemory } from "@/hooks/useExplorationMemory";
@@ -44,13 +43,23 @@ const GameMap = dynamic(() => import("@/components/GameMap"), {
   ),
 });
 
+const PANEL_TITLES: Record<MobilePanelSection, string> = {
+  poi: "Nearby sites",
+  tasks: "Field tasks",
+  bag: "Inventory",
+  codex: "Codex",
+  camp: "Base camp",
+  journey: "Journey",
+  dev: "Field controls",
+};
+
 export default function HomePage() {
   const geo = useGeolocation();
   const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, resetFieldReport, clearEncounter, clearSaveWarning, reset, isVisited } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
-  const [activeMobileSection, setActiveMobileSection] =
-    useState<MobilePanelSection>("poi");
+  const [activePanel, setActivePanel] =
+    useState<MobilePanelSection | null>(null);
   const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
 
@@ -65,10 +74,10 @@ export default function HomePage() {
   const devToolsEnabled = DEV_TOOLS_ENABLED || geo.isDemo;
 
   useEffect(() => {
-    if (!devToolsEnabled && activeMobileSection === "dev") {
-      setActiveMobileSection("poi");
+    if (!devToolsEnabled && activePanel === "dev") {
+      setActivePanel(null);
     }
-  }, [activeMobileSection, devToolsEnabled]);
+  }, [activePanel, devToolsEnabled]);
 
   useEffect(() => {
     const gridStored = sessionStorage.getItem(FANTASY_GRID_SESSION_KEY);
@@ -185,6 +194,10 @@ export default function HomePage() {
     explorePoi(selectedPoi, playerPosition, { simulate: true });
   }, [explorePoi, playerPosition, selectedPoi]);
 
+  const handlePanelChange = useCallback((section: MobilePanelSection) => {
+    setActivePanel((current) => (current === section ? null : section));
+  }, []);
+
   if (!gameState) {
     return (
       <main className="app-page--centered flex items-center justify-center bg-slate-950 text-slate-400">
@@ -262,200 +275,106 @@ export default function HomePage() {
     : "rpg-map-frame";
 
   return (
-    <main className="app-page bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4">
-        <header className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-300/80">
-            Companion App / Overworld Prototype
-          </p>
-          <h1 className="text-2xl font-bold text-slate-50">GPSRPG</h1>
-          <p className="text-sm text-slate-400">
-            Overworld companion — explore nearby fantasy sites from your
-            real-world position, roll encounters, and track loot locally.
-          </p>
-        </header>
-
-        <PwaInstallPrompt />
-
-        {geo.isDemo && (
+    <main
+      className={`rpg-viewfinder ${geo.isDemo ? "rpg-viewfinder--demo" : ""}`}
+    >
+      <div className={`rpg-viewfinder__map ${mapFrameClass}`}>
+        <div className="rpg-scanner-overlay" aria-hidden="true">
+          <span className="rpg-scanner-corner rpg-scanner-corner--tl" />
+          <span className="rpg-scanner-corner rpg-scanner-corner--tr" />
+          <span className="rpg-scanner-corner rpg-scanner-corner--bl" />
+          <span className="rpg-scanner-corner rpg-scanner-corner--br" />
+        </div>
+        {osmContext.areaFlavorLabel && (
           <div
-            className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+            className="rpg-viewfinder__aura"
             role="status"
+            aria-live="polite"
           >
-            <p className="font-medium">
-              Demo Mode — {DEMO_LOCATION_LABEL}, not your real GPS
-            </p>
-            <p className="mt-1 text-xs text-amber-200/80">
-              {geo.error
-                ? `Location unavailable (${geo.error}). Using a fixed demo map position for desktop testing. You can retry live GPS after changing browser or device location settings.`
-                : "Fixed map position for desktop testing. Use nudge controls or Simulate visit. Reload on a phone with location allowed for live GPS."}
-            </p>
-            <button
-              type="button"
-              onClick={geo.retryLiveGps}
-              className="mt-2 rounded-lg border border-amber-300/45 px-3 py-1.5 text-xs font-medium text-amber-50 hover:bg-amber-400/15"
-            >
-              Retry live GPS
+            <span className="rpg-chip rpg-aura-chip">
+              <span className="rpg-chip-dot" aria-hidden="true" />
+              {osmContext.areaFlavorLabel}
+            </span>
+          </div>
+        )}
+        <GameMap
+          playerLat={playerPosition.lat}
+          playerLng={playerPosition.lng}
+          pois={discoverablePois}
+          selectedPoiId={selectedPoi?.id ?? null}
+          visitedPoiIds={gameState.visitedPOIIds}
+          revealedCellKeys={explorationMemory.revealedCellKeys}
+          fantasyGridEnabled={fantasyGridEnabled}
+          streetReferenceMode={streetReferenceMode}
+          onInteractPoi={handleMapPoiInteract}
+        />
+      </div>
+
+      <div className="rpg-viewfinder__hud-row">
+        <CharacterHUD
+          player={gameState.player}
+          gpsLabel={gpsLabel}
+          gpsAccuracyMeters={geo.accuracy}
+          showGpsAccuracy={geo.status === "active"}
+        />
+        <Link
+          href="/about"
+          className="rpg-viewfinder__about"
+          aria-label="About, privacy, and limitations"
+        >
+          ?
+        </Link>
+      </div>
+
+      <div className="rpg-viewfinder__notices">
+        <PwaInstallPrompt />
+        {geo.isDemo && (
+          <div className="rpg-viewfinder-notice" role="status">
+            <span>
+              Demo · {DEMO_LOCATION_LABEL}
+              {geo.error ? ` · ${geo.error}` : ""}
+            </span>
+            <button type="button" onClick={geo.retryLiveGps}>
+              Retry GPS
             </button>
           </div>
         )}
-
-        {geo.status === "active" && (
-          <div
-            className="rpg-panel px-4 py-2.5 text-xs text-slate-400"
-            role="note"
-          >
-            <p>
-              <span className="font-medium text-slate-200">Live GPS.</span> Sites
-              stream into and out of the rolling field as you move. At highway
-              speeds (passenger testing only), markers may pass quickly — stop
-              or walk to explore safely. Do not use the app while driving.
-            </p>
-          </div>
-        )}
-
         {saveWarning && (
-          <div
-            className="rounded-xl border border-rose-400/45 bg-rose-950/55 px-4 py-3 text-sm text-rose-100 shadow-[0_0_22px_rgba(244,63,94,0.14)]"
-            role="alert"
-          >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="font-semibold">Save warning</p>
-                <p className="mt-1 text-xs leading-relaxed text-rose-100/80">
-                  {saveWarning}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={clearSaveWarning}
-                className="rounded-lg border border-rose-300/40 px-3 py-1.5 text-xs font-medium text-rose-50 hover:bg-rose-400/15"
-              >
-                Dismiss
-              </button>
-            </div>
+          <div className="rpg-viewfinder-notice rpg-viewfinder-notice--danger" role="alert">
+            <span>{saveWarning}</span>
+            <button type="button" onClick={clearSaveWarning}>
+              Dismiss
+            </button>
           </div>
         )}
+      </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <div
-            className={`relative h-[min(42vh,360px)] min-h-[240px] overflow-hidden sm:h-[min(50vh,440px)] sm:min-h-[280px] lg:h-[min(60vh,520px)] lg:min-h-[320px] ${mapFrameClass}`}
-          >
-            <div className="rpg-scanner-overlay" aria-hidden="true">
-              <span className="rpg-scanner-corner rpg-scanner-corner--tl" />
-              <span className="rpg-scanner-corner rpg-scanner-corner--tr" />
-              <span className="rpg-scanner-corner rpg-scanner-corner--bl" />
-              <span className="rpg-scanner-corner rpg-scanner-corner--br" />
-            </div>
-            {osmContext.areaFlavorLabel && (
-              <div
-                className="pointer-events-none absolute left-3 top-3 z-[500]"
-                role="status"
-                aria-live="polite"
-              >
-                <div className="rpg-aura-readout">
-                  <span className="rpg-aura-readout__label">Scanner readout</span>
-                  <span className="rpg-chip rpg-aura-chip">
-                    <span className="rpg-chip-dot" aria-hidden="true" />
-                    Local Aura · {osmContext.areaFlavorLabel}
-                  </span>
-                </div>
-              </div>
-            )}
-            <GameMap
-              playerLat={playerPosition.lat}
-              playerLng={playerPosition.lng}
-              pois={discoverablePois}
-              selectedPoiId={selectedPoi?.id ?? null}
-              visitedPoiIds={gameState.visitedPOIIds}
-              revealedCellKeys={explorationMemory.revealedCellKeys}
-              fantasyGridEnabled={fantasyGridEnabled}
-              streetReferenceMode={streetReferenceMode}
-              onInteractPoi={handleMapPoiInteract}
-            />
-          </div>
+      {geo.status === "active" && (
+        <p className="sr-only" role="note">
+          Live GPS is active. Walk or stop to explore safely. Do not use the app
+          while driving.
+        </p>
+      )}
 
-          <div className="flex flex-col gap-4">
-            <CharacterHUD
-              player={gameState.player}
-              gpsLabel={gpsLabel}
-              gpsAccuracyMeters={geo.accuracy}
-              showGpsAccuracy={geo.status === "active"}
-            />
-
-            <MobilePanelNav
-              activeSection={activeMobileSection}
-              devToolsEnabled={devToolsEnabled}
-              inventoryCount={inventoryCount}
-              codexUniqueItems={codexUniqueItems}
-              readyDepotDoors={readyDepotDoors}
-              onSectionChange={setActiveMobileSection}
-            />
-
-            <div className="flex flex-col gap-4 lg:hidden">
-              {activeMobileSection === "poi" && (
-                <POIPanel
-                  poi={selectedPoi}
-                  pois={discoverablePois}
-                  playerPosition={playerPosition}
-                  visited={selectedPoi ? isVisited(selectedPoi.id) : false}
-                  onExplore={handleExplore}
-                  onSelectPoi={setSelectedPoi}
-                  onSimulateVisit={
-                    devToolsEnabled ? handleSimulateVisit : undefined
-                  }
-                />
-              )}
-              {activeMobileSection === "tasks" && (
-                <FieldTasksPanel
-                  tasks={gameState.fieldTasks}
-                  onRefresh={devToolsEnabled ? refreshFieldTasks : undefined}
-                />
-              )}
-              {activeMobileSection === "bag" && (
-                <InventoryPanel
-                  inventory={gameState.player.inventory}
-                  onSalvageCommon={salvageCommonTriplet}
-                />
-              )}
-              {activeMobileSection === "codex" && (
-                <CodexPanel codex={gameState.codex} />
-              )}
-              {activeMobileSection === "camp" && (
-                <BaseCampPanel
-                  codex={gameState.codex}
-                  baseCamp={gameState.baseCamp}
-                  fieldReportSites={gameState.fieldReport.sitesExplored}
-                  onClaimDoor={claimDepotDoor}
-                  onMarkVisit={markBaseCampVisit}
-                />
-              )}
-              {activeMobileSection === "journey" && (
-                <>
-                  <FieldReportPanel
-                    report={gameState.fieldReport}
-                    onReset={resetFieldReport}
-                  />
-                  <ActivityLogPanel events={gameState.activityLog} />
-                </>
-              )}
-              {devToolsEnabled && activeMobileSection === "dev" && (
-                <DevControls
-                  isDemo={geo.isDemo}
-                  gpsStatus={geo.status}
-                  fantasyGridEnabled={fantasyGridEnabled}
-                  streetReferenceMode={streetReferenceMode}
-                  onToggleFantasyGrid={handleToggleFantasyGrid}
-                  onToggleStreetReference={handleToggleStreetReference}
-                  onEnableDemo={geo.enableDemoMode}
-                  onNudge={geo.nudgePosition}
-                  onReset={reset}
-                  onRefreshTasks={refreshFieldTasks}
-                />
-              )}
-            </div>
-
-            <div className="hidden flex-col gap-4 lg:flex">
+      {activePanel && (
+        <aside
+          id="viewfinder-panel"
+          className="rpg-viewfinder__sheet"
+          aria-labelledby="viewfinder-panel-title"
+        >
+          <header className="rpg-viewfinder__sheet-header">
+            <span className="rpg-viewfinder__sheet-handle" aria-hidden="true" />
+            <h2 id="viewfinder-panel-title">{PANEL_TITLES[activePanel]}</h2>
+            <button
+              type="button"
+              onClick={() => setActivePanel(null)}
+              aria-label={`Close ${PANEL_TITLES[activePanel]}`}
+            >
+              ×
+            </button>
+          </header>
+          <div className="rpg-viewfinder__sheet-scroll">
+            {activePanel === "poi" && (
               <POIPanel
                 poi={selectedPoi}
                 pois={discoverablePois}
@@ -467,15 +386,21 @@ export default function HomePage() {
                   devToolsEnabled ? handleSimulateVisit : undefined
                 }
               />
+            )}
+            {activePanel === "tasks" && (
               <FieldTasksPanel
                 tasks={gameState.fieldTasks}
                 onRefresh={devToolsEnabled ? refreshFieldTasks : undefined}
               />
+            )}
+            {activePanel === "bag" && (
               <InventoryPanel
                 inventory={gameState.player.inventory}
                 onSalvageCommon={salvageCommonTriplet}
               />
-              <CodexPanel codex={gameState.codex} />
+            )}
+            {activePanel === "codex" && <CodexPanel codex={gameState.codex} />}
+            {activePanel === "camp" && (
               <BaseCampPanel
                 codex={gameState.codex}
                 baseCamp={gameState.baseCamp}
@@ -483,31 +408,42 @@ export default function HomePage() {
                 onClaimDoor={claimDepotDoor}
                 onMarkVisit={markBaseCampVisit}
               />
-              <FieldReportPanel
-                report={gameState.fieldReport}
-                onReset={resetFieldReport}
-              />
-              <ActivityLogPanel events={gameState.activityLog} />
-              {devToolsEnabled && (
-                <DevControls
-                  isDemo={geo.isDemo}
-                  gpsStatus={geo.status}
-                  fantasyGridEnabled={fantasyGridEnabled}
-                  streetReferenceMode={streetReferenceMode}
-                  onToggleFantasyGrid={handleToggleFantasyGrid}
-                  onToggleStreetReference={handleToggleStreetReference}
-                  onEnableDemo={geo.enableDemoMode}
-                  onNudge={geo.nudgePosition}
-                  onReset={reset}
-                  onRefreshTasks={refreshFieldTasks}
+            )}
+            {activePanel === "journey" && (
+              <>
+                <FieldReportPanel
+                  report={gameState.fieldReport}
+                  onReset={resetFieldReport}
                 />
-              )}
-            </div>
+                <ActivityLogPanel events={gameState.activityLog} />
+              </>
+            )}
+            {devToolsEnabled && activePanel === "dev" && (
+              <DevControls
+                isDemo={geo.isDemo}
+                gpsStatus={geo.status}
+                fantasyGridEnabled={fantasyGridEnabled}
+                streetReferenceMode={streetReferenceMode}
+                onToggleFantasyGrid={handleToggleFantasyGrid}
+                onToggleStreetReference={handleToggleStreetReference}
+                onEnableDemo={geo.enableDemoMode}
+                onNudge={geo.nudgePosition}
+                onReset={reset}
+                onRefreshTasks={refreshFieldTasks}
+              />
+            )}
           </div>
-        </div>
+        </aside>
+      )}
 
-        <SiteFooter />
-      </div>
+      <MobilePanelNav
+        activeSection={activePanel}
+        devToolsEnabled={devToolsEnabled}
+        inventoryCount={inventoryCount}
+        codexUniqueItems={codexUniqueItems}
+        readyDepotDoors={readyDepotDoors}
+        onSectionChange={handlePanelChange}
+      />
 
       <EncounterModal encounter={lastEncounter} onClose={clearEncounter} />
       <FeedbackProvider />
