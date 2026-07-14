@@ -31,6 +31,7 @@ import {
 import { getMapPoiTapAction } from "@/lib/map-poi-interaction";
 import { getDiscoverablePois } from "@/lib/poi-discovery";
 import { getTopOpenLoopNudge } from "@/lib/open-loops";
+import { buildTravelerSynopsis } from "@/lib/companion/traveler-synopsis";
 import { metersToLeagues } from "@/lib/movement/movement-ledger";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import {
@@ -172,6 +173,10 @@ export default function HomePage() {
           })
         : null,
     [discoverablePois, gameState, playerPosition]
+  );
+  const travelerSynopsis = useMemo(
+    () => (gameState ? buildTravelerSynopsis(gameState) : null),
+    [gameState]
   );
 
   const inventoryCount = gameState?.player.inventory.length ?? 0;
@@ -359,6 +364,7 @@ export default function HomePage() {
       <div className="rpg-viewfinder__hud-row">
         <CharacterHUD
           player={gameState.player}
+          synopsis={travelerSynopsis!}
           gpsLabel={gpsLabel}
           gpsAccuracyMeters={geo.accuracy}
           showGpsAccuracy={geo.status === "active"}

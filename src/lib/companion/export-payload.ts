@@ -1,4 +1,5 @@
 import type { GameState } from "@/lib/types";
+import { buildSanctumScaffold } from "./sanctum-scaffold";
 import {
   buildBoards,
   buildInventoryExport,
@@ -8,11 +9,36 @@ import {
 import {
   COMPANION_EXPORT_SCHEMA_VERSION,
   type CompanionExportV1,
+  type CompanionSanctumScaffold,
 } from "./export-schema";
 
 export interface BuildExportPayloadOptions {
   platform?: "web" | "android";
   outdoorEffort?: CompanionExportV1["outdoorEffort"];
+  sanctumGearFromUe5?: Parameters<typeof buildSanctumScaffold>[1];
+}
+
+function buildSanctumExport(
+  state: GameState,
+  gearFromUe5?: BuildExportPayloadOptions["sanctumGearFromUe5"]
+): CompanionSanctumScaffold {
+  const scaffold = buildSanctumScaffold(state, gearFromUe5);
+  return {
+    gearSlots: scaffold.gearSlots.map((slot) => ({
+      slotId: slot.slotId,
+      catalogId: slot.catalogId,
+      source: slot.source,
+    })),
+    craftingNudges: scaffold.craftingNudges.map((nudge) => ({
+      recipeId: nudge.recipeId,
+      outputCatalogId: nudge.outputCatalogId,
+      readyInSanctum: nudge.readyInSanctum,
+      missing: nudge.missing.map((gap) => ({
+        catalogId: gap.catalogId,
+        shortfall: gap.shortfall,
+      })),
+    })),
+  };
 }
 
 export function buildExportPayload(
@@ -34,6 +60,7 @@ export function buildExportPayload(
       options.outdoorEffort ??
       buildOutdoorEffortFromLedger(state.movementLedger),
     unlockTokens: buildUnlockTokens(state),
+    sanctum: buildSanctumExport(state, options.sanctumGearFromUe5),
   };
 }
 

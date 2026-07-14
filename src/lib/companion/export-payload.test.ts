@@ -36,5 +36,7 @@ describe("companion export payload", () => {
     expect(payload.boards.setProgress.length).toBeGreaterThan(0);
     expect(payload.outdoorEffort.totalLeaguesCharted).toBe(0);
     expect(payload.outdoorEffort.todayLeaguesCharted).toBe(0);
+    expect(payload.sanctum?.gearSlots).toHaveLength(4);
+    expect(payload.sanctum?.craftingNudges).toBeDefined();
   });
 });
