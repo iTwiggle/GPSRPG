@@ -38,6 +38,7 @@ function runMarkerA11yTests() {
 function auditMarkerSources() {
   const poiMarkerIcons = read("src/lib/poi-marker-icons.ts");
   const gameMap = read("src/components/GameMap.tsx");
+  const poiMapMarker = read("src/components/PoiMapMarker.tsx");
   const markerA11y = read("src/lib/marker-a11y.ts");
 
   if (!poiMarkerIcons.includes("createPoiMarkerConfig")) {
@@ -52,8 +53,16 @@ function auditMarkerSources() {
     fail("GameMap.tsx must render markers through AccessibleMarker");
   }
 
-  if (!gameMap.includes("createPoiMarkerConfig")) {
-    fail("GameMap.tsx must use createPoiMarkerConfig for POI markers");
+  const poiMarkersUseAccessibleConfig =
+    gameMap.includes("createPoiMarkerConfig") ||
+    (gameMap.includes("PoiMapMarker") &&
+      poiMapMarker.includes("createPoiMarkerConfig") &&
+      poiMapMarker.includes("AccessibleMarker"));
+
+  if (!poiMarkersUseAccessibleConfig) {
+    fail(
+      "POI markers must use createPoiMarkerConfig via GameMap or PoiMapMarker"
+    );
   }
 
   if (!markerA11y.includes("syncMarkerAccessibility")) {
