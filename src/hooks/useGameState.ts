@@ -17,7 +17,7 @@ import {
   getSetRewardXp,
 } from "@/lib/item-catalog";
 import { recordExplore, codexItemKey } from "@/lib/codex";
-import { applyExploreToTasks, refreshFieldTasks as rollFieldTasks } from "@/lib/tasks";
+import { applyExploreToTasks, applyFieldTaskRefresh } from "@/lib/tasks";
 import { updateFieldReportOnExplore } from "@/lib/field-report";
 import { applyXp } from "@/lib/xp";
 import {
@@ -224,13 +224,24 @@ export function useGameState() {
     [gameState, persist]
   );
 
-  const refreshFieldTasks = useCallback(() => {
-    if (!gameState) return;
-    persist({
-      ...gameState,
-      fieldTasks: rollFieldTasks(gameState.codex),
-    });
-  }, [gameState, persist]);
+  const refreshFieldTasks = useCallback(
+    (options?: { bypassDailyLimit?: boolean }) => {
+      if (!gameState) return false;
+
+      const result = applyFieldTaskRefresh(gameState, options);
+      if (!result.ok) return false;
+
+      persist(result.state);
+      feedback.emitToast({
+        title: "New field contracts",
+        subtitle: "Three fresh goals for your next outing",
+        rarity: "uncommon",
+        glyph: "📜",
+      });
+      return true;
+    },
+    [gameState, persist]
+  );
 
   const salvageCommonTriplet = useCallback(
     (catalogKey: string) => {

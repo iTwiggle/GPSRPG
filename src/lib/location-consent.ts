@@ -1,13 +1,15 @@
-const CONSENT_KEY = "gpsrpg-location-consent-v1";
-const GAME_STATE_KEY = "gpsrpg-game-state-v1";
+import { STORAGE_KEYS } from "@/lib/platform/storage-keys";
+import { getStorageAdapter } from "@/lib/platform/storage-adapter";
 
 export type LocationConsent = "live" | "demo";
 
 export function readLocationConsent(): LocationConsent | null {
   if (typeof window === "undefined") return null;
 
+  const storage = getStorageAdapter();
+
   try {
-    const value = localStorage.getItem(CONSENT_KEY);
+    const value = storage.getItem(STORAGE_KEYS.locationConsent);
     if (value === "live" || value === "demo") return value;
   } catch {
     // Ignore storage errors; treat as no prior consent.
@@ -20,8 +22,10 @@ export function readLocationConsent(): LocationConsent | null {
 export function inferLegacyLiveConsent(): boolean {
   if (typeof window === "undefined") return false;
 
+  const storage = getStorageAdapter();
+
   try {
-    return localStorage.getItem(GAME_STATE_KEY) !== null;
+    return storage.getItem(STORAGE_KEYS.gameState) !== null;
   } catch {
     return false;
   }
@@ -30,8 +34,10 @@ export function inferLegacyLiveConsent(): boolean {
 export function writeLocationConsent(consent: LocationConsent): void {
   if (typeof window === "undefined") return;
 
+  const storage = getStorageAdapter();
+
   try {
-    localStorage.setItem(CONSENT_KEY, consent);
+    storage.setItem(STORAGE_KEYS.locationConsent, consent);
   } catch {
     // Consent still applies for the current session even if storage fails.
   }

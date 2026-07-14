@@ -1,4 +1,7 @@
 import type { Item, ItemRarity } from "./types";
+import { itemCatalogKey } from "./companion/catalog-registry";
+
+export { itemCatalogKey };
 
 export const RARITY_ORDER: Record<ItemRarity, number> = {
   rare: 0,
@@ -44,10 +47,6 @@ export const RARITY_GLOW_CLASS: Record<ItemRarity, string> = {
   uncommon: "rpg-item-icon--uncommon",
   rare: "rpg-item-icon--rare",
 };
-
-export function itemCatalogKey(item: Pick<Item, "name" | "type">): string {
-  return `${item.name}|${item.type}`;
-}
 
 export interface AggregatedInventoryItem {
   key: string;

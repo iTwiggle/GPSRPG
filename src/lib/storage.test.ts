@@ -6,8 +6,10 @@ import {
   loadGameState,
   STORAGE_SCHEMA_VERSION,
 } from "./storage";
+import { STORAGE_KEYS } from "./platform/storage-keys";
+import { CATALOG_IDS } from "./companion/catalog-registry";
 
-const STORAGE_KEY = "gpsrpg-game-state-v1";
+const STORAGE_KEY = STORAGE_KEYS.gameState;
 
 function createTestLocalStorage() {
   const store = new Map<string, string>();
@@ -44,6 +46,7 @@ describe("storage vertical slice", () => {
           inventory: [
             {
               id: "item-1",
+              catalogId: CATALOG_IDS.rustyDagger,
               name: "Rusty Dagger",
               type: "weapon",
               rarity: "common",
@@ -61,6 +64,9 @@ describe("storage vertical slice", () => {
     expect(loaded.state.visitedPOIIds).toContain("poi-1-2-3-0");
     expect(loaded.state.player.inventory).toHaveLength(1);
     expect(loaded.state.schemaVersion).toBe(STORAGE_SCHEMA_VERSION);
+    expect(loaded.state.player.inventory[0]?.catalogId).toBe(
+      CATALOG_IDS.rustyDagger
+    );
     expect(localStorage.getItem(STORAGE_KEY)).toContain("poi-1-2-3-0");
   });
 
@@ -108,5 +114,39 @@ describe("storage vertical slice", () => {
     expect(result.ok).toBe(false);
     expect(result.warning).toContain("could not be saved");
     expect(result.warning).toContain("test quota");
+  });
+
+  it("migrates legacy v1 codex keys to catalog ids", () => {
+    const legacy = {
+      schemaVersion: 1,
+      player: createInitialState().player,
+      visitedPOIIds: [],
+      codex: {
+        items: {
+          "Rusty Dagger|weapon": {
+            name: "Rusty Dagger",
+            type: "weapon",
+            rarity: "common",
+            countFound: 1,
+            firstFoundAt: "2026-01-01T00:00:00.000Z",
+            lastFoundAt: "2026-01-01T00:00:00.000Z",
+          },
+        },
+        pois: {},
+        encounters: {},
+        stats: createInitialState().codex.stats,
+        completedSetIds: [],
+      },
+      activityLog: [],
+      fieldTasks: createInitialState().fieldTasks,
+      fieldReport: createInitialState().fieldReport,
+      baseCamp: createInitialState().baseCamp,
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+    const loaded = loadGameState();
+
+    expect(loaded.state.schemaVersion).toBe(2);
+    expect(loaded.state.codex.items[CATALOG_IDS.rustyDagger]?.countFound).toBe(1);
   });
 });

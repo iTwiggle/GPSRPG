@@ -1,4 +1,5 @@
-import { createEmptyActivityLog, appendFieldReportEvents } from "./activity-log";
+import { appendFieldReportEvents } from "./activity-log";
+import { resolveCatalogId } from "./companion/catalog-registry";
 import { createEmptyBaseCamp, normalizeBaseCamp } from "./base-camp";
 import { createEmptyCodex, normalizeCodex } from "./codex";
 import { clearExplorationMemory } from "./exploration-memory";
@@ -6,14 +7,17 @@ import {
   createEmptyFieldReport,
   normalizeFieldReport,
 } from "./field-report";
+import { getStorageAdapter } from "./platform/storage-adapter";
+import {
+  CORRUPT_SAVE_BACKUP_PREFIX,
+  RESETTABLE_STORAGE_KEYS,
+  STORAGE_KEYS,
+} from "./platform/storage-keys";
 import { generateFieldTasks, normalizeFieldTasks } from "./tasks";
 import { createDefaultPlayer } from "./xp";
-import type { GameState, Item, Player } from "./types";
+import type { CompanionMeta, GameState, Item, Player } from "./types";
 
-const STORAGE_KEY = "gpsrpg-game-state-v1";
-export const STORAGE_SCHEMA_VERSION = 1;
-
-const CORRUPT_SAVE_BACKUP_PREFIX = `${STORAGE_KEY}-corrupt-`;
+export const STORAGE_SCHEMA_VERSION = 2;
 
 export interface LoadGameStateResult {
   state: GameState;
@@ -29,32 +33,34 @@ type StoredGameState = Partial<GameState> & {
   schemaVersion?: number;
 };
 
-export function createInitialState(): GameState {
-  return {
-    schemaVersion: STORAGE_SCHEMA_VERSION,
-    player: createDefaultPlayer(),
-    visitedPOIIds: [],
-    codex: createEmptyCodex(),
-    activityLog: createEmptyActivityLog(),
-    fieldTasks: generateFieldTasks(),
-    fieldReport: createEmptyFieldReport(),
-    baseCamp: createEmptyBaseCamp(),
-  };
-}
-
 function backupCorruptSave(raw: string): string | null {
-  if (typeof window === "undefined") return null;
-
+  const storage = getStorageAdapter();
   const backupKey = `${CORRUPT_SAVE_BACKUP_PREFIX}${new Date()
     .toISOString()
     .replace(/[:.]/g, "-")}`;
 
   try {
-    localStorage.setItem(backupKey, raw);
+    storage.setItem(backupKey, raw);
     return backupKey;
   } catch {
     return null;
   }
+}
+
+function normalizeCompanionMeta(
+  meta: Partial<CompanionMeta> | undefined
+): CompanionMeta {
+  return {
+    lastContractRefreshDate: meta?.lastContractRefreshDate,
+  };
+}
+
+function normalizeInventoryItem(item: Item): Item {
+  const catalogId = resolveCatalogId(item);
+  if (!catalogId || item.catalogId === catalogId) {
+    return catalogId ? { ...item, catalogId } : item;
+  }
+  return { ...item, catalogId };
 }
 
 function normalizeGameState(parsed: StoredGameState): GameState {
@@ -66,14 +72,29 @@ function normalizeGameState(parsed: StoredGameState): GameState {
     player: {
       ...fallbackPlayer,
       ...savedPlayer,
-      inventory: savedPlayer.inventory ?? [],
+      inventory: (savedPlayer.inventory ?? []).map(normalizeInventoryItem),
     },
     visitedPOIIds: parsed.visitedPOIIds ?? [],
     codex: normalizeCodex(parsed.codex),
-    activityLog: parsed.activityLog ?? createEmptyActivityLog(),
+    activityLog: parsed.activityLog ?? [],
     fieldTasks: normalizeFieldTasks(parsed.fieldTasks),
     fieldReport: normalizeFieldReport(parsed.fieldReport),
     baseCamp: normalizeBaseCamp(parsed.baseCamp),
+    companionMeta: normalizeCompanionMeta(parsed.companionMeta),
+  };
+}
+
+export function createInitialState(): GameState {
+  return {
+    schemaVersion: STORAGE_SCHEMA_VERSION,
+    player: createDefaultPlayer(),
+    visitedPOIIds: [],
+    codex: createEmptyCodex(),
+    activityLog: [],
+    fieldTasks: generateFieldTasks(),
+    fieldReport: createEmptyFieldReport(),
+    baseCamp: createEmptyBaseCamp(),
+    companionMeta: {},
   };
 }
 
@@ -82,8 +103,10 @@ export function loadGameState(): LoadGameStateResult {
     return { state: createInitialState(), warning: null };
   }
 
+  const storage = getStorageAdapter();
+
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = storage.getItem(STORAGE_KEYS.gameState);
     if (!raw) {
       return { state: createInitialState(), warning: null };
     }
@@ -96,7 +119,7 @@ export function loadGameState(): LoadGameStateResult {
   } catch (error) {
     let raw: string | null = null;
     try {
-      raw = localStorage.getItem(STORAGE_KEY);
+      raw = storage.getItem(STORAGE_KEYS.gameState);
     } catch {
       raw = null;
     }
@@ -118,9 +141,11 @@ export function saveGameState(state: GameState): SaveGameStateResult {
     return { ok: true, warning: null };
   }
 
+  const storage = getStorageAdapter();
+
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
+    storage.setItem(
+      STORAGE_KEYS.gameState,
       JSON.stringify({
         ...state,
         schemaVersion: STORAGE_SCHEMA_VERSION,
@@ -150,7 +175,7 @@ export function markPoiVisited(state: GameState, poiId: string): GameState {
 export function addLootToPlayer(player: Player, loot: Item[]): Player {
   return {
     ...player,
-    inventory: [...player.inventory, ...loot],
+    inventory: [...player.inventory, ...loot.map(normalizeInventoryItem)],
   };
 }
 
@@ -168,13 +193,19 @@ export function resetFieldReportInState(
   };
 }
 
+/** Clears all resettable companion keys. Location consent is intentionally kept. */
+export function clearAllCompanionStorage(): void {
+  if (typeof window === "undefined") return;
+
+  const storage = getStorageAdapter();
+  for (const key of RESETTABLE_STORAGE_KEYS) {
+    storage.removeItem(key);
+  }
+}
+
 export function resetGameState(): GameState {
   if (typeof window !== "undefined") {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // Reset still returns a fresh in-memory save if browser storage is blocked.
-    }
+    clearAllCompanionStorage();
     clearExplorationMemory();
   }
   return createInitialState();

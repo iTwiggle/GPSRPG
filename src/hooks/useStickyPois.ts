@@ -9,8 +9,8 @@ import {
   buildWorldPoiField,
   WORLD_POI_ACTIVE_RADIUS_METERS,
 } from "@/lib/world-poi-field";
-
-const ONBOARDING_POI_STORAGE_KEY = "gpsrpg-onboarding-poi-v1";
+import { getStorageAdapter } from "@/lib/platform/storage-adapter";
+import { STORAGE_KEYS } from "@/lib/platform/storage-keys";
 
 interface UseStickyPoisResult {
   pois: POI[];
@@ -31,8 +31,9 @@ function isStoredPoi(value: unknown): value is POI {
 
 function readOnboardingPoi(): POI | null {
   if (typeof window === "undefined") return null;
+  const storage = getStorageAdapter();
   try {
-    const raw = localStorage.getItem(ONBOARDING_POI_STORAGE_KEY);
+    const raw = storage.getItem(STORAGE_KEYS.onboardingPoi);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     return isStoredPoi(parsed) ? parsed : null;
@@ -62,8 +63,9 @@ function createOnboardingPoi(
 
 function writeOnboardingPoi(poi: POI): void {
   if (typeof window === "undefined") return;
+  const storage = getStorageAdapter();
   try {
-    localStorage.setItem(ONBOARDING_POI_STORAGE_KEY, JSON.stringify(poi));
+    storage.setItem(STORAGE_KEYS.onboardingPoi, JSON.stringify(poi));
   } catch {
     // The rolling world field still works if onboarding persistence is blocked.
   }

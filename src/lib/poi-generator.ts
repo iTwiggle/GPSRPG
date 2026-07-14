@@ -10,6 +10,7 @@ import {
   type OsmContextCategory,
 } from "./osm-context";
 import type { POI } from "./types";
+import { hashSeedNumeric, seededRandom } from "./prng";
 
 const POI_COUNT = 8;
 const MIN_RADIUS_METERS = 120;
@@ -23,24 +24,6 @@ export const GUARANTEED_FIRST_POI_MAX_METERS = 110;
 export const POI_CELL_SIZE_METERS = 400;
 
 export { getAreaCellKey };
-
-function hashSeed(...values: number[]): number {
-  let hash = 2166136261;
-  for (const value of values) {
-    const int = Math.floor(value * 1000);
-    hash ^= int;
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0x100000000;
-  };
-}
 
 function metersToLatLngOffset(
   originLat: number,
@@ -72,14 +55,14 @@ export function generateNearbyPOIs(
   const { cellLat, cellLng } = cell;
   const { lat: anchorLat, lng: anchorLng } = getAreaCellCenter(cell);
   const categoryCode = getContextCategoryCode(areaContext);
-  const baseSeed = hashSeed(cellLat, cellLng);
+  const baseSeed = hashSeedNumeric(cellLat, cellLng);
   const rand = seededRandom(baseSeed);
 
   const pois: POI[] = [];
 
   for (let i = 0; i < count; i += 1) {
     const typeRand = seededRandom(
-      hashSeed(cellLat, cellLng, i, categoryCode)
+      hashSeedNumeric(cellLat, cellLng, i, categoryCode)
     );
     const type = pickPoiType(areaContext, typeRand);
     const originLat = i === 0 ? lat : anchorLat;
@@ -94,10 +77,10 @@ export function generateNearbyPOIs(
     const offset = metersToLatLngOffset(originLat, distance, bearing);
 
     const nameRand = seededRandom(
-      hashSeed(cellLat, cellLng, i, 1, categoryCode)
+      hashSeedNumeric(cellLat, cellLng, i, 1, categoryCode)
     );
     const flavorRand = seededRandom(
-      hashSeed(cellLat, cellLng, i, 2, categoryCode)
+      hashSeedNumeric(cellLat, cellLng, i, 2, categoryCode)
     );
 
     pois.push({

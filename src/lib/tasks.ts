@@ -4,12 +4,15 @@ import {
   getIncompleteSetProgress,
   getItemSet,
 } from "./item-catalog";
-import { itemCatalogKey } from "./item-visual";
+import { itemCatalogKey } from "./companion/catalog-registry";
+import { hashSeed, seededRandom } from "./prng";
 import type {
   Codex,
+  CompanionMeta,
   EncounterResult,
   FieldTask,
   FieldTaskType,
+  GameState,
   POI,
   POIType,
 } from "./types";
@@ -104,26 +107,6 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     rewardXp: 30,
   },
 ];
-
-function hashSeed(...values: (string | number)[]): number {
-  let hash = 2166136261;
-  for (const value of values) {
-    const str = String(value);
-    for (let i = 0; i < str.length; i += 1) {
-      hash ^= str.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
-  }
-  return hash >>> 0;
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0x100000000;
-  };
-}
 
 function makeTaskId(seed: number, index: number): string {
   return `task-${seed}-${index}`;
@@ -286,6 +269,71 @@ export function normalizeFieldTasks(tasks: unknown): FieldTask[] {
 
 export function refreshFieldTasks(codex?: Codex): FieldTask[] {
   return generateFieldTasks(Date.now(), codex);
+}
+
+export function getLocalDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function isExpeditionComplete(tasks: FieldTask[]): boolean {
+  return (
+    tasks.length > 0 && tasks.every((task) => task.status === "completed")
+  );
+}
+
+export interface ContractRefreshCheck {
+  ok: boolean;
+  reason?: "not_complete" | "already_refreshed_today";
+}
+
+export function canRefreshFieldTasks(
+  state: GameState,
+  options?: { bypassDailyLimit?: boolean }
+): ContractRefreshCheck {
+  if (!isExpeditionComplete(state.fieldTasks)) {
+    return { ok: false, reason: "not_complete" };
+  }
+
+  if (options?.bypassDailyLimit) {
+    return { ok: true };
+  }
+
+  const today = getLocalDateString();
+  if (state.companionMeta?.lastContractRefreshDate === today) {
+    return { ok: false, reason: "already_refreshed_today" };
+  }
+
+  return { ok: true };
+}
+
+export function applyFieldTaskRefresh(
+  state: GameState,
+  options?: { bypassDailyLimit?: boolean }
+): { state: GameState; ok: boolean; reason?: ContractRefreshCheck["reason"] } {
+  const check = canRefreshFieldTasks(state, options);
+  if (!check.ok) {
+    return { state, ok: false, reason: check.reason };
+  }
+
+  const today = getLocalDateString();
+  const nextMeta: CompanionMeta = {
+    ...state.companionMeta,
+    lastContractRefreshDate: options?.bypassDailyLimit
+      ? state.companionMeta?.lastContractRefreshDate
+      : today,
+  };
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      fieldTasks: refreshFieldTasks(state.codex),
+      companionMeta: nextMeta,
+    },
+  };
 }
 
 export interface ExploreTaskContext {
