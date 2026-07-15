@@ -42,6 +42,18 @@ export function normalizeMovementLedger(
   };
 }
 
+/**
+ * Exact GPS samples are runtime-only inputs for distance deltas.
+ * Persist aggregate movement totals, never the latest precise coordinate.
+ */
+export function stripTransientMovementSample(
+  ledger: MovementLedger
+): MovementLedger {
+  const { lastPosition: _lastPosition, lastSampleAt: _lastSampleAt, ...rest } =
+    ledger;
+  return rest;
+}
+
 export function metersToLeagues(meters: number): number {
   return Math.round((meters / METERS_PER_LEAGUE) * 10) / 10;
 }
