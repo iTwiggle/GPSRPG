@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BaseCampPanel from "@/components/BaseCampPanel";
+import DailyBriefingCard from "@/components/DailyBriefingCard";
 import FeedbackProvider from "@/components/feedback/FeedbackProvider";
 import CharacterHUD from "@/components/CharacterHUD";
 import TravelerSynopsisCard from "@/components/TravelerSynopsisCard";
@@ -13,6 +14,7 @@ import EncounterModal from "@/components/EncounterModal";
 import ExpeditionPanel from "@/components/ExpeditionPanel";
 import InventoryPanel from "@/components/InventoryPanel";
 import OpenLoopBanner from "@/components/OpenLoopBanner";
+import WorldModifierChip from "@/components/WorldModifierChip";
 import MobilePanelNav, {
   type MobilePanelSection,
 } from "@/components/MobilePanelNav";
@@ -33,6 +35,14 @@ import { getMapPoiTapAction } from "@/lib/map-poi-interaction";
 import { getDiscoverablePois } from "@/lib/poi-discovery";
 import { getTopOpenLoopNudge } from "@/lib/open-loops";
 import { buildTravelerSynopsis } from "@/lib/companion/traveler-synopsis";
+import {
+  buildDailyBriefing,
+  shouldShowDailyBriefing,
+} from "@/lib/temporal/daily-briefing";
+import {
+  getTodayCooldownOptions,
+  getWorldModifierForDate,
+} from "@/lib/temporal/world-modifier";
 import { metersToLeagues } from "@/lib/movement/movement-ledger";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import {
@@ -61,12 +71,14 @@ const PANEL_TITLES: Record<MobilePanelSection, string> = {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, resetFieldReport, clearEncounter, clearSaveWarning, reset, getPoiVisitStatus, samplePlayerMovement } =
+  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, resetFieldReport, clearEncounter, clearSaveWarning, reset, getPoiVisitStatus, samplePlayerMovement, dismissDailyBriefing } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activePanel, setActivePanel] =
     useState<MobilePanelSection | null>(null);
   const [synopsisOpen, setSynopsisOpen] = useState(false);
+  const [briefingOpen, setBriefingOpen] = useState(false);
+  const briefingPromptedRef = useRef(false);
   const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
 
@@ -180,6 +192,22 @@ export default function HomePage() {
     () => (gameState ? buildTravelerSynopsis(gameState) : null),
     [gameState]
   );
+  const worldModifier = useMemo(() => getWorldModifierForDate(), []);
+  const dailyBriefing = useMemo(
+    () =>
+      gameState
+        ? buildDailyBriefing(gameState, discoverablePois)
+        : null,
+    [discoverablePois, gameState]
+  );
+
+  useEffect(() => {
+    if (briefingPromptedRef.current || !gameState || !playerPosition) return;
+    briefingPromptedRef.current = true;
+    if (shouldShowDailyBriefing(gameState)) {
+      setBriefingOpen(true);
+    }
+  }, [gameState, playerPosition]);
 
   const inventoryCount = gameState?.player.inventory.length ?? 0;
   const codexUniqueItems = gameState
@@ -217,7 +245,8 @@ export default function HomePage() {
       const validation = canExplorePoi(
         playerPosition,
         poi,
-        gameState.visitedPois
+        gameState.visitedPois,
+        { cooldown: getTodayCooldownOptions(poi.type) }
       );
       const action = getMapPoiTapAction(
         selectedPoi?.id ?? null,
@@ -249,6 +278,7 @@ export default function HomePage() {
 
   const handlePanelChange = useCallback((section: MobilePanelSection) => {
     setSynopsisOpen(false);
+    setBriefingOpen(false);
     setActivePanel((current) => (current === section ? null : section));
   }, []);
 
@@ -257,12 +287,25 @@ export default function HomePage() {
     setSelectedPoi(null);
   }, []);
 
+  const closeBriefing = useCallback(() => {
+    setBriefingOpen(false);
+    dismissDailyBriefing();
+  }, [dismissDailyBriefing]);
+
   const handleSynopsisOpenChange = useCallback((open: boolean) => {
     setSynopsisOpen(open);
     if (open) {
+      setBriefingOpen(false);
       setActivePanel(null);
       setSelectedPoi(null);
     }
+  }, []);
+
+  const openBriefing = useCallback(() => {
+    setBriefingOpen(true);
+    setSynopsisOpen(false);
+    setActivePanel(null);
+    setSelectedPoi(null);
   }, []);
 
   useEffect(() => {
@@ -398,6 +441,7 @@ export default function HomePage() {
           showGpsAccuracy={geo.status === "active"}
           leaguesToday={leaguesToday}
         />
+        <WorldModifierChip modifier={worldModifier} onPress={openBriefing} />
         <OpenLoopBanner nudge={openLoopNudge} />
         <Link
           href="/about"
@@ -444,6 +488,14 @@ export default function HomePage() {
           className="rpg-viewfinder__sheet-backdrop"
           aria-label="Close panel and return to map"
           onClick={closeActivePanel}
+        />
+      )}
+
+      {briefingOpen && dailyBriefing && (
+        <DailyBriefingCard
+          briefing={dailyBriefing}
+          open={briefingOpen}
+          onClose={closeBriefing}
         />
       )}
 

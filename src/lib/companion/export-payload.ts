@@ -1,5 +1,7 @@
 import type { GameState } from "@/lib/types";
 import { buildSanctumScaffold } from "./sanctum-scaffold";
+import { getLocalDateString } from "@/lib/tasks";
+import { getWorldModifierForDate } from "@/lib/temporal/world-modifier";
 import {
   buildBoards,
   buildInventoryExport,
@@ -61,6 +63,10 @@ export function buildExportPayload(
       buildOutdoorEffortFromLedger(state.movementLedger),
     unlockTokens: buildUnlockTokens(state),
     sanctum: buildSanctumExport(state, options.sanctumGearFromUe5),
+    worldModifier: {
+      id: getWorldModifierForDate(getLocalDateString()).id,
+      date: getLocalDateString(),
+    },
   };
 }
 

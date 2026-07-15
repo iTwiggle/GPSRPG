@@ -70,4 +70,9 @@ export interface CompanionExportV1 {
   unlockTokens: CompanionUnlockToken[];
   /** UE5 sanctum handoff scaffold — gear slots + crafting proximity. */
   sanctum?: CompanionSanctumScaffold;
+  /** Active daily world modifier for UE5 parity. */
+  worldModifier?: {
+    id: string;
+    date: string;
+  };
 }

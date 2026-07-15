@@ -197,6 +197,8 @@ export interface MovementLedger {
 export interface CompanionMeta {
   /** Local calendar date (YYYY-MM-DD) of the last manual contract refresh. */
   lastContractRefreshDate?: string;
+  /** Local calendar date the daily field briefing was last dismissed. */
+  lastBriefingSeenDate?: string;
 }
 
 export interface GameState {

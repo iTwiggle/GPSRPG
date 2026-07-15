@@ -471,6 +471,184 @@ body {
   color: #fcd34d;
 }
 
+.rpg-world-modifier-chip {
+  pointer-events: auto;
+  display: inline-flex;
+  min-width: 0;
+  max-width: 8.5rem;
+  flex: none;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid rgba(251, 191, 36, 0.32);
+  border-radius: 9999px;
+  background: rgba(69, 39, 9, 0.55);
+  padding: 0.38rem 0.55rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fde68a;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.rpg-world-modifier-chip__glyph {
+  flex: none;
+  font-size: 0.68rem;
+}
+
+.rpg-world-modifier-chip__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpg-daily-briefing {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1610;
+  pointer-events: auto;
+  width: min(calc(100vw - 1.25rem), 24rem);
+  max-height: min(78dvh, 36rem);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    165deg,
+    rgba(20, 14, 8, 0.97),
+    rgba(15, 23, 42, 0.96)
+  );
+  padding: 1rem 1rem 1.1rem;
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: rpg-traveler-card-in 220ms ease-out;
+}
+
+.rpg-daily-briefing__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.rpg-daily-briefing__eyebrow {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.rpg-daily-briefing__title {
+  margin-top: 0.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #f8fafc;
+}
+
+.rpg-daily-briefing__close {
+  flex: none;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.7);
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.rpg-daily-briefing__modifier {
+  margin-top: 0.85rem;
+  border: 1px solid rgba(251, 191, 36, 0.24);
+  border-radius: 0.85rem;
+  background: rgba(69, 39, 9, 0.42);
+  padding: 0.75rem 0.8rem;
+}
+
+.rpg-daily-briefing__modifier-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fcd34d;
+}
+
+.rpg-daily-briefing__modifier h3 {
+  margin-top: 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff7ed;
+}
+
+.rpg-daily-briefing__modifier-blurb {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fde68a;
+}
+
+.rpg-daily-briefing__modifier-flavor {
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: #fcd34d99;
+}
+
+.rpg-daily-briefing__highlights {
+  margin-top: 0.85rem;
+}
+
+.rpg-daily-briefing__highlights h3 {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.rpg-daily-briefing__highlights ul {
+  margin-top: 0.45rem;
+  list-style: none;
+}
+
+.rpg-daily-briefing__highlights li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 0.65rem;
+  background: rgba(15, 23, 42, 0.45);
+  padding: 0.45rem 0.55rem;
+  font-size: 0.68rem;
+  color: #cbd5e1;
+}
+
+.rpg-daily-briefing__highlights li + li {
+  margin-top: 0.35rem;
+}
+
+.rpg-daily-briefing__highlights li span:first-child {
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.rpg-daily-briefing__cta {
+  margin-top: 0.9rem;
+  width: 100%;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 0.75rem;
+  background: rgba(251, 191, 36, 0.16);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fde68a;
+  cursor: pointer;
+}
+
 .rpg-viewfinder__about {
   pointer-events: auto;
   display: grid;

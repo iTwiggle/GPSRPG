@@ -16,6 +16,10 @@ export const POI_COOLDOWN_MS: Record<POIType, number | null> = {
 
 export type PoiVisitUiStatus = "fresh" | "ready" | "cooldown" | "landmark_done";
 
+export interface PoiCooldownOptions {
+  cooldownMultiplier?: number;
+}
+
 export function getPoiCooldownMs(poiType: POIType): number | null {
   return POI_COOLDOWN_MS[poiType];
 }
@@ -27,41 +31,47 @@ export function isLandmarkPoiType(poiType: POIType): boolean {
 export function getCooldownRemainingMs(
   visit: VisitedPoiState | undefined,
   poiType: POIType,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  options?: PoiCooldownOptions
 ): number {
   const cooldownMs = getPoiCooldownMs(poiType);
   if (!visit || cooldownMs === null) return 0;
 
+  const multiplier = options?.cooldownMultiplier ?? 1;
+  const effectiveCooldown = cooldownMs * multiplier;
   const elapsed = nowMs - Date.parse(visit.lastExploredAt);
-  return Math.max(0, cooldownMs - elapsed);
+  return Math.max(0, effectiveCooldown - elapsed);
 }
 
 export function isPoiOnCooldown(
   visit: VisitedPoiState | undefined,
   poiType: POIType,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  options?: PoiCooldownOptions
 ): boolean {
-  return getCooldownRemainingMs(visit, poiType, nowMs) > 0;
+  return getCooldownRemainingMs(visit, poiType, nowMs, options) > 0;
 }
 
 export function canReExplorePoi(
   visit: VisitedPoiState | undefined,
   poiType: POIType,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  options?: PoiCooldownOptions
 ): boolean {
   if (!visit) return true;
   if (isLandmarkPoiType(poiType)) return false;
-  return !isPoiOnCooldown(visit, poiType, nowMs);
+  return !isPoiOnCooldown(visit, poiType, nowMs, options);
 }
 
 export function getPoiVisitUiStatus(
   visit: VisitedPoiState | undefined,
   poiType: POIType,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  options?: PoiCooldownOptions
 ): PoiVisitUiStatus {
   if (!visit) return "fresh";
   if (isLandmarkPoiType(poiType)) return "landmark_done";
-  if (isPoiOnCooldown(visit, poiType, nowMs)) return "cooldown";
+  if (isPoiOnCooldown(visit, poiType, nowMs, options)) return "cooldown";
   return "ready";
 }
 

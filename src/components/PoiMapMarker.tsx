@@ -11,6 +11,7 @@ import {
   getCooldownRemainingMs,
   type PoiVisitUiStatus,
 } from "@/lib/temporal/poi-cooldowns";
+import { getTodayCooldownOptions } from "@/lib/temporal/world-modifier";
 import type { POI, VisitedPoiState } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
 import { Popup } from "react-leaflet";
@@ -58,7 +59,7 @@ const PoiMapMarker = memo(function PoiMapMarker({
 
   const cooldownMs =
     visitStatus === "cooldown" && visit
-      ? getCooldownRemainingMs(visit, poi.type)
+      ? getCooldownRemainingMs(visit, poi.type, Date.now(), getTodayCooldownOptions(poi.type))
       : 0;
 
   return (

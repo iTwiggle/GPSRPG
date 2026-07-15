@@ -1,5 +1,9 @@
 import { isWithinRadius } from "./distance";
-import { canReExplorePoi, isLandmarkPoiType } from "./temporal/poi-cooldowns";
+import {
+  canReExplorePoi,
+  isLandmarkPoiType,
+  type PoiCooldownOptions,
+} from "./temporal/poi-cooldowns";
 import {
   EXPLORE_RADIUS_METERS,
   type POI,
@@ -21,12 +25,12 @@ export function canExplorePoi(
   player: Position,
   poi: POI,
   visitedPois: Record<string, VisitedPoiState>,
-  options?: { simulate?: boolean }
+  options?: { simulate?: boolean; cooldown?: PoiCooldownOptions }
 ): ExploreValidationResult {
   const visit = visitedPois[poi.id];
 
   if (!options?.simulate && visit) {
-    if (!canReExplorePoi(visit, poi.type)) {
+    if (!canReExplorePoi(visit, poi.type, Date.now(), options?.cooldown)) {
       return {
         ok: false,
         reason: isLandmarkPoiType(poi.type)

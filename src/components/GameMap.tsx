@@ -14,6 +14,7 @@ import {
 import type { POI, VisitedPoiState } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
 import { getPoiVisitUiStatus } from "@/lib/temporal/poi-cooldowns";
+import { getTodayCooldownOptions } from "@/lib/temporal/world-modifier";
 
 /**
  * Pan only when the player drifts toward the viewport edge. Small demo nudges
@@ -137,7 +138,12 @@ function GameMap({
           key={poi.id}
           poi={poi}
           visit={visitedPois[poi.id]}
-          visitStatus={getPoiVisitUiStatus(visitedPois[poi.id], poi.type)}
+          visitStatus={getPoiVisitUiStatus(
+            visitedPois[poi.id],
+            poi.type,
+            Date.now(),
+            getTodayCooldownOptions(poi.type)
+          )}
           isSelected={poi.id === selectedPoiId}
           playerLat={playerLat}
           playerLng={playerLng}

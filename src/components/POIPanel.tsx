@@ -17,6 +17,7 @@ import {
   getCooldownRemainingMs,
   type PoiVisitUiStatus,
 } from "@/lib/temporal/poi-cooldowns";
+import { getTodayCooldownOptions } from "@/lib/temporal/world-modifier";
 import type { VisitedPoiState } from "@/lib/types";
 import SiteApproachHUD from "@/components/SiteApproachHUD";
 
@@ -59,7 +60,7 @@ export default function POIPanel({
     visitStatus === "fresh" || visitStatus === "ready";
   const cooldownMs =
     visitStatus === "cooldown" && visit
-      ? getCooldownRemainingMs(visit, poi.type)
+      ? getCooldownRemainingMs(visit, poi.type, Date.now(), getTodayCooldownOptions(poi.type))
       : 0;
   const statusLabel =
     visitStatus === "landmark_done"
