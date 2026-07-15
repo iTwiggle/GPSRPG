@@ -241,6 +241,11 @@ export default function ExplorationFogOverlay({
     drawNow();
     pane.replaceChildren(canvas);
 
+    // Follow Leaflet while its map pane is being translated. Waiting for
+    // moveend lets a sufficiently long drag outrun any finite canvas skirt and
+    // briefly expose the street tiles at the viewport edge. The scheduler
+    // coalesces move events to at most one paint per animation frame.
+    map.on("move", redraw);
     map.on("moveend", redraw);
     map.on("zoomend", redraw);
     map.on("viewreset", redraw);
@@ -249,6 +254,7 @@ export default function ExplorationFogOverlay({
     return () => {
       active = false;
       scheduler.cancel();
+      map.off("move", redraw);
       map.off("moveend", redraw);
       map.off("zoomend", redraw);
       map.off("viewreset", redraw);
@@ -267,7 +273,7 @@ export default function ExplorationFogOverlay({
 
   useLayoutEffect(() => {
     if (enabled) redrawRef.current?.();
-  }, [enabled, revealedCellKeys]);
+  }, [enabled, revealedCellKeys, liveRevealRadiusMeters]);
 
   useLayoutEffect(() => {
     if (!enabled) return;
