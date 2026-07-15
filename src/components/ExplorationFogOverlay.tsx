@@ -19,7 +19,10 @@ const PANE_Z_INDEX = "550";
 const KNOWN_TERRITORY_CLEAR_ALPHA = 0.72;
 // Leave painted fog beyond every viewport edge so Leaflet's animated pane
 // transform cannot expose base tiles between move events and our next redraw.
-const FOG_CANVAS_OVERSCAN_PX = 96;
+// The boosted Scout's Eye cutout is wider than the original 96 px skirt at
+// common mobile zooms. 160 px keeps the opaque canvas ahead of Leaflet's pane
+// transform during horizontal swipes without doubling its memory footprint.
+const FOG_CANVAS_OVERSCAN_PX = 160;
 
 interface ExplorationFogOverlayProps {
   enabled: boolean;

@@ -83,12 +83,15 @@ export function useGameState() {
 
   const explorePoi = useCallback(
     (poi: POI, playerPosition: Position, options?: { simulate?: boolean }) => {
-      if (!gameState) return null;
+      // Read the synchronously updated ref so two taps arriving before React's
+      // next render cannot both resolve against the same pre-visit snapshot.
+      const current = gameStateRef.current;
+      if (!current) return null;
 
       const validation = canExplorePoi(
         playerPosition,
         poi,
-        gameState.visitedPois,
+        current.visitedPois,
         options
       );
       if (!validation.ok) return null;
@@ -99,24 +102,24 @@ export function useGameState() {
       const perkResult = applyActivePerksToEncounter(
         encounter,
         poi,
-        gameState.baseCamp,
+        current.baseCamp,
         rollSeed ?? poi.id
       );
       encounter = perkResult.encounter;
       const baseCamp = perkResult.baseCamp;
 
       const newCodexItemKeys = encounter.loot
-        .filter((item) => !gameState.codex.items[codexItemKey(item)])
+        .filter((item) => !current.codex.items[codexItemKey(item)])
         .map((item) => codexItemKey(item));
 
-      const prevLevel = gameState.player.level;
+      const prevLevel = current.player.level;
       const playerAfterEncounter = applyXp(
-        gameState.player,
+        current.player,
         encounter.xpGained
       );
       let player = addLootToPlayer(playerAfterEncounter, encounter.loot);
 
-      let withCodex = recordExplore(gameState.codex, poi, encounter);
+      let withCodex = recordExplore(current.codex, poi, encounter);
       const newSetIds = getNewlyCompletedSetIds(
         withCodex,
         withCodex.completedSetIds
@@ -143,7 +146,7 @@ export function useGameState() {
             : undefined,
       };
 
-      let activityLog = appendExploreEvents(gameState.activityLog, {
+      let activityLog = appendExploreEvents(current.activityLog, {
         poi,
         encounter: encounterWithDiscoveries,
         prevLevel,
@@ -169,7 +172,7 @@ export function useGameState() {
       }
 
       const { tasks: withTasks, completions } = applyExploreToTasks(
-        gameState.fieldTasks,
+        current.fieldTasks,
         { poi, encounter: encounterWithDiscoveries }
       );
 
@@ -189,7 +192,7 @@ export function useGameState() {
         );
       }
 
-      const withFieldReport = updateFieldReportOnExplore(gameState.fieldReport, {
+      const withFieldReport = updateFieldReportOnExplore(current.fieldReport, {
         poi,
         encounter: encounterWithDiscoveries,
         taskRewardXp,
@@ -198,7 +201,7 @@ export function useGameState() {
 
       const nextState = recordPoiExplore(
         {
-          ...gameState,
+          ...current,
           player,
           codex: withCodex,
           baseCamp,
@@ -228,7 +231,7 @@ export function useGameState() {
 
       return encounterWithDiscoveries;
     },
-    [gameState, persist]
+    [persist]
   );
 
   const refreshFieldTasks = useCallback(
