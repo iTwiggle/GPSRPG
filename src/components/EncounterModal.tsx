@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import ItemIcon from "@/components/ItemIcon";
-import { getCatalogEntry, getItemSet } from "@/lib/item-catalog";
+import { encounterReportDismissMs } from "@/lib/encounter-report";
+import { getItemSet } from "@/lib/item-catalog";
 import {
   ITEM_TYPE_LABEL,
   RARITY_CHIP,
@@ -18,162 +22,152 @@ export default function EncounterModal({
   encounter,
   onClose,
 }: EncounterModalProps) {
+  const [paused, setPaused] = useState(false);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  const dismissMs = useMemo(
+    () => (encounter ? encounterReportDismissMs(encounter) : null),
+    [encounter]
+  );
+
+  useEffect(() => {
+    setPaused(false);
+  }, [encounter]);
+
+  useEffect(() => {
+    if (!encounter || dismissMs === null || paused) return;
+    const timer = window.setTimeout(() => closeRef.current(), dismissMs);
+    return () => window.clearTimeout(timer);
+  }, [dismissMs, encounter, paused]);
+
+  useEffect(() => {
+    if (!encounter) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeRef.current();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [encounter]);
+
   if (!encounter) return null;
 
   const newKeys = new Set(encounter.newCodexItemKeys ?? []);
-  const hasNewDiscoveries = newKeys.size > 0;
   const completedSets = (encounter.completedSetIds ?? [])
     .map((id) => getItemSet(id))
     .filter((set): set is NonNullable<typeof set> => Boolean(set));
   const hasRareLoot = encounter.loot.some((item) => item.rarity === "rare");
+  const staysOpen = dismissMs === null;
 
   return (
-    <div className="app-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 p-3">
-      <div
-        className={`rpg-panel max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto border-amber-500/25 p-6 ${hasRareLoot ? "rpg-encounter--rare-pull" : ""}`}
-        role="dialog"
-        aria-modal="true"
+    <aside
+      className="encounter-report-shell"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <section
+        className={`encounter-report rpg-panel ${
+          hasRareLoot ? "rpg-encounter--rare-pull" : ""
+        }`}
+        role="status"
         aria-labelledby="encounter-title"
+        onPointerEnter={() => setPaused(true)}
+        onPointerLeave={() => setPaused(false)}
+        onFocusCapture={() => setPaused(true)}
+        onBlurCapture={() => setPaused(false)}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300/90">
-          Field report
-        </p>
-        <h2
-          id="encounter-title"
-          className="mt-1 text-xl font-bold text-slate-50"
-        >
-          {encounter.title}
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-400">
-          {encounter.description}
-        </p>
-
-        {hasNewDiscoveries && (
-          <div className="rpg-discovery-panel mt-4 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sky-200">
-              Catalogued!
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-amber-300/90">
+              {staysOpen ? "Notable field report" : "Field report"}
             </p>
-            <ul className="mt-2 space-y-2">
-              {encounter.loot
-                .filter((item) => newKeys.has(itemCatalogKey(item)))
-                .map((item) => {
-                  const entry = getCatalogEntry(item);
-                  return (
-                    <li
-                      key={item.id}
-                      className="flex items-start gap-2 text-sm text-sky-50"
-                    >
-                      <ItemIcon type={item.type} rarity={item.rarity} />
-                      <div>
-                        <span className="font-medium">{item.name}</span>
-                        {entry && (
-                          <p className="mt-0.5 text-xs leading-relaxed text-sky-100/75">
-                            {entry.description}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-            </ul>
+            <h2
+              id="encounter-title"
+              className="mt-0.5 truncate text-sm font-bold text-slate-50"
+            >
+              {encounter.title}
+            </h2>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="encounter-report-close"
+            aria-label="Dismiss field report"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mt-2 flex items-center gap-2 text-xs">
+          <strong className="shrink-0 text-amber-300">
+            +{encounter.xpGained} XP
+          </strong>
+          {encounter.setBonusXp ? (
+            <span className="text-amber-100/75">
+              +{encounter.setBonusXp} set
+            </span>
+          ) : null}
+          {encounter.perkBonusXp ? (
+            <span className="text-violet-200/80">
+              +{encounter.perkBonusXp} perk
+            </span>
+          ) : null}
+          {encounter.loot.length === 0 ? (
+            <span className="truncate text-slate-400">Pack unchanged</span>
+          ) : null}
+        </div>
+
+        {encounter.loot.length > 0 && (
+          <ul className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5">
+            {encounter.loot.map((item, index) => {
+              const isNew = newKeys.has(itemCatalogKey(item));
+              const revealClass = lootRevealClass(item.rarity);
+              return (
+                <li
+                  key={item.id}
+                  className={`encounter-report-loot ${RARITY_CHIP[item.rarity]} ${revealClass}`}
+                  style={
+                    revealClass
+                      ? { animationDelay: `${index * 120}ms` }
+                      : undefined
+                  }
+                >
+                  <ItemIcon type={item.type} rarity={item.rarity} />
+                  <span className="min-w-0">
+                    <span className="block max-w-32 truncate font-medium">
+                      {item.name}
+                    </span>
+                    <span className="block text-[9px] uppercase tracking-wide opacity-70">
+                      {isNew ? "New · " : ""}
+                      {RARITY_LABEL[item.rarity]} {ITEM_TYPE_LABEL[item.type]}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         )}
 
         {completedSets.length > 0 && (
-          <div className="mt-3 rounded-lg border border-amber-500/35 bg-amber-500/10 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-200">
-              Album set complete
-            </p>
-            <ul className="mt-2 space-y-1 text-sm text-amber-50">
-              {completedSets.map((set) => (
-                <li key={set.id}>
-                  {set.name}{" "}
-                  <span className="text-amber-200/80">(+{set.rewardXp} XP)</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <p className="mt-2 text-[11px] font-medium text-amber-100">
+            Set complete: {completedSets.map((set) => set.name).join(", ")}
+          </p>
         )}
 
-        <div className="mt-4 rounded-lg border border-slate-700/70 bg-slate-950/50 p-3">
-          <div className="rpg-xp-flash">
-            <p className="text-sm font-semibold text-amber-300">
-              +{encounter.xpGained} XP
-              {encounter.setBonusXp
-                ? ` · +${encounter.setBonusXp} set bonus`
-                : ""}
-              {encounter.perkBonusXp
-                ? ` · +${encounter.perkBonusXp} perk bonus`
-                : ""}
-            </p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
-              <div className="h-full w-full rounded-full bg-gradient-to-r from-amber-500 via-violet-500 to-amber-400" />
-            </div>
-          </div>
+        {encounter.perkMessages && encounter.perkMessages.length > 0 && (
+          <p className="mt-1 truncate text-[10px] text-violet-200">
+            ⚡ {encounter.perkMessages.join(" · ")}
+          </p>
+        )}
 
-          {encounter.perkMessages && encounter.perkMessages.length > 0 && (
-            <ul className="mt-2 space-y-1 text-xs text-violet-200">
-              {encounter.perkMessages.map((message) => (
-                <li key={message}>⚡ {message}</li>
-              ))}
-            </ul>
-          )}
-
-          {encounter.loot.length > 0 ? (
-            <ul className="mt-3 space-y-2">
-              {encounter.loot.map((item, index) => {
-                const isNew = newKeys.has(itemCatalogKey(item));
-                const revealClass = lootRevealClass(item.rarity);
-                return (
-                  <li
-                    key={item.id}
-                    className={`rounded-lg border px-3 py-2 text-sm ${RARITY_CHIP[item.rarity]} ${revealClass}`}
-                    style={
-                      revealClass
-                        ? { animationDelay: `${index * 120}ms` }
-                        : undefined
-                    }
-                  >
-                    <div className="flex items-start gap-2">
-                      <ItemIcon type={item.type} rarity={item.rarity} size="md" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-medium">{item.name}</p>
-                          <div className="flex shrink-0 flex-col items-end gap-1">
-                            {isNew && (
-                              <span className="rpg-discovery-glow rounded-full border border-sky-400/40 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-100">
-                                New
-                              </span>
-                            )}
-                            <span className="text-xs uppercase tracking-wide">
-                              {RARITY_LABEL[item.rarity]}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-[11px] uppercase tracking-wide opacity-75">
-                          {ITEM_TYPE_LABEL[item.type]}
-                        </p>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="mt-3 text-sm text-slate-500">
-              Your pack is unchanged this time.
-            </p>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-5 w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_16px_rgba(124,58,237,0.3)] hover:bg-violet-500"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
+        {!staysOpen && (
+          <div
+            className={`encounter-report-timer ${paused ? "is-paused" : ""}`}
+            style={{ "--report-duration": `${dismissMs}ms` } as React.CSSProperties}
+            aria-hidden="true"
+          />
+        )}
+      </section>
+    </aside>
   );
 }
