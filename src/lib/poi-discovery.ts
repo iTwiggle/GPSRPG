@@ -11,6 +11,7 @@ interface DiscoverablePoisOptions {
   playerPosition: Position;
   revealedCellKeys: string[];
   fogOfWarEnabled: boolean;
+  liveRevealRadiusMeters?: number;
 }
 
 /**
@@ -23,6 +24,7 @@ export function getDiscoverablePois({
   playerPosition,
   revealedCellKeys,
   fogOfWarEnabled,
+  liveRevealRadiusMeters = EXPLORATION_REVEAL_RADIUS_METERS,
 }: DiscoverablePoisOptions): POI[] {
   if (!fogOfWarEnabled) return pois;
 
@@ -31,7 +33,7 @@ export function getDiscoverablePois({
   return pois.filter(
     (poi) =>
       distanceMeters(playerPosition, poi) <=
-        EXPLORATION_REVEAL_RADIUS_METERS ||
+        liveRevealRadiusMeters ||
       discoverableCellKeys.has(explorationCellKey(getExplorationCell(poi)))
   );
 }

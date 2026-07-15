@@ -2,6 +2,8 @@ import ActivityLogPanel from "@/components/ActivityLogPanel";
 import FieldReportPanel from "@/components/FieldReportPanel";
 import FieldTasksPanel from "@/components/FieldTasksPanel";
 import { getExpeditionProgress } from "@/lib/expedition";
+import { formatDistance } from "@/lib/distance";
+import type { TrailMomentumStatus } from "@/lib/movement/trail-momentum";
 import type { ActivityEvent, FieldReport, FieldTask } from "@/lib/types";
 
 interface ExpeditionPanelProps {
@@ -12,6 +14,7 @@ interface ExpeditionPanelProps {
   onRefreshTasks?: () => void;
   contractRefreshDisabled?: boolean;
   contractRefreshHint?: string;
+  trailMomentum: TrailMomentumStatus & { demoPreviewActive: boolean };
 }
 
 export default function ExpeditionPanel({
@@ -22,6 +25,7 @@ export default function ExpeditionPanel({
   onRefreshTasks,
   contractRefreshDisabled = false,
   contractRefreshHint,
+  trailMomentum,
 }: ExpeditionPanelProps) {
   const fulfilled = tasks.filter((task) => task.status === "completed").length;
   const active = tasks.length - fulfilled;
@@ -82,6 +86,30 @@ export default function ExpeditionPanel({
             <dd>{report.itemsFound}</dd>
           </div>
         </dl>
+      </section>
+
+      <section className={`rpg-trail-momentum ${trailMomentum.scoutsEyeActive ? "rpg-trail-momentum--active" : ""}`} aria-labelledby="trail-momentum-title">
+        <div className="rpg-trail-momentum__heading">
+          <div>
+            <p className="rpg-expedition__eyebrow">Daily movement boon</p>
+            <h3 id="trail-momentum-title" className="rpg-trail-momentum__title">{trailMomentum.scoutsEyeActive ? "Scout's Eye active" : "Build Trail Momentum"}</h3>
+          </div>
+          <span className="rpg-trail-momentum__glyph" aria-hidden="true">◉</span>
+        </div>
+        <p className="rpg-trail-momentum__copy">
+          {trailMomentum.demoPreviewActive
+            ? "Demo preview: live sight reaches 20% farther. No movement progress was saved."
+            : trailMomentum.scoutsEyeActive
+              ? "+20% live sight until local midnight. Explore range remains 150 m."
+              : `${formatDistance(trailMomentum.remainingMeters)} more validated walking unlocks +20% live sight for today.`}
+        </p>
+        <div className="rpg-trail-momentum__progress" role="progressbar" aria-label={`Daily Trail Momentum: ${trailMomentum.progressPercent}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={trailMomentum.progressPercent}>
+          <div style={{ width: `${trailMomentum.progressPercent}%` }} />
+        </div>
+        <div className="rpg-trail-momentum__meta">
+          <span>{formatDistance(Math.min(trailMomentum.distanceMeters, trailMomentum.targetMeters))} / {formatDistance(trailMomentum.targetMeters)}</span>
+          <span>Live GPS only · no route history</span>
+        </div>
       </section>
 
       <FieldTasksPanel

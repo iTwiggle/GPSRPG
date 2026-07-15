@@ -72,6 +72,15 @@ describe("storage vertical slice", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toContain("poi-1-2-3-0");
   });
 
+  it("persists movement aggregates without a precise GPS anchor", () => {
+    const initial = createInitialState();
+    saveGameState({ ...initial, movementLedger: { ...initial.movementLedger, totalMeters: 450, todayMeters: 450, lastPosition: { lat: 41.4993, lng: -81.6944 }, lastSampleAt: "2026-07-15T12:00:00.000Z", lastAccuracyMeters: 5 } });
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as { movementLedger?: Record<string, unknown> };
+    expect(raw.movementLedger?.totalMeters).toBe(450);
+    expect(raw.movementLedger?.lastPosition).toBeUndefined();
+    expect(raw.movementLedger?.lastSampleAt).toBeUndefined();
+  });
+
   it("normalizes legacy saves without schemaVersion", () => {
     localStorage.setItem(
       STORAGE_KEY,

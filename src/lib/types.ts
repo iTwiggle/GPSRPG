@@ -191,6 +191,8 @@ export interface MovementLedger {
   lastOutdoorSessionAt: string | null;
   lastPosition?: Position;
   lastSampleAt?: string;
+  /** Transient only; stripped before persistence with the precise anchor. */
+  lastAccuracyMeters?: number;
 }
 
 /** Cross-session companion metadata (sync, daily gates, UE5 handoff). */

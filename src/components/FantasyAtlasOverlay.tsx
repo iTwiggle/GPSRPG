@@ -56,6 +56,7 @@ interface AtlasVisibilityState {
   playerLat: number;
   playerLng: number;
   revealedCellKeys: string[];
+  liveRevealRadiusMeters: number;
 }
 
 function positionCanvas(map: L.Map, canvas: HTMLCanvasElement, dpr: number) {
@@ -84,7 +85,7 @@ function isPlacementRevealed(
 ): boolean {
   if (
     distanceMeters({ lat: state.playerLat, lng: state.playerLng }, placement) <=
-    EXPLORATION_REVEAL_RADIUS_METERS * 1.15
+    state.liveRevealRadiusMeters * 1.15
   ) {
     return true;
   }
@@ -100,6 +101,7 @@ interface FantasyAtlasOverlayProps {
   playerLat: number;
   playerLng: number;
   revealedCellKeys: string[];
+  liveRevealRadiusMeters?: number;
 }
 
 export default function FantasyAtlasOverlay({
@@ -108,6 +110,7 @@ export default function FantasyAtlasOverlay({
   playerLat,
   playerLng,
   revealedCellKeys,
+  liveRevealRadiusMeters = EXPLORATION_REVEAL_RADIUS_METERS,
 }: FantasyAtlasOverlayProps) {
   const map = useMap();
   const detailCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -118,12 +121,13 @@ export default function FantasyAtlasOverlay({
     playerLat,
     playerLng,
     revealedCellKeys,
+    liveRevealRadiusMeters,
   });
   const positionSchedulerRef = useRef<ReturnType<
     typeof createOverlayRedrawScheduler
   > | null>(null);
 
-  visibilityRef.current = { playerLat, playerLng, revealedCellKeys };
+  visibilityRef.current = { playerLat, playerLng, revealedCellKeys, liveRevealRadiusMeters };
 
   useLayoutEffect(() => {
     if (!enabled) {

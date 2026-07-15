@@ -9,6 +9,7 @@ import {
 } from "./field-report";
 import {
   createEmptyMovementLedger,
+  movementLedgerForPersistence,
   normalizeMovementLedger,
 } from "./movement/movement-ledger";
 import { getStorageAdapter } from "./platform/storage-adapter";
@@ -183,6 +184,7 @@ export function saveGameState(state: GameState): SaveGameStateResult {
       STORAGE_KEYS.gameState,
       JSON.stringify({
         ...state,
+        movementLedger: movementLedgerForPersistence(state.movementLedger),
         schemaVersion: STORAGE_SCHEMA_VERSION,
       })
     );
