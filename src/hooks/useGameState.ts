@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   appendExploreEvents,
   appendSetCompleteEvents,
@@ -30,6 +30,7 @@ import {
   updateMovementLedger,
 } from "@/lib/storage";
 import { sampleMovementLedger, recordOutingCompleted } from "@/lib/movement/movement-ledger";
+import { getTrailMomentumStatus } from "@/lib/movement/trail-momentum";
 import { getPoiVisitUiStatus } from "@/lib/temporal/poi-cooldowns";
 import type {
   EncounterResult,
@@ -60,6 +61,7 @@ function bestRarity(loot: Item[]): ItemRarity {
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const gameStateRef = useRef<GameState | null>(null);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [lastEncounter, setLastEncounter] = useState<EncounterResult | null>(
     null
@@ -67,11 +69,13 @@ export function useGameState() {
 
   useEffect(() => {
     const result = loadGameState();
+    gameStateRef.current = result.state;
     setGameState(result.state);
     setSaveWarning(result.warning);
   }, []);
 
   const persist = useCallback((next: GameState) => {
+    gameStateRef.current = next;
     setGameState(next);
     const result = saveGameState(next);
     setSaveWarning(result.warning);
@@ -371,24 +375,29 @@ export function useGameState() {
   }, [gameState, persist]);
 
   const samplePlayerMovement = useCallback(
-    (position: Position) => {
-      if (!gameState) return;
-      const nextLedger = sampleMovementLedger(
-        gameState.movementLedger,
-        position
-      );
-      const next = updateMovementLedger(gameState, nextLedger);
-      if (nextLedger.totalMeters > gameState.movementLedger.totalMeters) {
+    (position: Position, accuracyMeters: number, source: "live" | "demo") => {
+      const current = gameStateRef.current;
+      if (!current) return;
+      const nextLedger = sampleMovementLedger(current.movementLedger, position, new Date().toISOString(), { accuracyMeters, source });
+      const next = updateMovementLedger(current, nextLedger);
+      gameStateRef.current = next;
+      if (nextLedger.totalMeters > current.movementLedger.totalMeters) {
+        const wasActive = getTrailMomentumStatus(current.movementLedger).scoutsEyeActive;
+        const isActive = getTrailMomentumStatus(nextLedger).scoutsEyeActive;
         persist(next);
+        if (!wasActive && isActive) {
+          feedback.emitToast({ title: "Scout's Eye awakened", subtitle: "+20% live sight until local midnight", rarity: "uncommon", glyph: "◉" });
+        }
         return;
       }
       setGameState(next);
     },
-    [gameState, persist]
+    [persist]
   );
 
   const reset = useCallback(() => {
     const fresh = resetGameState();
+    gameStateRef.current = fresh;
     setGameState(fresh);
     setLastEncounter(null);
     setSaveWarning(null);

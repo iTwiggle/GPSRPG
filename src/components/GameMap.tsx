@@ -52,6 +52,7 @@ interface GameMapProps {
   revealedCellKeys: string[];
   fantasyGridEnabled: boolean;
   streetReferenceMode: boolean;
+  liveRevealRadiusMeters?: number;
   onInteractPoi: (poi: POI) => void;
 }
 
@@ -64,6 +65,7 @@ function GameMap({
   revealedCellKeys,
   fantasyGridEnabled,
   streetReferenceMode,
+  liveRevealRadiusMeters,
   onInteractPoi,
 }: GameMapProps) {
   const center = useMemo(
@@ -101,12 +103,14 @@ function GameMap({
         playerLat={playerLat}
         playerLng={playerLng}
         revealedCellKeys={revealedCellKeys}
+        liveRevealRadiusMeters={liveRevealRadiusMeters}
       />
       <ExplorationFogOverlay
         enabled={fantasyGridEnabled && !streetReferenceMode}
         playerLat={playerLat}
         playerLng={playerLng}
         revealedCellKeys={revealedCellKeys}
+        liveRevealRadiusMeters={liveRevealRadiusMeters}
       />
       <FollowPlayerViewport lat={playerLat} lng={playerLng} />
 

@@ -26,12 +26,14 @@ interface ExplorationFogOverlayProps {
   playerLat: number;
   playerLng: number;
   revealedCellKeys: string[];
+  liveRevealRadiusMeters?: number;
 }
 
 interface FogRenderState {
   playerLat: number;
   playerLng: number;
   revealedCellKeys: string[];
+  liveRevealRadiusMeters: number;
 }
 
 interface FogCanvasViewport {
@@ -99,7 +101,8 @@ function drawExplorationFog(
   dpr: number,
   playerLat: number,
   playerLng: number,
-  revealedCellKeys: string[]
+  revealedCellKeys: string[],
+  liveRevealRadiusMeters: number
 ) {
   const { size, topLeft } = getFogCanvasViewport(map);
   const bounds = map.getBounds().pad(0.35);
@@ -149,7 +152,7 @@ function drawExplorationFog(
     topLeft,
     playerLat,
     playerLng,
-    EXPLORATION_REVEAL_RADIUS_METERS * 1.15
+    liveRevealRadiusMeters * 1.15
   );
   clearSoftCircle(ctx, player.x, player.y, currentRadius, 1);
 
@@ -161,6 +164,7 @@ export default function ExplorationFogOverlay({
   playerLat,
   playerLng,
   revealedCellKeys,
+  liveRevealRadiusMeters = EXPLORATION_REVEAL_RADIUS_METERS,
 }: ExplorationFogOverlayProps) {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -170,12 +174,13 @@ export default function ExplorationFogOverlay({
     playerLat,
     playerLng,
     revealedCellKeys,
+    liveRevealRadiusMeters,
   });
   const positionSchedulerRef = useRef<ReturnType<
     typeof createOverlayRedrawScheduler
   > | null>(null);
 
-  renderStateRef.current = { playerLat, playerLng, revealedCellKeys };
+  renderStateRef.current = { playerLat, playerLng, revealedCellKeys, liveRevealRadiusMeters };
 
   useLayoutEffect(() => {
     if (!enabled) {
@@ -218,7 +223,8 @@ export default function ExplorationFogOverlay({
         dpr,
         state.playerLat,
         state.playerLng,
-        state.revealedCellKeys
+        state.revealedCellKeys,
+        state.liveRevealRadiusMeters
       );
     };
 

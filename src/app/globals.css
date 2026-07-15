@@ -2154,3 +2154,13 @@ body {
     animation: rpg-fade-inout 900ms ease-out forwards !important;
   }
 }
+.rpg-trail-momentum { position: relative; flex: none; overflow: hidden; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 0.85rem; background: radial-gradient(circle at 92% 12%, rgba(56, 189, 248, 0.14), transparent 34%), linear-gradient(145deg, rgba(8, 24, 42, 0.92), rgba(11, 18, 34, 0.94)); padding: 0.9rem; }
+.rpg-trail-momentum--active { border-color: rgba(34, 211, 238, 0.44); box-shadow: 0 0 24px rgba(14, 165, 233, 0.12); }
+.rpg-trail-momentum__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+.rpg-trail-momentum__title { margin-top: 0.18rem; font-size: 0.92rem; font-weight: 780; color: #e0f2fe; }
+.rpg-trail-momentum__glyph { display: grid; width: 2rem; height: 2rem; flex: none; place-items: center; border: 1px solid rgba(103, 232, 249, 0.34); border-radius: 9999px; background: rgba(8, 145, 178, 0.18); color: #a5f3fc; }
+.rpg-trail-momentum__copy { margin-top: 0.55rem; font-size: 0.72rem; line-height: 1.45; color: rgba(186, 230, 253, 0.76); }
+.rpg-trail-momentum__progress { height: 0.38rem; margin-top: 0.72rem; overflow: hidden; border-radius: 9999px; background: rgba(2, 6, 23, 0.72); }
+.rpg-trail-momentum__progress > div { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0ea5e9, #67e8f9); box-shadow: 0 0 12px rgba(34, 211, 238, 0.48); transition: width 240ms ease; }
+.rpg-trail-momentum__meta { display: flex; justify-content: space-between; gap: 0.75rem; margin-top: 0.5rem; font-size: 0.58rem; font-weight: 650; color: rgba(148, 163, 184, 0.72); }
+.rpg-trail-momentum__meta span:last-child { text-align: right; }

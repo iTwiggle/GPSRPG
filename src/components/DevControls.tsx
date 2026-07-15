@@ -13,6 +13,7 @@ interface DevControlsProps {
   onNudge: (north: number, east: number) => void;
   onReset: () => void;
   onRefreshTasks?: () => void;
+  onPreviewScoutsEye?: () => void;
 }
 
 const NUDGE_METERS = 40;
@@ -29,6 +30,7 @@ export default function DevControls({
   onNudge,
   onReset,
   onRefreshTasks,
+  onPreviewScoutsEye,
 }: DevControlsProps) {
   const handleRandomNearby = () => {
     const angle = Math.random() * Math.PI * 2;
@@ -69,6 +71,11 @@ export default function DevControls({
               className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100"
             >
               New Contracts
+            </button>
+          )}
+          {onPreviewScoutsEye && (
+            <button type="button" onClick={onPreviewScoutsEye} className="rounded-lg border border-sky-400 bg-sky-100 px-3 py-1.5 text-xs font-medium text-sky-900 hover:bg-sky-200">
+              Preview Scout&apos;s Eye
             </button>
           )}
         </div>

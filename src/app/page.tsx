@@ -34,6 +34,8 @@ import { getDiscoverablePois } from "@/lib/poi-discovery";
 import { getTopOpenLoopNudge } from "@/lib/open-loops";
 import { buildTravelerSynopsis } from "@/lib/companion/traveler-synopsis";
 import { metersToLeagues } from "@/lib/movement/movement-ledger";
+import { getTrailMomentumStatus, SCOUTS_EYE_REVEAL_MULTIPLIER } from "@/lib/movement/trail-momentum";
+import { EXPLORATION_REVEAL_RADIUS_METERS } from "@/lib/exploration-memory";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import {
   canRefreshFieldTasks,
@@ -69,6 +71,8 @@ export default function HomePage() {
   const [synopsisOpen, setSynopsisOpen] = useState(false);
   const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
+  const [scoutsEyePreview, setScoutsEyePreview] = useState(false);
+  const [, setLocalDayTick] = useState(0);
 
   const playerPosition = geo.position;
   const playerLat = playerPosition?.lat;
@@ -115,6 +119,11 @@ export default function HomePage() {
 
   const { pois } = useStickyPois(playerPosition, areaContext);
   const fogOfWarEnabled = fantasyGridEnabled && !streetReferenceMode;
+  const trailMomentum = gameState ? getTrailMomentumStatus(gameState.movementLedger) : null;
+  const scoutsEyeActive = Boolean(trailMomentum?.scoutsEyeActive || (geo.isDemo && scoutsEyePreview));
+  const liveRevealRadiusMeters = scoutsEyeActive
+    ? EXPLORATION_REVEAL_RADIUS_METERS * SCOUTS_EYE_REVEAL_MULTIPLIER
+    : EXPLORATION_REVEAL_RADIUS_METERS;
   const discoverablePois = useMemo(
     () =>
       playerLat !== undefined && playerLng !== undefined
@@ -123,6 +132,7 @@ export default function HomePage() {
             playerPosition: { lat: playerLat, lng: playerLng },
             revealedCellKeys: explorationMemory.revealedCellKeys,
             fogOfWarEnabled,
+            liveRevealRadiusMeters,
           })
         : [],
     [
@@ -131,6 +141,7 @@ export default function HomePage() {
       playerLat,
       playerLng,
       pois,
+      liveRevealRadiusMeters,
     ]
   );
 
@@ -159,9 +170,21 @@ export default function HomePage() {
   }, [geo.status]);
 
   useEffect(() => {
-    if (!playerPosition || !gameState) return;
-    samplePlayerMovement(playerPosition);
-  }, [gameState, playerPosition, samplePlayerMovement]);
+    if (!playerPosition || geo.status !== "active" || geo.accuracy == null) return;
+    samplePlayerMovement(playerPosition, geo.accuracy, "live");
+  }, [geo.accuracy, geo.status, playerPosition, samplePlayerMovement]);
+
+  useEffect(() => {
+    if (!geo.isDemo) setScoutsEyePreview(false);
+  }, [geo.isDemo]);
+
+  useEffect(() => {
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+    const timer = window.setTimeout(() => setLocalDayTick((value) => value + 1), Math.max(1_000, nextMidnight.getTime() - now.getTime()));
+    return () => window.clearTimeout(timer);
+  }, [gameState?.movementLedger.todayDate]);
 
   const openLoopNudge = useMemo(
     () =>
@@ -384,6 +407,7 @@ export default function HomePage() {
           revealedCellKeys={explorationMemory.revealedCellKeys}
           fantasyGridEnabled={fantasyGridEnabled}
           streetReferenceMode={streetReferenceMode}
+          liveRevealRadiusMeters={liveRevealRadiusMeters}
           onInteractPoi={handleMapPoiInteract}
         />
       </div>
@@ -506,6 +530,12 @@ export default function HomePage() {
                 }
                 contractRefreshDisabled={contractRefreshDisabled}
                 contractRefreshHint={contractRefreshHint}
+                trailMomentum={{
+                  ...(trailMomentum ?? getTrailMomentumStatus(gameState.movementLedger)),
+                  scoutsEyeActive,
+                  liveRevealRadiusMeters,
+                  demoPreviewActive: geo.isDemo && scoutsEyePreview,
+                }}
               />
             )}
             {activePanel === "bag" && (
@@ -539,6 +569,7 @@ export default function HomePage() {
                 onRefreshTasks={() =>
                   refreshFieldTasks({ bypassDailyLimit: true })
                 }
+                onPreviewScoutsEye={geo.isDemo ? () => setScoutsEyePreview((active) => !active) : undefined}
               />
             )}
           </div>

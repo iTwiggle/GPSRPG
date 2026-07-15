@@ -49,6 +49,14 @@ describe("fog-gated POI discovery", () => {
     expect(visible.map((poi) => poi.id)).toEqual(["nearby", "distant"]);
   });
 
+  it("lets Scout's Eye expand only the live discovery footprint", () => {
+    const edgePoi = makePoi("edge", moveNorth(ORIGIN, 135));
+    const base = getDiscoverablePois({ pois: [edgePoi], playerPosition: ORIGIN, revealedCellKeys: [], fogOfWarEnabled: true });
+    const boosted = getDiscoverablePois({ pois: [edgePoi], playerPosition: ORIGIN, revealedCellKeys: [], fogOfWarEnabled: true, liveRevealRadiusMeters: 144 });
+    expect(base).toHaveLength(0);
+    expect(boosted.map((poi) => poi.id)).toEqual(["edge"]);
+  });
+
   it("returns the full field when fog discovery is disabled", () => {
     const pois = [nearbyPoi, distantPoi];
     const visible = getDiscoverablePois({
