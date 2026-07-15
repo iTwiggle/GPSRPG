@@ -3,6 +3,7 @@ import {
   createEmptyMovementLedger,
   metersToLeagues,
   sampleMovementLedger,
+  stripTransientMovementSample,
 } from "./movement-ledger";
 
 describe("movement ledger", () => {
@@ -50,5 +51,21 @@ describe("movement ledger", () => {
     );
 
     expect(jitter.totalMeters).toBe(0);
+  });
+
+  it("removes the precise runtime sample before persistence", () => {
+    const sampled = sampleMovementLedger(
+      createEmptyMovementLedger(),
+      { lat: 37.7749, lng: -122.4194 },
+      "2026-07-14T12:00:00.000Z"
+    );
+
+    const persisted = stripTransientMovementSample(sampled);
+
+    expect(persisted.lastPosition).toBeUndefined();
+    expect(persisted.lastSampleAt).toBeUndefined();
+    expect(persisted.lastOutdoorSessionAt).toBe(
+      "2026-07-14T12:00:00.000Z"
+    );
   });
 });
