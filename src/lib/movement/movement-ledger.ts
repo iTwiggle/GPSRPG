@@ -15,7 +15,9 @@ export interface MovementSampleOptions {
   source: "live" | "demo";
 }
 
-export function createEmptyMovementLedger(today: string = getLocalDateString()): MovementLedger {
+export function createEmptyMovementLedger(
+  today: string = getLocalDateString()
+): MovementLedger {
   return {
     totalMeters: 0,
     todayMeters: 0,
@@ -51,17 +53,20 @@ export function normalizeMovementLedger(
   };
 }
 
-/** Persist effort aggregates without retaining a precise GPS coordinate. */
-export function movementLedgerForPersistence(ledger: MovementLedger): MovementLedger {
-  return {
-    totalMeters: ledger.totalMeters,
-    todayMeters: ledger.todayMeters,
-    todayDate: ledger.todayDate,
-    totalMinutesInMotion: ledger.totalMinutesInMotion,
-    todayMinutesInMotion: ledger.todayMinutesInMotion,
-    outingsCompleted: ledger.outingsCompleted,
-    lastOutdoorSessionAt: ledger.lastOutdoorSessionAt,
-  };
+/**
+ * Exact GPS samples are runtime-only inputs for distance deltas.
+ * Persist aggregate movement totals, never the latest precise coordinate.
+ */
+export function stripTransientMovementSample(
+  ledger: MovementLedger
+): MovementLedger {
+  const {
+    lastPosition: _lastPosition,
+    lastSampleAt: _lastSampleAt,
+    lastAccuracyMeters: _lastAccuracyMeters,
+    ...rest
+  } = ledger;
+  return rest;
 }
 
 export function metersToLeagues(meters: number): number {
@@ -77,7 +82,12 @@ export function sampleMovementLedger(
   const today = getLocalDateString(new Date(sampledAt));
   const next = normalizeMovementLedger(ledger, today);
 
-  if (options.source !== "live" || !Number.isFinite(options.accuracyMeters) || options.accuracyMeters <= 0 || options.accuracyMeters > MAX_SAMPLE_ACCURACY_METERS) {
+  if (
+    options.source !== "live" ||
+    !Number.isFinite(options.accuracyMeters) ||
+    options.accuracyMeters <= 0 ||
+    options.accuracyMeters > MAX_SAMPLE_ACCURACY_METERS
+  ) {
     return next;
   }
 
@@ -106,13 +116,28 @@ export function sampleMovementLedger(
   }
 
   const deltaMeters = distanceMeters(next.lastPosition, position);
-  const minimumDisplacement = Math.max(MIN_MOVEMENT_SEGMENT_METERS, ((next.lastAccuracyMeters ?? options.accuracyMeters) + options.accuracyMeters) * 0.75);
+  const minimumDisplacement = Math.max(
+    MIN_MOVEMENT_SEGMENT_METERS,
+    ((next.lastAccuracyMeters ?? options.accuracyMeters) +
+      options.accuracyMeters) *
+      0.75
+  );
   if (deltaMeters < minimumDisplacement) return next;
   if (deltaMeters > MAX_MOVEMENT_SEGMENT_METERS) {
-    return { ...next, lastPosition: position, lastSampleAt: sampledAt, lastAccuracyMeters: options.accuracyMeters, lastOutdoorSessionAt: sampledAt };
+    return {
+      ...next,
+      lastPosition: position,
+      lastSampleAt: sampledAt,
+      lastAccuracyMeters: options.accuracyMeters,
+      lastOutdoorSessionAt: sampledAt,
+    };
   }
+
   const speedMps = deltaMeters / (gapMs / 1000);
-  if (speedMps < MOTION_SPEED_THRESHOLD_MPS || speedMps > MAX_WALKING_SPEED_MPS) {
+  if (
+    speedMps < MOTION_SPEED_THRESHOLD_MPS ||
+    speedMps > MAX_WALKING_SPEED_MPS
+  ) {
     return {
       ...next,
       lastPosition: position,
