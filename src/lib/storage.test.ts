@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  clearAllCompanionStorage,
   createInitialState,
   markPoiVisited,
   saveGameState,
@@ -72,13 +73,45 @@ describe("storage vertical slice", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toContain("poi-1-2-3-0");
   });
 
-  it("persists movement aggregates without a precise GPS anchor", () => {
-    const initial = createInitialState();
-    saveGameState({ ...initial, movementLedger: { ...initial.movementLedger, totalMeters: 450, todayMeters: 450, lastPosition: { lat: 41.4993, lng: -81.6944 }, lastSampleAt: "2026-07-15T12:00:00.000Z", lastAccuracyMeters: 5 } });
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as { movementLedger?: Record<string, unknown> };
-    expect(raw.movementLedger?.totalMeters).toBe(450);
-    expect(raw.movementLedger?.lastPosition).toBeUndefined();
-    expect(raw.movementLedger?.lastSampleAt).toBeUndefined();
+  it("does not persist the exact runtime GPS sample", () => {
+    const state = createInitialState();
+    state.movementLedger = {
+      ...state.movementLedger,
+      totalMeters: 125,
+      lastPosition: { lat: 41.4993, lng: -81.6944 },
+      lastSampleAt: "2026-07-15T12:00:00.000Z",
+      lastOutdoorSessionAt: "2026-07-15T12:00:00.000Z",
+    };
+
+    saveGameState(state);
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    expect(raw).not.toBeNull();
+    expect(raw).not.toContain("41.4993");
+    expect(raw).not.toContain("-81.6944");
+    expect(raw).not.toContain("lastPosition");
+    expect(raw).not.toContain("lastSampleAt");
+    expect(raw).toContain("\"totalMeters\":125");
+  });
+
+  it("drops precise samples from legacy saves on load", () => {
+    const state = createInitialState();
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...state,
+        movementLedger: {
+          ...state.movementLedger,
+          lastPosition: { lat: 41.4993, lng: -81.6944 },
+          lastSampleAt: "2026-07-15T12:00:00.000Z",
+        },
+      })
+    );
+
+    const loaded = loadGameState();
+
+    expect(loaded.state.movementLedger.lastPosition).toBeUndefined();
+    expect(loaded.state.movementLedger.lastSampleAt).toBeUndefined();
   });
 
   it("normalizes legacy saves without schemaVersion", () => {
@@ -130,6 +163,22 @@ describe("storage vertical slice", () => {
     } finally {
       resetStorageAdapter();
     }
+  });
+
+  it("clears location-derived caches on reset but keeps consent", () => {
+    localStorage.setItem(STORAGE_KEYS.gameState, "game");
+    localStorage.setItem(STORAGE_KEYS.explorationMemory, "fog");
+    localStorage.setItem(STORAGE_KEYS.onboardingPoi, "poi");
+    localStorage.setItem(STORAGE_KEYS.osmContext, "osm-cell-cache");
+    localStorage.setItem(STORAGE_KEYS.locationConsent, "live");
+
+    clearAllCompanionStorage();
+
+    expect(localStorage.getItem(STORAGE_KEYS.gameState)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.explorationMemory)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingPoi)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.osmContext)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.locationConsent)).toBe("live");
   });
 
   it("migrates legacy v1 codex keys to catalog ids", () => {
