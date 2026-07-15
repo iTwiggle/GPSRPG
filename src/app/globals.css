@@ -937,6 +937,91 @@ body {
     max(1rem, var(--safe-left));
 }
 
+.encounter-report-shell {
+  position: fixed;
+  inset: auto 0 calc(env(safe-area-inset-bottom) + 5.25rem);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  padding: 0 0.75rem;
+  pointer-events: none;
+}
+
+.encounter-report {
+  position: relative;
+  width: min(100%, 22rem);
+  max-height: min(42dvh, 19rem);
+  overflow: auto;
+  padding: 0.75rem;
+  border-color: rgb(245 158 11 / 0.28);
+  background: rgb(9 15 28 / 0.88);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.38);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+  animation: encounter-report-arrive 180ms ease-out both;
+}
+
+.encounter-report-close {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgb(148 163 184 / 0.2);
+  border-radius: 999px;
+  color: rgb(226 232 240 / 0.82);
+  background: rgb(15 23 42 / 0.68);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.encounter-report-loot {
+  display: flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 0.4rem;
+  border-width: 1px;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+.encounter-report-timer {
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: linear-gradient(90deg, #f59e0b, #8b5cf6);
+  transform-origin: left;
+  animation: encounter-report-expire var(--report-duration) linear forwards;
+}
+
+.encounter-report-timer.is-paused {
+  animation-play-state: paused;
+}
+
+@keyframes encounter-report-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+}
+
+@keyframes encounter-report-expire {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .encounter-report {
+    animation: none;
+  }
+
+  .encounter-report-timer {
+    animation-name: none;
+  }
+}
+
 .leaflet-container {
   font-family: inherit;
   z-index: 0;
