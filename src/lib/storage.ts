@@ -9,8 +9,8 @@ import {
 } from "./field-report";
 import {
   createEmptyMovementLedger,
-  movementLedgerForPersistence,
   normalizeMovementLedger,
+  stripTransientMovementSample,
 } from "./movement/movement-ledger";
 import { getStorageAdapter } from "./platform/storage-adapter";
 import {
@@ -109,7 +109,9 @@ function normalizeGameState(parsed: StoredGameState): GameState {
       inventory: (savedPlayer.inventory ?? []).map(normalizeInventoryItem),
     },
     visitedPois: migrateVisitedPois(parsed),
-    movementLedger: normalizeMovementLedger(parsed.movementLedger),
+    movementLedger: stripTransientMovementSample(
+      normalizeMovementLedger(parsed.movementLedger)
+    ),
     codex: normalizeCodex(parsed.codex),
     activityLog: parsed.activityLog ?? [],
     fieldTasks: normalizeFieldTasks(parsed.fieldTasks),
@@ -184,7 +186,7 @@ export function saveGameState(state: GameState): SaveGameStateResult {
       STORAGE_KEYS.gameState,
       JSON.stringify({
         ...state,
-        movementLedger: movementLedgerForPersistence(state.movementLedger),
+        movementLedger: stripTransientMovementSample(state.movementLedger),
         schemaVersion: STORAGE_SCHEMA_VERSION,
       })
     );
