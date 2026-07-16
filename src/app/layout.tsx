@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import PwaShell from "@/components/PwaShell";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
@@ -76,6 +77,7 @@ export default function RootLayout({
       <body className="app-shell min-h-dvh antialiased">
         <PwaShell />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
