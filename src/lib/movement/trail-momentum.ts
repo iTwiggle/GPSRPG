@@ -66,9 +66,10 @@ export function getTrailMomentumStatus(
 
 export function applyTrailSurgeXp(
   encounter: EncounterResult,
-  ledger: MovementLedger
+  ledger: MovementLedger,
+  previewActive = false
 ): { encounter: EncounterResult; bonusXp: number; message?: string } {
-  if (!getTrailMomentumStatus(ledger).trailSurgeActive) {
+  if (!previewActive && !getTrailMomentumStatus(ledger).trailSurgeActive) {
     return { encounter, bonusXp: 0 };
   }
 

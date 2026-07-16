@@ -85,7 +85,11 @@ export function useGameState() {
   }, []);
 
   const explorePoi = useCallback(
-    (poi: POI, playerPosition: Position, options?: { simulate?: boolean }) => {
+    (
+      poi: POI,
+      playerPosition: Position,
+      options?: { simulate?: boolean; trailSurgePreview?: boolean }
+    ) => {
       // Read the synchronously updated ref so two taps arriving before React's
       // next render cannot both resolve against the same pre-visit snapshot.
       const current = gameStateRef.current;
@@ -112,7 +116,8 @@ export function useGameState() {
       const baseCamp = perkResult.baseCamp;
       const trailSurgeResult = applyTrailSurgeXp(
         encounter,
-        current.movementLedger
+        current.movementLedger,
+        options?.trailSurgePreview
       );
       encounter = trailSurgeResult.encounter;
 

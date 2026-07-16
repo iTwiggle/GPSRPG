@@ -254,21 +254,28 @@ export default function HomePage() {
       }
 
       if (action === "explore") {
-        explorePoi(poi, playerPosition);
+        explorePoi(poi, playerPosition, {
+          trailSurgePreview: geo.isDemo && scoutsEyePreview,
+        });
       }
     },
-    [explorePoi, gameState, playerPosition, selectedPoi]
+    [explorePoi, gameState, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]
   );
 
   const handleExplore = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition);
-  }, [explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, {
+      trailSurgePreview: geo.isDemo && scoutsEyePreview,
+    });
+  }, [explorePoi, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]);
 
   const handleSimulateVisit = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition, { simulate: true });
-  }, [explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, {
+      simulate: true,
+      trailSurgePreview: geo.isDemo && scoutsEyePreview,
+    });
+  }, [explorePoi, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]);
 
   const handlePanelChange = useCallback((section: MobilePanelSection) => {
     setSynopsisOpen(false);
@@ -533,6 +540,13 @@ export default function HomePage() {
                 trailMomentum={{
                   ...(trailMomentum ?? getTrailMomentumStatus(gameState.movementLedger)),
                   scoutsEyeActive,
+                  trailSurgeActive:
+                    Boolean(trailMomentum?.trailSurgeActive) ||
+                    (geo.isDemo && scoutsEyePreview),
+                  trailSurgeProgressPercent:
+                    geo.isDemo && scoutsEyePreview
+                      ? 100
+                      : (trailMomentum?.trailSurgeProgressPercent ?? 0),
                   liveRevealRadiusMeters,
                   demoPreviewActive: geo.isDemo && scoutsEyePreview,
                 }}

@@ -75,7 +75,7 @@ export default function DevControls({
           )}
           {onPreviewScoutsEye && (
             <button type="button" onClick={onPreviewScoutsEye} className="rounded-lg border border-sky-400 bg-sky-100 px-3 py-1.5 text-xs font-medium text-sky-900 hover:bg-sky-200">
-              Preview Scout&apos;s Eye
+              Preview movement boons
             </button>
           )}
         </div>
