@@ -64,14 +64,12 @@ export function useStickyPois(
   useEffect(() => {
     if (!playerPosition || startupAnchorResolved.current) return;
 
-    // Persist a previous field immediately; brand-new fields wait for Overpass.
-    if (!anchor && !isSettled) {
-      return;
-    }
-
     startupAnchorResolved.current = true;
 
     if (!anchor) {
+      // Seed a provisional field immediately so the map never shows
+      // "green grid + player only" while Overpass is in flight. Context
+      // upgrade below re-keys once OSM settles (if nothing explored yet).
       const nextAnchor = createPoiAnchor(playerPosition, areaContext, place);
       setAnchor(nextAnchor);
       writePoiAnchor(nextAnchor);
@@ -166,7 +164,9 @@ export function useStickyPois(
       : null;
 
   const awaitingPlaceContext =
-    Boolean(playerPosition) && !resolvedAnchor && !isSettled;
+    Boolean(playerPosition) &&
+    Boolean(resolvedAnchor) &&
+    !isSettled;
 
   return {
     pois,

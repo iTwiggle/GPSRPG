@@ -16,7 +16,11 @@ import {
   getPoiDisplayName,
   getPoiDisplayTypeLabel,
 } from "@/lib/poi-reveal";
-import { getPoiGlyphClassName, POI_TYPE_CHIP_BG } from "@/lib/poi-visual";
+import {
+  getPoiGlyphClassName,
+  getSealedPoiGlyphClassName,
+  POI_TYPE_CHIP_BG,
+} from "@/lib/poi-visual";
 import { EXPLORE_RADIUS_METERS, type POI, type Position } from "@/lib/types";
 import SiteApproachHUD from "@/components/SiteApproachHUD";
 
@@ -70,9 +74,11 @@ export default function POIPanel({
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 gap-3">
             <div
-              className={`${getPoiGlyphClassName(poi.type)}${
-                revealed ? "" : " poi-marker--veiled"
-              }`}
+              className={
+                revealed
+                  ? getPoiGlyphClassName(poi.type)
+                  : getSealedPoiGlyphClassName()
+              }
               aria-hidden="true"
             >
               <div className="poi-marker-glyph" />
@@ -244,7 +250,7 @@ function NearestPoiEmptyState({
             </div>
           </div>
           <div
-            className={`${getPoiGlyphClassName(nearest.type)} poi-marker--veiled shrink-0`}
+            className={`${getSealedPoiGlyphClassName()} shrink-0`}
             aria-hidden="true"
           >
             <div className="poi-marker-glyph" />

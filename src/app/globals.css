@@ -367,6 +367,11 @@ body {
   transform: rotate(-35deg) scale(0.82);
 }
 
+.poi-card-glyph.poi-marker--sealed .poi-marker-glyph {
+  margin: 0;
+  transform: scale(0.9);
+}
+
 /* ── Player marker ─────────────────────────────────────── */
 
 .player-marker {
@@ -423,19 +428,67 @@ body {
   filter: grayscale(0.35) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
 }
 
-/* Unexplored sites: silhouette only — name/flavor unlock on Explore. */
-.poi-marker--veiled .poi-marker-glyph {
-  opacity: 0.55;
-  filter: brightness(0.55) saturate(0.35) blur(0.35px)
-    drop-shadow(0 0 8px rgba(167, 139, 250, 0.35))
-    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+/*
+ * Sealed sites: bright mystery orbs that stay readable on every fantasy biome
+ * (grove-green type glyphs were vanishing into the green grid).
+ */
+.poi-marker--sealed .poi-marker-glyph {
+  width: 16px;
+  height: 16px;
+  margin: 6px;
+  border-radius: 9999px;
+  opacity: 1;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #f5f3ff 0%,
+    #c4b5fd 38%,
+    #7c3aed 72%,
+    #4c1d95 100%
+  );
+  border: 2px solid #fef3c7;
+  box-shadow:
+    0 0 0 2px rgba(15, 23, 42, 0.9),
+    0 0 16px rgba(167, 139, 250, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.7);
+  filter: none;
+  transform: none;
 }
 
-.poi-marker--veiled.poi-marker--selected .poi-marker-glyph {
-  opacity: 0.85;
-  filter: brightness(0.7) saturate(0.5)
-    drop-shadow(0 0 10px rgba(251, 191, 36, 0.45))
-    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+.poi-marker--sealed .poi-marker-glyph::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(254, 243, 199, 0.55);
+  background: transparent;
+}
+
+.poi-marker--sealed .poi-marker-glyph::after {
+  content: none;
+}
+
+.poi-marker--sealed.poi-marker--selected .poi-marker-glyph {
+  outline: 3px solid rgba(251, 191, 36, 0.95);
+  outline-offset: 3px;
+  filter: none;
+  box-shadow:
+    0 0 0 2px rgba(15, 23, 42, 0.9),
+    0 0 18px rgba(251, 191, 36, 0.65),
+    0 0 14px rgba(167, 139, 250, 0.85);
+}
+
+.poi-marker--sealed.poi-marker--selected.poi-marker--in-range .poi-marker-glyph {
+  outline-color: rgba(52, 211, 153, 0.95);
+  box-shadow:
+    0 0 0 2px rgba(15, 23, 42, 0.9),
+    0 0 18px rgba(52, 211, 153, 0.75),
+    0 0 14px rgba(167, 139, 250, 0.7);
+}
+
+/* Dark halo on the icon root so grove/cache stay readable on green biomes */
+.poi-marker:not(.poi-marker--sealed) {
+  filter: drop-shadow(0 0 1.5px rgba(2, 6, 23, 1))
+    drop-shadow(0 0 3px rgba(2, 6, 23, 0.95));
 }
 
 .poi-marker--visited:not(.poi-marker--quarry) .poi-marker-glyph::after {

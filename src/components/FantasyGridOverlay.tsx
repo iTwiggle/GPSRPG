@@ -12,7 +12,8 @@ import {
 } from "@/lib/fantasy-grid-surface";
 
 const PANE_NAME = "fantasyGridPane";
-const PANE_Z_INDEX = "350";
+/** Below overlay (400) and marker (600) panes so sites stay visible. */
+const PANE_Z_INDEX = "250";
 const SCREEN_TILE_PX = 36;
 /** Below this on-screen size, world-meter tiles are skipped in favor of screen tiles. */
 const MIN_WORLD_TILE_PX = 8;
@@ -291,7 +292,7 @@ export default function FantasyGridOverlay({
     canvas.setAttribute("aria-hidden", "true");
     pane.replaceChildren(canvas);
     canvasRef.current = canvas;
-    canvas.style.opacity = streetReferenceRef.current ? "0.38" : "0.92";
+    canvas.style.opacity = streetReferenceRef.current ? "0.38" : "0.78";
 
     const redraw = () => {
       if (rafRef.current !== null) {
@@ -338,7 +339,7 @@ export default function FantasyGridOverlay({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !enabled) return;
-    canvas.style.opacity = streetReference ? "0.38" : "0.92";
+    canvas.style.opacity = streetReference ? "0.38" : "0.78";
   }, [streetReference, enabled]);
 
   return null;

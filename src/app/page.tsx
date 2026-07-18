@@ -300,7 +300,7 @@ export default function HomePage() {
           </p>
           {playerPosition && awaitingPlaceContext && (
             <p className="text-xs text-violet-300/80" role="status">
-              Scanning nearby places…
+              Sites live — refining place scan…
             </p>
           )}
           {playerPosition && metersUntilRefresh !== null && (

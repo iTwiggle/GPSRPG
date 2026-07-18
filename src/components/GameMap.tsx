@@ -239,6 +239,7 @@ export default function GameMap({
               veiled: !revealed,
               inRange: isSelected && inRange,
             })}
+            zIndexOffset={isSelected ? 800 : revealed ? 650 : 700}
             eventHandlers={{
               click: () => onSelectPoi(poi),
             }}

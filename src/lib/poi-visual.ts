@@ -26,3 +26,8 @@ export const POI_TYPE_CHIP_BG: Record<POIType, string> = {
 export function getPoiGlyphClassName(type: POIType): string {
   return `poi-card-glyph poi-marker poi-marker--${type}`;
 }
+
+/** High-contrast sealed glyph used before Explore reveals the site type. */
+export function getSealedPoiGlyphClassName(): string {
+  return "poi-card-glyph poi-marker poi-marker--sealed";
+}

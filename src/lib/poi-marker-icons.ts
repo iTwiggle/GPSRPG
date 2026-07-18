@@ -22,13 +22,15 @@ export function createPoiMarkerIcon(
     inRange = false,
     veiled = false,
   } = options;
+  // Sealed sites use a high-contrast mystery glyph — type colors vanish into
+  // the green fantasy grid (especially grove-on-grove) and spoil the reveal.
+  const sealed = veiled && !visited;
   const classes = [
     "poi-marker",
-    `poi-marker--${type}`,
+    sealed ? "poi-marker--sealed" : `poi-marker--${type}`,
     selected ? "poi-marker--selected" : "",
     selected && inRange ? "poi-marker--in-range" : "",
     visited ? "poi-marker--visited" : "",
-    veiled && !visited ? "poi-marker--veiled" : "",
   ]
     .filter(Boolean)
     .join(" ");
