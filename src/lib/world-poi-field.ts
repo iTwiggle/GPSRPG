@@ -8,6 +8,7 @@ import {
   cellKeyToString,
   getAreaCellCenter,
   getAreaCellKey,
+  getCachedOsmCategory,
   type AreaCellKey,
   type OsmContextCategory,
 } from "./osm-context";
@@ -18,6 +19,17 @@ import type { POI, Position } from "./types";
 export const WORLD_POI_ACTIVE_RADIUS_METERS = 520;
 export const WORLD_POIS_PER_CELL = 2;
 const WORLD_FIELD_CELL_RADIUS = 2;
+
+export function resolveCellAreaContext(
+  cell: AreaCellKey,
+  currentCellKey: string,
+  liveContext: OsmContextCategory = "generic"
+): OsmContextCategory {
+  return (
+    getCachedOsmCategory(cell) ??
+    (cellKeyToString(cell) === currentCellKey ? liveContext : "generic")
+  );
+}
 
 function metersToLatLngOffset(
   originLat: number,
@@ -93,7 +105,7 @@ export function generateWorldCellPois(
     const typeRand = seededRandom(
       hashSeedNumeric(cell.cellLat, cell.cellLng, index, 17)
     );
-    const type = pickPoiType("generic", typeRand);
+    const type = pickPoiType(areaContext, typeRand);
     const nameRand = seededRandom(
       hashSeedNumeric(cell.cellLat, cell.cellLng, index, 31)
     );
@@ -103,7 +115,7 @@ export function generateWorldCellPois(
 
     pois.push({
       id: `poi-${cell.cellLat.toFixed(6)}-${cell.cellLng.toFixed(6)}-${index}`,
-      name: buildPoiName(type, nameRand, "generic"),
+      name: buildPoiName(type, nameRand, areaContext),
       type,
       flavor: pickPoiFlavor(type, flavorRand, areaContext),
       lat: center.lat + offset.lat,
@@ -129,9 +141,7 @@ export function generateWorldFieldPois(
   return getWorldFieldCells(player).flatMap((cell) =>
     generateWorldCellPois(
       cell,
-      cellKeyToString(cell) === currentCellKey
-        ? currentAreaContext
-        : "generic"
+      resolveCellAreaContext(cell, currentCellKey, currentAreaContext)
     )
   );
 }

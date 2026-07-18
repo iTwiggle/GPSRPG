@@ -7,6 +7,7 @@ const POI_CELL_SIZE_METERS = 400;
 export type OsmContextCategory =
   | "cemetery"
   | "park_or_woods"
+  | "marsh"
   | "water"
   | "industrial"
   | "education"
@@ -39,6 +40,7 @@ export const AREA_FLAVOR_LABELS: Record<
 > = {
   cemetery: "Cemetery",
   park_or_woods: "Grove",
+  marsh: "Marsh",
   water: "Water",
   industrial: "Industrial",
   education: "Academy",
@@ -50,6 +52,7 @@ export const AREA_FLAVOR_LABELS: Record<
 const CATEGORY_PRIORITY: OsmContextCategory[] = [
   "worship",
   "cemetery",
+  "marsh",
   "water",
   "park_or_woods",
   "education",
@@ -286,9 +289,12 @@ function classifyElementTags(
     return "park_or_woods";
   }
 
+  if (natural === "wetland") {
+    return "marsh";
+  }
+
   if (
     natural === "water" ||
-    natural === "wetland" ||
     landuse === "reservoir" ||
     Boolean(waterway)
   ) {
@@ -456,4 +462,16 @@ export async function resolveOsmContext(
 
   inFlight.set(cellKey, request);
   return request;
+}
+
+export async function prefetchOsmCells(
+  cells: AreaCellKey[],
+  limit: number = 4
+): Promise<void> {
+  const uncached = cells.filter((cell) => !getCachedOsmCategory(cell));
+  await Promise.all(
+    uncached.slice(0, limit).map((cell) =>
+      resolveOsmContext(cell).catch(() => undefined)
+    )
+  );
 }

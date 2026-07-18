@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BaseCampPanel from "@/components/BaseCampPanel";
 import FeedbackProvider from "@/components/feedback/FeedbackProvider";
 import CharacterHUD from "@/components/CharacterHUD";
+import FirstFootfallCard from "@/components/FirstFootfallCard";
 import TravelerSynopsisCard from "@/components/TravelerSynopsisCard";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
@@ -33,6 +34,12 @@ import { getMapPoiTapAction } from "@/lib/map-poi-interaction";
 import { getDiscoverablePois } from "@/lib/poi-discovery";
 import { getTopOpenLoopNudge } from "@/lib/open-loops";
 import { buildTravelerSynopsis } from "@/lib/companion/traveler-synopsis";
+import { cellKeyToString, getAreaCellKey } from "@/lib/osm-context";
+import {
+  buildCellArrivalBrief,
+  hasSeenFootfall,
+  type CellArrivalBrief,
+} from "@/lib/world/cell-arrival";
 import { metersToLeagues } from "@/lib/movement/movement-ledger";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import {
@@ -61,12 +68,17 @@ const PANEL_TITLES: Record<MobilePanelSection, string> = {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, resetFieldReport, clearEncounter, clearSaveWarning, reset, getPoiVisitStatus, samplePlayerMovement } =
+  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, markFootfallSeen, craftAtSanctum, resetFieldReport, clearEncounter, clearSaveWarning, reset, getPoiVisitStatus, samplePlayerMovement } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activePanel, setActivePanel] =
     useState<MobilePanelSection | null>(null);
   const [synopsisOpen, setSynopsisOpen] = useState(false);
+  const [footfallOpen, setFootfallOpen] = useState(false);
+  const [footfallBrief, setFootfallBrief] = useState<CellArrivalBrief | null>(
+    null
+  );
+  const lastFootfallCellRef = useRef<string | null>(null);
   const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
 
@@ -78,6 +90,10 @@ export default function HomePage() {
 
   const areaContext =
     osmContext.status === "ready" ? osmContext.category : "generic";
+  const areaCellKey = useMemo(() => {
+    if (playerLat === undefined || playerLng === undefined) return null;
+    return cellKeyToString(getAreaCellKey(playerLat, playerLng));
+  }, [playerLat, playerLng]);
   // Demo Mode is itself a testing surface: its movement controls must remain
   // reachable even when production builds hide the normal developer toolbox.
   const devToolsEnabled = DEV_TOOLS_ENABLED || geo.isDemo;
@@ -159,9 +175,40 @@ export default function HomePage() {
   }, [geo.status]);
 
   useEffect(() => {
-    if (!playerPosition || !gameState) return;
-    samplePlayerMovement(playerPosition);
-  }, [gameState, playerPosition, samplePlayerMovement]);
+    if (!playerPosition || !gameState || !areaCellKey) return;
+    if (lastFootfallCellRef.current === areaCellKey) return;
+    lastFootfallCellRef.current = areaCellKey;
+
+    if (hasSeenFootfall(gameState, areaCellKey)) {
+      setFootfallOpen(false);
+      setFootfallBrief(null);
+      return;
+    }
+
+    setFootfallBrief(
+      buildCellArrivalBrief({
+        state: gameState,
+        cellKey: areaCellKey,
+        placeCategory: areaContext,
+        pois: discoverablePois,
+        playerPosition,
+      })
+    );
+    setFootfallOpen(true);
+  }, [
+    areaCellKey,
+    areaContext,
+    discoverablePois,
+    gameState,
+    playerPosition,
+  ]);
+
+  const handleFootfallDismiss = useCallback(() => {
+    if (footfallBrief) {
+      markFootfallSeen(footfallBrief.cellKey);
+    }
+    setFootfallOpen(false);
+  }, [footfallBrief, markFootfallSeen]);
 
   const openLoopNudge = useMemo(
     () =>
@@ -231,24 +278,25 @@ export default function HomePage() {
       }
 
       if (action === "explore") {
-        explorePoi(poi, playerPosition);
+        explorePoi(poi, playerPosition, { areaContext });
       }
     },
-    [explorePoi, gameState, playerPosition, selectedPoi]
+    [explorePoi, gameState, playerPosition, selectedPoi, areaContext]
   );
 
   const handleExplore = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition);
-  }, [explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, { areaContext });
+  }, [areaContext, explorePoi, playerPosition, selectedPoi]);
 
   const handleSimulateVisit = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition, { simulate: true });
-  }, [explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, { simulate: true, areaContext });
+  }, [areaContext, explorePoi, playerPosition, selectedPoi]);
 
   const handlePanelChange = useCallback((section: MobilePanelSection) => {
     setSynopsisOpen(false);
+    setFootfallOpen(false);
     setActivePanel((current) => (current === section ? null : section));
   }, []);
 
@@ -264,6 +312,11 @@ export default function HomePage() {
       setSelectedPoi(null);
     }
   }, []);
+
+  useEffect(() => {
+    if (!playerPosition || !gameState) return;
+    samplePlayerMovement(playerPosition);
+  }, [gameState, playerPosition, samplePlayerMovement]);
 
   useEffect(() => {
     if (!activePanel) return;
@@ -455,6 +508,14 @@ export default function HomePage() {
         />
       )}
 
+      {footfallOpen && footfallBrief && (
+        <FirstFootfallCard
+          brief={footfallBrief}
+          open={footfallOpen}
+          onDismiss={handleFootfallDismiss}
+        />
+      )}
+
       {activePanel && (
         <aside
           id="viewfinder-panel"
@@ -522,6 +583,7 @@ export default function HomePage() {
                 fieldReportSites={gameState.fieldReport.sitesExplored}
                 gameState={gameState}
                 onClaimDoor={claimDepotDoor}
+                onCraft={craftAtSanctum}
                 onMarkVisit={markBaseCampVisit}
               />
             )}

@@ -1,4 +1,5 @@
 import type { Codex, Item, ItemRarity, POIType } from "./types";
+import type { OsmContextCategory } from "./osm-context";
 
 export interface ItemCatalogEntry {
   catalogId: string;
@@ -260,6 +261,16 @@ export const ITEM_CATALOG: ItemCatalogEntry[] = [
     poiAffinity: "grove",
   },
   {
+    catalogId: "marsh-bloom",
+    name: "Marsh Bloom",
+    type: "consumable",
+    rarity: "common",
+    weight: 3,
+    description: "Pale violet flowers gathered from bog and reed beds.",
+    setId: "grove-herbs",
+    poiAffinity: "grove",
+  },
+  {
     catalogId: "beast-fang",
     name: "Beast Fang",
     type: "weapon",
@@ -428,14 +439,31 @@ export function getCatalogKeysForSet(setId: string): string[] {
 }
 
 export function getLootWeightTable(
-  poiType?: POIType
+  poiType?: POIType,
+  areaContext?: OsmContextCategory
 ): ItemCatalogEntry[] {
+  let table: ItemCatalogEntry[];
   if (!poiType) {
-    return ITEM_CATALOG.filter((entry) => entry.poiAffinity === "general");
+    table = ITEM_CATALOG.filter((entry) => entry.poiAffinity === "general");
+  } else {
+    table = ITEM_CATALOG.filter(
+      (entry) =>
+        entry.poiAffinity === "general" || entry.poiAffinity === poiType
+    );
   }
 
-  return ITEM_CATALOG.filter(
-    (entry) =>
-      entry.poiAffinity === "general" || entry.poiAffinity === poiType
-  );
+  if (areaContext === "marsh") {
+    const bloom = catalogById.get("marsh-bloom");
+    if (bloom && !table.some((entry) => entry.catalogId === "marsh-bloom")) {
+      table = [...table, { ...bloom, weight: bloom.weight * 4 }];
+    } else if (bloom) {
+      table = table.map((entry) =>
+        entry.catalogId === "marsh-bloom"
+          ? { ...entry, weight: entry.weight * 4 }
+          : entry
+      );
+    }
+  }
+
+  return table;
 }

@@ -294,6 +294,16 @@ const CONTEXT_TYPE_WEIGHTS: Record<
     tower: 0.5,
     quarry: 0.25,
   },
+  marsh: {
+    grove: 3.5,
+    well: 2.5,
+    cache: 2,
+    shrine: 1.5,
+    camp: 1,
+    gate: 0.75,
+    tower: 0.5,
+    quarry: 0.25,
+  },
   industrial: {
     quarry: 3.5,
     camp: 2,
@@ -358,6 +368,7 @@ const CONTEXT_NAME_SUFFIXES: Partial<
     "Verdant Hollow",
   ],
   water: ["Drowned Altar", "River Shrine", "Old Dock", "Moonwell"],
+  marsh: ["Reed Hollow", "Bog Shrine", "Mist Glade", "Sedge Patch"],
   industrial: ["Forge", "Goblin Works", "Rust Yard", "Stone Pit"],
   education: ["Archive", "Academy", "Old Study", "Lore Cache"],
   worship: ["Chapel", "Relic Site", "Blessing Shrine", "Sanctuary"],
@@ -380,6 +391,11 @@ const CONTEXT_DESCRIPTORS: Partial<Record<OsmContextCategory, string[]>> = {
     "Damp stone glistens where the water once ran close.",
     "Old mooring rings rust beside a forgotten crossing.",
     "The air tastes of river mist and drowned echoes.",
+  ],
+  marsh: [
+    "Reeds whisper over black mud and standing water.",
+    "Marsh blooms cling to the bank in pale violet clusters.",
+    "Bitter herb-scent rises where the trail sinks into bog.",
   ],
   industrial: [
     "Soot-stained scrap and half-forged iron litter the ground.",

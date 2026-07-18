@@ -74,7 +74,7 @@ export const SANCTUM_CRAFTING_RECIPES: SanctumCraftingRecipe[] = [
     name: "Healing Potion",
     outputCatalogId: "healing-draught",
     ingredients: [
-      { catalogId: "herb-bundle", label: "Herb Bundle", required: 3 },
+      { catalogId: "marsh-bloom", label: "Marsh Bloom", required: 3 },
       { catalogId: "well-coin", label: "Well Coin", required: 2 },
     ],
   },
