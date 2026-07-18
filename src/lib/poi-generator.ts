@@ -9,7 +9,8 @@ import {
   getContextCategoryCode,
   type OsmContextCategory,
 } from "./osm-context";
-import type { POI } from "./types";
+import { bearingDegrees } from "./distance";
+import type { POI, Position } from "./types";
 
 const POI_COUNT = 8;
 const MIN_RADIUS_METERS = 120;
@@ -64,6 +65,11 @@ export interface GenerateNearbyPOIsOptions {
    * instead of mixing player-near first site + cell-center ring.
    */
   placeAnchored?: boolean;
+  /**
+   * When place-anchored, bias the first site toward this approach point
+   * (usually the player latch). Latched at field creation — stable for the field.
+   */
+  approachFrom?: Position | null;
 }
 
 /** Generate deterministic fantasy POIs near a GPS coordinate. */
@@ -76,6 +82,7 @@ export function generateNearbyPOIs(
     count = POI_COUNT,
     areaContext = "generic",
     placeAnchored = false,
+    approachFrom = null,
   } = options;
   const cell = getAreaCellKey(lat, lng);
   const { cellLat, cellLng } = cell;
@@ -112,7 +119,23 @@ export function generateNearbyPOIs(
           rand() *
             (GUARANTEED_FIRST_POI_MAX_METERS - GUARANTEED_FIRST_POI_MIN_METERS)
         : MIN_RADIUS_METERS + rand() * (MAX_RADIUS_METERS - MIN_RADIUS_METERS);
-    const bearing = rand() * Math.PI * 2;
+
+    // One rand() either path — approach bias must not desync later site rolls.
+    const bearingRoll = rand();
+    const bearing =
+      i === 0 &&
+      placeAnchored &&
+      approachFrom &&
+      (approachFrom.lat !== originLat || approachFrom.lng !== originLng)
+        ? (bearingDegrees(
+            { lat: originLat, lng: originLng },
+            approachFrom
+          ) *
+            Math.PI) /
+            180 +
+          (bearingRoll - 0.5) * (Math.PI / 2.5)
+        : bearingRoll * Math.PI * 2;
+
     const offset = metersToLatLngOffset(originLat, distance, bearing);
 
     const nameRand = seededRandom(

@@ -19,6 +19,8 @@ export interface AreaCellKey {
 
 /** A named real-world feature used to key a fantasy field. */
 export interface NamedOsmPlace {
+  /** Stable key — OSM `type/id` when available. */
+  id: string;
   name: string;
   category: Exclude<OsmContextCategory, "generic">;
   lat: number;
@@ -30,6 +32,8 @@ export interface OsmContextResult {
   fetchedAt: number;
   /** Best named landmark matching the dominant category, when available. */
   place?: NamedOsmPlace | null;
+  /** Other named landmarks in the cell (for destination scouting). */
+  places?: NamedOsmPlace[];
 }
 
 interface OverpassElement {
@@ -185,19 +189,69 @@ function isCacheValid(
   return now - entry.fetchedAt < ttl;
 }
 
+function normalizeNamedPlace(
+  place: Partial<NamedOsmPlace> | null | undefined
+): NamedOsmPlace | null {
+  if (!place || typeof place.name !== "string") return null;
+  if (
+    typeof place.lat !== "number" ||
+    typeof place.lng !== "number" ||
+    !Number.isFinite(place.lat) ||
+    !Number.isFinite(place.lng)
+  ) {
+    return null;
+  }
+
+  const category = place.category as string | undefined;
+  if (!category || !(category in AREA_FLAVOR_LABELS)) {
+    return null;
+  }
+
+  const id =
+    typeof place.id === "string" && place.id.length > 0
+      ? place.id
+      : buildNamedPlaceId({}, place.name, place.lat, place.lng);
+
+  return {
+    id,
+    name: place.name,
+    category: category as Exclude<OsmContextCategory, "generic">,
+    lat: place.lat,
+    lng: place.lng,
+  };
+}
+
+function normalizeOsmResult(result: OsmContextResult): OsmContextResult {
+  const place = normalizeNamedPlace(result.place ?? null);
+  const places = Array.isArray(result.places)
+    ? result.places
+        .map((entry) => normalizeNamedPlace(entry))
+        .filter((entry): entry is NamedOsmPlace => entry != null)
+    : place
+      ? [place]
+      : [];
+
+  return {
+    ...result,
+    place,
+    places,
+  };
+}
+
 function getCachedContext(
   cellKey: string,
   now: number
 ): OsmContextResult | null {
   const memory = memoryCache.get(cellKey);
   if (memory && isCacheValid(memory, now)) {
-    return memory;
+    return normalizeOsmResult(memory);
   }
 
   const stored = readStorageCache()[cellKey];
   if (stored && isCacheValid(stored, now)) {
-    memoryCache.set(cellKey, stored);
-    return stored;
+    const normalized = normalizeOsmResult(stored);
+    memoryCache.set(cellKey, normalized);
+    return normalized;
   }
 
   return null;
@@ -386,6 +440,40 @@ function readFeatureName(tags: Record<string, string>): string | null {
   return raw.slice(0, 80);
 }
 
+export function buildNamedPlaceId(
+  element: { type?: string; id?: number },
+  name: string,
+  lat: number,
+  lng: number
+): string {
+  if (
+    typeof element.type === "string" &&
+    typeof element.id === "number" &&
+    Number.isFinite(element.id)
+  ) {
+    return `${element.type}/${element.id}`;
+  }
+  return `name:${name.toLowerCase()}@${lat.toFixed(5)},${lng.toFixed(5)}`;
+}
+
+function toNamedPlace(
+  element: OverpassElement,
+  category: Exclude<OsmContextCategory, "generic">
+): NamedOsmPlace | null {
+  if (!element.tags) return null;
+  const name = readFeatureName(element.tags);
+  if (!name) return null;
+  const centroid = getElementCentroid(element);
+  if (!centroid) return null;
+  return {
+    id: buildNamedPlaceId(element, name, centroid.lat, centroid.lng),
+    name,
+    category,
+    lat: centroid.lat,
+    lng: centroid.lng,
+  };
+}
+
 function haversineMeters(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number }
@@ -409,6 +497,26 @@ export function classifyOsmElements(
   return analyzeOsmElements(elements).category;
 }
 
+/** All named landmarks in the payload, deduped by place id. */
+export function listNamedPlaces(
+  elements: OverpassElement[]
+): NamedOsmPlace[] {
+  const byId = new Map<string, NamedOsmPlace>();
+
+  for (const element of elements) {
+    if (!element.tags) continue;
+    const category = classifyElementTags(element.tags);
+    if (!category || category === "generic") continue;
+    const place = toNamedPlace(element, category);
+    if (!place) continue;
+    if (!byId.has(place.id)) {
+      byId.set(place.id, place);
+    }
+  }
+
+  return [...byId.values()];
+}
+
 /** Pick the closest named feature matching the dominant category. */
 export function pickNamedPlaceForCategory(
   elements: OverpassElement[],
@@ -425,21 +533,13 @@ export function pickNamedPlaceForCategory(
     const elementCategory = classifyElementTags(element.tags);
     if (elementCategory !== category) continue;
 
-    const name = readFeatureName(element.tags);
-    if (!name) continue;
+    const place = toNamedPlace(element, category);
+    if (!place) continue;
 
-    const centroid = getElementCentroid(element);
-    if (!centroid) continue;
-
-    const distance = haversineMeters(near, centroid);
+    const distance = haversineMeters(near, place);
     if (distance < bestDistance) {
       bestDistance = distance;
-      best = {
-        name,
-        category,
-        lat: centroid.lat,
-        lng: centroid.lng,
-      };
+      best = place;
     }
   }
 
@@ -449,7 +549,11 @@ export function pickNamedPlaceForCategory(
 export function analyzeOsmElements(
   elements: OverpassElement[],
   near?: { lat: number; lng: number }
-): { category: OsmContextCategory; place: NamedOsmPlace | null } {
+): {
+  category: OsmContextCategory;
+  place: NamedOsmPlace | null;
+  places: NamedOsmPlace[];
+} {
   const counts = new Map<OsmContextCategory, number>();
 
   for (const element of elements) {
@@ -459,8 +563,10 @@ export function analyzeOsmElements(
     counts.set(category, (counts.get(category) ?? 0) + 1);
   }
 
+  const places = listNamedPlaces(elements);
+
   if (counts.size === 0) {
-    return { category: "generic", place: null };
+    return { category: "generic", place: null, places };
   }
 
   let bestCategory: OsmContextCategory = "generic";
@@ -484,7 +590,7 @@ export function analyzeOsmElements(
       ? pickNamedPlaceForCategory(elements, bestCategory, near)
       : null;
 
-  return { category: bestCategory, place };
+  return { category: bestCategory, place, places };
 }
 
 async function fetchOsmContextForCell(
@@ -518,7 +624,7 @@ async function fetchOsmContextForCell(
       elements?: OverpassElement[];
     };
     const cellCenter = getAreaCellCenter(cell);
-    const { category, place } = analyzeOsmElements(
+    const { category, place, places } = analyzeOsmElements(
       payload.elements ?? [],
       cellCenter
     );
@@ -526,6 +632,7 @@ async function fetchOsmContextForCell(
     return {
       category,
       place,
+      places,
       fetchedAt: Date.now(),
     };
   } finally {
@@ -569,6 +676,7 @@ export async function resolveOsmContext(
       const fallback: OsmContextResult = {
         category: "generic",
         place: null,
+        places: [],
         fetchedAt: Date.now(),
       };
       storeContext(cellKey, fallback);

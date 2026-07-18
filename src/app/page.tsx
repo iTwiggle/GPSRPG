@@ -21,6 +21,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { useGameState } from "@/hooks/useGameState";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useOsmContext } from "@/hooks/useOsmContext";
+import { usePlaceScout } from "@/hooks/usePlaceScout";
 import { useStickyPois } from "@/hooks/useStickyPois";
 import { countReadyDepotDoors } from "@/lib/base-camp";
 import { POI_ANCHOR_REGENERATE_METERS } from "@/lib/poi-anchor";
@@ -29,8 +30,10 @@ import {
   FANTASY_GRID_SESSION_KEY,
   STREET_REF_SESSION_KEY,
 } from "@/lib/fantasy-grid-surface";
+import type { NamedOsmPlace } from "@/lib/osm-context";
+import { getScoutTeaserLine } from "@/lib/place-scout";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
-import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
+import { DEMO_LOCATION_LABEL, type POI, type Position } from "@/lib/types";
 
 const GameMap = dynamic(() => import("@/components/GameMap"), {
   ssr: false,
@@ -50,6 +53,7 @@ export default function HomePage() {
     useState<MobilePanelSection>("poi");
   const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
+  const [mapFocus, setMapFocus] = useState<Position | null>(null);
 
   const playerPosition = geo.position;
   const osmContext = useOsmContext(playerPosition?.lat, playerPosition?.lng);
@@ -110,6 +114,43 @@ export default function HomePage() {
 
   const fieldPlaceName = anchor?.placeName ?? placeName;
 
+  const activeFieldPlace: NamedOsmPlace | null = useMemo(() => {
+    if (
+      anchor?.placeAnchored &&
+      anchor.placeId &&
+      anchor.placeName &&
+      anchor.areaContext !== "generic"
+    ) {
+      return {
+        id: anchor.placeId,
+        name: anchor.placeName,
+        category: anchor.areaContext,
+        lat: anchor.lat,
+        lng: anchor.lng,
+      };
+    }
+    return osmContext.place;
+  }, [anchor, osmContext.place]);
+
+  const effectiveMapFocus = mapFocus ?? playerPosition;
+
+  const { scout, scoutPlaces, selectedScoutPlaceId, selectScoutPlace } =
+    usePlaceScout({
+      player: playerPosition,
+      mapFocus: effectiveMapFocus,
+      localPlaces: osmContext.places,
+      discoveredPlaceIds: gameState?.discoveredPlaceIds ?? [],
+      activePlaceId: activeFieldPlace?.id ?? null,
+    });
+
+  const destinationPlaces = useMemo(() => {
+    const discovered = new Set(gameState?.discoveredPlaceIds ?? []);
+    const activeId = activeFieldPlace?.id ?? null;
+    return scoutPlaces.filter(
+      (place) => !discovered.has(place.id) && place.id !== activeId
+    );
+  }, [activeFieldPlace?.id, gameState?.discoveredPlaceIds, scoutPlaces]);
+
   useEffect(() => {
     if (!selectedPoi) return;
     if (!pois.some((poi) => poi.id === selectedPoi.id)) {
@@ -145,13 +186,29 @@ export default function HomePage() {
 
   const handleExplore = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition);
-  }, [explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, { place: activeFieldPlace });
+  }, [activeFieldPlace, explorePoi, playerPosition, selectedPoi]);
 
   const handleSimulateVisit = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition, { simulate: true });
-  }, [explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, {
+      simulate: true,
+      place: activeFieldPlace,
+    });
+  }, [activeFieldPlace, explorePoi, playerPosition, selectedPoi]);
+
+  const handleSelectScoutPlace = useCallback(
+    (place: NamedOsmPlace) => {
+      selectScoutPlace(place.id);
+      setSelectedPoi(null);
+      setActiveMobileSection("poi");
+    },
+    [selectScoutPlace]
+  );
+
+  const handleMapFocusChange = useCallback((focus: Position) => {
+    setMapFocus(focus);
+  }, []);
 
   if (!gameState) {
     return (
@@ -331,9 +388,10 @@ export default function HomePage() {
             </div>
             {(osmContext.areaFlavorLabel ||
               osmContext.status === "loading" ||
-              fieldPlaceName) && (
+              fieldPlaceName ||
+              scout) && (
               <div
-                className="pointer-events-none absolute left-3 top-3 z-[500]"
+                className="pointer-events-none absolute left-3 top-3 z-[500] max-w-[min(92%,22rem)] space-y-2"
                 role="status"
                 aria-live="polite"
               >
@@ -352,6 +410,23 @@ export default function HomePage() {
                     </span>
                   )}
                 </div>
+                {scout && (
+                  <div className="rpg-aura-readout border border-amber-400/30 bg-slate-950/80">
+                    <span className="rpg-aura-readout__label text-amber-200/80">
+                      Destination scout
+                    </span>
+                    <span className="rpg-chip rpg-aura-chip border-amber-400/35 text-amber-100">
+                      <span className="rpg-chip-dot bg-amber-300" aria-hidden="true" />
+                      {scout.headline}
+                    </span>
+                    <p className="mt-1.5 text-[11px] leading-snug text-slate-300/90">
+                      {getScoutTeaserLine(scout.place)}{" "}
+                      <span className="text-slate-500">
+                        ({formatDistance(scout.distanceMeters)})
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             <GameMap
@@ -365,6 +440,11 @@ export default function HomePage() {
               fantasyGridEnabled={fantasyGridEnabled}
               streetReferenceMode={streetReferenceMode}
               onSelectPoi={setSelectedPoi}
+              scoutPlaces={destinationPlaces}
+              scout={scout}
+              selectedScoutPlaceId={selectedScoutPlaceId}
+              onSelectScoutPlace={handleSelectScoutPlace}
+              onMapFocusChange={handleMapFocusChange}
             />
           </div>
 

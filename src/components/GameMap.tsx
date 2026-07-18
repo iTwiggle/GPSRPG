@@ -1,10 +1,19 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import { useEffect, useMemo, useRef } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Circle,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
+import L from "leaflet";
 import FantasyGridOverlay from "@/components/FantasyGridOverlay";
 import { getApproachReadout } from "@/lib/approach";
-import { formatDistance } from "@/lib/distance";
+import { distanceMeters, formatDistance } from "@/lib/distance";
 import { mapCategoryToBiome } from "@/lib/fantasy-grid-surface";
 import {
   getPoiDisplayName,
@@ -12,9 +21,13 @@ import {
   isPoiRevealed,
 } from "@/lib/poi-reveal";
 import { createPoiMarkerIcon, playerMarkerIcon } from "@/lib/poi-marker-icons";
-import type { OsmContextCategory } from "@/lib/osm-context";
-import type { POI } from "@/lib/types";
+import type { NamedOsmPlace, OsmContextCategory } from "@/lib/osm-context";
+import type { ScoutReadout } from "@/lib/place-scout";
+import type { POI, Position } from "@/lib/types";
 import { EXPLORE_RADIUS_METERS } from "@/lib/types";
+
+/** Only re-snap the camera when the player moves this far — lets pan-to-scout work. */
+const RECENTER_MOVE_METERS = 45;
 
 function RecenterMap({
   lat,
@@ -24,12 +37,59 @@ function RecenterMap({
   lng: number;
 }) {
   const map = useMap();
+  const lastCenter = useRef<Position | null>(null);
 
   useEffect(() => {
-    map.setView([lat, lng], map.getZoom(), { animate: true });
+    if (!lastCenter.current) {
+      map.setView([lat, lng], map.getZoom(), { animate: false });
+      lastCenter.current = { lat, lng };
+      return;
+    }
+
+    const moved = distanceMeters(lastCenter.current, { lat, lng });
+    if (moved >= RECENTER_MOVE_METERS) {
+      map.setView([lat, lng], map.getZoom(), { animate: true });
+      lastCenter.current = { lat, lng };
+    }
   }, [lat, lng, map]);
 
   return null;
+}
+
+function MapFocusReporter({
+  onFocusChange,
+}: {
+  onFocusChange: (focus: Position) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const center = map.getCenter();
+    onFocusChange({ lat: center.lat, lng: center.lng });
+  }, [map, onFocusChange]);
+
+  useMapEvents({
+    moveend: (event) => {
+      const center = event.target.getCenter();
+      onFocusChange({ lat: center.lat, lng: center.lng });
+    },
+  });
+
+  return null;
+}
+
+function createDestinationIcon(selected: boolean): L.DivIcon {
+  return L.divIcon({
+    className: "",
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    html: `<div style="
+      width:22px;height:22px;border-radius:9999px;
+      border:2px solid ${selected ? "#fbbf24" : "#a78bfa"};
+      background:${selected ? "rgba(251,191,36,0.35)" : "rgba(124,58,237,0.28)"};
+      box-shadow:0 0 12px ${selected ? "rgba(251,191,36,0.45)" : "rgba(124,58,237,0.35)"};
+    "></div>`,
+  });
 }
 
 interface GameMapProps {
@@ -43,6 +103,11 @@ interface GameMapProps {
   fantasyGridEnabled: boolean;
   streetReferenceMode: boolean;
   onSelectPoi: (poi: POI) => void;
+  scoutPlaces?: NamedOsmPlace[];
+  scout?: ScoutReadout | null;
+  selectedScoutPlaceId?: string | null;
+  onSelectScoutPlace?: (place: NamedOsmPlace) => void;
+  onMapFocusChange?: (focus: Position) => void;
 }
 
 export default function GameMap({
@@ -56,6 +121,11 @@ export default function GameMap({
   fantasyGridEnabled,
   streetReferenceMode,
   onSelectPoi,
+  scoutPlaces = [],
+  scout = null,
+  selectedScoutPlaceId = null,
+  onSelectScoutPlace,
+  onMapFocusChange,
 }: GameMapProps) {
   const center = useMemo(
     () => [playerLat, playerLng] as [number, number],
@@ -92,6 +162,7 @@ export default function GameMap({
         streetReference={streetReferenceMode}
       />
       <RecenterMap lat={playerLat} lng={playerLng} />
+      {onMapFocusChange && <MapFocusReporter onFocusChange={onMapFocusChange} />}
 
       <Marker position={center} icon={playerMarkerIcon}>
         <Popup>You are here</Popup>
@@ -108,6 +179,42 @@ export default function GameMap({
           dashArray: "4 6",
         }}
       />
+
+      {scoutPlaces.map((place) => {
+        const isSelected = place.id === selectedScoutPlaceId;
+        return (
+          <Marker
+            key={`scout-${place.id}`}
+            position={[place.lat, place.lng]}
+            icon={createDestinationIcon(isSelected)}
+            eventHandlers={{
+              click: () => onSelectScoutPlace?.(place),
+            }}
+            zIndexOffset={isSelected ? 600 : 400}
+          >
+            <Popup>
+              <div className="text-sm">
+                <p className="font-semibold text-slate-100">{place.name}</p>
+                <p className="text-violet-300">Uncharted place</p>
+                {scout && scout.place.id === place.id && (
+                  <p className="mt-1 text-xs text-amber-200/90">
+                    {scout.headline}
+                  </p>
+                )}
+                <p className="text-slate-400">
+                  {formatDistance(
+                    distanceMeters(
+                      { lat: playerLat, lng: playerLng },
+                      place
+                    )
+                  )}{" "}
+                  away
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
 
       {pois.map((poi) => {
         const visited = visitedPoiIds.includes(poi.id);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getApproachReadout } from "./approach";
 import { canExplorePoi } from "./explore-validation";
-import { distanceMeters } from "./distance";
+import { bearingDegrees, distanceMeters } from "./distance";
 import {
   GUARANTEED_FIRST_POI_MAX_METERS,
   GUARANTEED_FIRST_POI_MIN_METERS,
@@ -123,6 +123,27 @@ describe("generateNearbyPOIs", () => {
       expect(distance).toBeGreaterThanOrEqual(120);
       expect(distance).toBeLessThanOrEqual(450);
     }
+  });
+
+  it("biases the first place-anchored site toward the approach latch", () => {
+    const place = { lat: 37.7694, lng: -122.4862 };
+    const approachFrom = { lat: 37.772, lng: -122.4862 };
+    const pois = generateNearbyPOIs(place.lat, place.lng, {
+      areaContext: "park_or_woods",
+      placeAnchored: true,
+      approachFrom,
+    });
+
+    const approachBearing = bearingDegrees(place, approachFrom);
+    const poiBearing = bearingDegrees(place, pois[0]);
+    const delta = Math.abs(poiBearing - approachBearing);
+    const angularGap = Math.min(delta, 360 - delta);
+
+    // First site should lie within ~50° of the player's approach into the place.
+    expect(angularGap).toBeLessThan(50);
+    expect(distanceMeters(place, pois[0])).toBeLessThanOrEqual(
+      GUARANTEED_FIRST_POI_MAX_METERS
+    );
   });
 
   it("returns deterministic POIs for the same anchor", () => {

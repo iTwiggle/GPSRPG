@@ -440,6 +440,25 @@ export function pickPoiType(
   return weightedPick(weights, rand);
 }
 
+/** Highest-weighted site type for a place mood — used for spoiler-safe scout hints. */
+export function getDominantPoiTypeForCategory(
+  context: OsmContextCategory
+): POIType {
+  const contextWeights = CONTEXT_TYPE_WEIGHTS[context];
+  let best: POIType = "shrine";
+  let bestWeight = -1;
+
+  for (const type of POI_TYPES) {
+    const weight = contextWeights[type] ?? BASE_TYPE_WEIGHT;
+    if (weight > bestWeight) {
+      best = type;
+      bestWeight = weight;
+    }
+  }
+
+  return best;
+}
+
 export function getPoiTypeLabel(type: POIType): string {
   return POI_TYPE_FLAVOR[type].label;
 }

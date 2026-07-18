@@ -48,6 +48,21 @@ export default function EncounterModal({
           {encounter.description}
         </p>
 
+        {encounter.firstVisitPlaceName && (
+          <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-500/10 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-200">
+              First footfall
+            </p>
+            <p className="mt-1 text-sm text-amber-50">
+              {encounter.firstVisitPlaceName} yields a one-shot place relic
+              {encounter.firstVisitRelicName
+                ? `: ${encounter.firstVisitRelicName}`
+                : ""}
+              . Affinity loot is guaranteed on this arrival.
+            </p>
+          </div>
+        )}
+
         {hasNewDiscoveries && (
           <div className="mt-4 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sky-200">

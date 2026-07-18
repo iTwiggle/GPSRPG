@@ -53,6 +53,10 @@ export interface EncounterResult {
   perkBonusXp?: number;
   /** Human-readable perk triggers for this explore. */
   perkMessages?: string[];
+  /** Real place name when this explore claimed first footfall. */
+  firstVisitPlaceName?: string;
+  /** One-shot place-type relic granted on first footfall. */
+  firstVisitRelicName?: string;
 }
 
 export interface CodexItemEntry {
@@ -177,6 +181,8 @@ export interface GameState {
   schemaVersion: number;
   player: Player;
   visitedPOIIds: string[];
+  /** Named OSM place ids where the player has claimed first footfall. */
+  discoveredPlaceIds: string[];
   codex: Codex;
   activityLog: ActivityEvent[];
   fieldTasks: FieldTask[];

@@ -127,6 +127,11 @@ export default function AboutPage() {
               fantasy until you Explore; unexplored sites stay veiled.
             </li>
             <li>
+              Pan or tap a named place you haven&apos;t footfalled yet to scout
+              sealed-site counts and affinity hints — without spoiling exact
+              loot. First Explore at a place grants a one-shot place relic.
+            </li>
+            <li>
               If Overpass is unavailable, the app falls back to a generic field
               around your position with no loss of gameplay.
             </li>

@@ -38,10 +38,14 @@ describe("analyzeOsmElements", () => {
     ];
 
     expect(classifyOsmElements(elements)).toBe("park_or_woods");
-    const { category, place } = analyzeOsmElements(elements, near);
+    const { category, place, places } = analyzeOsmElements(elements, near);
     expect(category).toBe("park_or_woods");
     expect(place?.name).toBe("Alamo Square");
+    expect(place?.id).toBe("way/1");
     expect(place?.lat).toBeCloseTo(37.7763, 4);
+    expect(places.map((entry) => entry.name)).toEqual(
+      expect.arrayContaining(["Alamo Square", "Distant Park"])
+    );
   });
 
   it("returns generic with no place when nothing matches", () => {

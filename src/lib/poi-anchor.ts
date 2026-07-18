@@ -28,6 +28,8 @@ export interface PoiAnchorState {
   areaContext: OsmContextCategory;
   /** Real OSM place name when the field is keyed to a landmark. */
   placeName?: string | null;
+  /** Stable OSM place key when the field is place-anchored. */
+  placeId?: string | null;
   /** True when lat/lng is a named place centroid (not the player spawn point). */
   placeAnchored?: boolean;
   /** Player position when the field was locked — walk-refresh distance uses this. */
@@ -51,6 +53,7 @@ function parsePoiAnchor(raw: string): PoiAnchorState | null {
       areaContext: parsed.areaContext as OsmContextCategory,
       placeName:
         typeof parsed.placeName === "string" ? parsed.placeName : null,
+      placeId: typeof parsed.placeId === "string" ? parsed.placeId : null,
       placeAnchored: Boolean(parsed.placeAnchored),
       playerLat:
         typeof parsed.playerLat === "number" ? parsed.playerLat : undefined,
@@ -139,6 +142,7 @@ export function createPoiAnchor(
       lng: place.lng,
       areaContext,
       placeName: place.name,
+      placeId: place.id,
       placeAnchored: true,
       playerLat: player.lat,
       playerLng: player.lng,
@@ -150,6 +154,7 @@ export function createPoiAnchor(
     lng: player.lng,
     areaContext,
     placeName: null,
+    placeId: null,
     placeAnchored: false,
     playerLat: player.lat,
     playerLng: player.lng,
@@ -171,6 +176,12 @@ export function contextUpgradeNeedsRefresh(
   }
 
   if (anchor.areaContext !== nextCategory) {
+    return true;
+  }
+
+  const nextId = nextPlace?.id ?? null;
+  const prevId = anchor.placeId ?? null;
+  if (nextId && nextId !== prevId) {
     return true;
   }
 

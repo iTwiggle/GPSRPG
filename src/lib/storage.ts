@@ -33,6 +33,7 @@ export function createInitialState(): GameState {
     schemaVersion: STORAGE_SCHEMA_VERSION,
     player: createDefaultPlayer(),
     visitedPOIIds: [],
+    discoveredPlaceIds: [],
     codex: createEmptyCodex(),
     activityLog: createEmptyActivityLog(),
     fieldTasks: generateFieldTasks(),
@@ -68,6 +69,11 @@ function normalizeGameState(parsed: StoredGameState): GameState {
       inventory: savedPlayer.inventory ?? [],
     },
     visitedPOIIds: parsed.visitedPOIIds ?? [],
+    discoveredPlaceIds: Array.isArray(parsed.discoveredPlaceIds)
+      ? parsed.discoveredPlaceIds.filter(
+          (id): id is string => typeof id === "string" && id.length > 0
+        )
+      : [],
     codex: normalizeCodex(parsed.codex),
     activityLog: parsed.activityLog ?? createEmptyActivityLog(),
     fieldTasks: normalizeFieldTasks(parsed.fieldTasks),

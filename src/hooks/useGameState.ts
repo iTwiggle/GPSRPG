@@ -29,6 +29,12 @@ import {
   saveGameState,
 } from "@/lib/storage";
 import type { EncounterResult, GameState, POI, Position } from "@/lib/types";
+import type { NamedOsmPlace } from "@/lib/osm-context";
+import {
+  applyFirstVisitPlaceBonus,
+  isPlaceDiscovered,
+  markPlaceDiscovered,
+} from "@/lib/place-discovery";
 import { rollEncounter } from "@/lib/encounter";
 import { canExplorePoi } from "@/lib/explore-validation";
 import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
@@ -53,7 +59,11 @@ export function useGameState() {
   }, []);
 
   const explorePoi = useCallback(
-    (poi: POI, playerPosition: Position, options?: { simulate?: boolean }) => {
+    (
+      poi: POI,
+      playerPosition: Position,
+      options?: { simulate?: boolean; place?: NamedOsmPlace | null }
+    ) => {
       if (!gameState) return null;
 
       const validation = canExplorePoi(
@@ -71,6 +81,14 @@ export function useGameState() {
         ...encounter,
         description: `The veil lifts on ${poi.name}. ${encounter.description}`,
       };
+
+      const place = options?.place ?? null;
+      const isFirstVisit =
+        place != null &&
+        !isPlaceDiscovered(place.id, gameState.discoveredPlaceIds);
+      if (isFirstVisit && place) {
+        encounter = applyFirstVisitPlaceBonus(encounter, poi, place);
+      }
 
       const perkResult = applyActivePerksToEncounter(
         encounter,
@@ -176,6 +194,10 @@ export function useGameState() {
         {
           ...gameState,
           player,
+          discoveredPlaceIds:
+            isFirstVisit && place
+              ? markPlaceDiscovered(gameState.discoveredPlaceIds, place.id)
+              : gameState.discoveredPlaceIds,
           codex: withCodex,
           baseCamp,
           activityLog,

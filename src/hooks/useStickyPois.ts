@@ -43,6 +43,11 @@ function fieldHasExploredSites(
   const pois = generateNearbyPOIs(anchor.lat, anchor.lng, {
     areaContext: anchor.areaContext,
     placeAnchored: Boolean(anchor.placeAnchored),
+    approachFrom:
+      typeof anchor.playerLat === "number" &&
+      typeof anchor.playerLng === "number"
+        ? { lat: anchor.playerLat, lng: anchor.playerLng }
+        : null,
   });
   return pois.some((poi) => visitedPoiIds.includes(poi.id));
 }
@@ -97,6 +102,7 @@ export function useStickyPois(
       nextAnchor.lng === anchor.lng &&
       nextAnchor.areaContext === anchor.areaContext &&
       nextAnchor.placeName === anchor.placeName &&
+      nextAnchor.placeId === anchor.placeId &&
       Boolean(nextAnchor.placeAnchored) === Boolean(anchor.placeAnchored)
     ) {
       return;
@@ -119,6 +125,7 @@ export function useStickyPois(
       nextAnchor.lng === anchor.lng &&
       nextAnchor.areaContext === anchor.areaContext &&
       nextAnchor.placeName === anchor.placeName &&
+      nextAnchor.placeId === anchor.placeId &&
       Boolean(nextAnchor.placeAnchored) === Boolean(anchor.placeAnchored)
     ) {
       return;
@@ -142,6 +149,14 @@ export function useStickyPois(
     return generateNearbyPOIs(resolvedAnchor.lat, resolvedAnchor.lng, {
       areaContext: resolvedAnchor.areaContext,
       placeAnchored: Boolean(resolvedAnchor.placeAnchored),
+      approachFrom:
+        typeof resolvedAnchor.playerLat === "number" &&
+        typeof resolvedAnchor.playerLng === "number"
+          ? {
+              lat: resolvedAnchor.playerLat,
+              lng: resolvedAnchor.playerLng,
+            }
+          : null,
     });
   }, [resolvedAnchor]);
 

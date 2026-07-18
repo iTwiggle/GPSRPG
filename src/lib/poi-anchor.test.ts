@@ -67,6 +67,7 @@ describe("stale anchor relocation", () => {
   it("anchors place fields to the landmark but refreshes from the player latch", () => {
     const player = { lat: 37.7749, lng: -122.4194 };
     const place = {
+      id: "way/ggp",
       name: "Golden Gate Park",
       category: "park_or_woods" as const,
       lat: 37.7694,
@@ -76,6 +77,7 @@ describe("stale anchor relocation", () => {
 
     expect(anchor.placeAnchored).toBe(true);
     expect(anchor.placeName).toBe("Golden Gate Park");
+    expect(anchor.placeId).toBe("way/ggp");
     expect(anchor.lat).toBeCloseTo(place.lat, 5);
     expect(getAnchorRefreshOrigin(anchor)).toEqual({
       lat: player.lat,
@@ -104,6 +106,7 @@ describe("contextUpgradeNeedsRefresh", () => {
     );
     expect(
       contextUpgradeNeedsRefresh(moodAnchor, "park_or_woods", {
+        id: "way/alamo",
         name: "Alamo Square",
         category: "park_or_woods",
         lat: 37.7763,
@@ -117,6 +120,7 @@ describe("contextUpgradeNeedsRefresh", () => {
       { lat: 37.7749, lng: -122.4194 },
       "park_or_woods",
       {
+        id: "way/alamo",
         name: "Alamo Square",
         category: "park_or_woods",
         lat: 37.7763,

@@ -20,6 +20,8 @@ export interface UseOsmContextResult {
   /** Named OSM landmark for the dominant category, when Overpass found one. */
   place: NamedOsmPlace | null;
   placeName: string | null;
+  /** Named landmarks in the resolved cell (for destination scouting). */
+  places: NamedOsmPlace[];
   cellKey: ReturnType<typeof getAreaCellKey> | null;
   /** True once Overpass resolved, failed, or a cache hit — safe to finalize the field. */
   isSettled: boolean;
@@ -39,12 +41,14 @@ export function useOsmContext(
   const [status, setStatus] = useState<OsmContextStatus>("idle");
   const [category, setCategory] = useState<OsmContextCategory>("generic");
   const [place, setPlace] = useState<NamedOsmPlace | null>(null);
+  const [places, setPlaces] = useState<NamedOsmPlace[]>([]);
 
   useEffect(() => {
     if (!cellKey || !cellKeyString) {
       setStatus("idle");
       setCategory("generic");
       setPlace(null);
+      setPlaces([]);
       return;
     }
 
@@ -52,6 +56,7 @@ export function useOsmContext(
     if (cached) {
       setCategory(cached.category);
       setPlace(cached.place ?? null);
+      setPlaces(cached.places ?? (cached.place ? [cached.place] : []));
       setStatus("ready");
       return;
     }
@@ -60,18 +65,21 @@ export function useOsmContext(
     setStatus("loading");
     setCategory("generic");
     setPlace(null);
+    setPlaces([]);
 
     resolveOsmContext(cellKey)
       .then((result) => {
         if (cancelled) return;
         setCategory(result.category);
         setPlace(result.place ?? null);
+        setPlaces(result.places ?? (result.place ? [result.place] : []));
         setStatus("ready");
       })
       .catch(() => {
         if (cancelled) return;
         setCategory("generic");
         setPlace(null);
+        setPlaces([]);
         setStatus("error");
       });
 
@@ -95,6 +103,7 @@ export function useOsmContext(
     areaFlavorLabel,
     place,
     placeName: place?.name ?? null,
+    places,
     cellKey,
     isSettled,
   };
