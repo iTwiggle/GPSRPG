@@ -59,6 +59,11 @@ function metersToLatLngOffset(
 export interface GenerateNearbyPOIsOptions {
   count?: number;
   areaContext?: OsmContextCategory;
+  /**
+   * When true, the whole field orbits the anchor (named place centroid)
+   * instead of mixing player-near first site + cell-center ring.
+   */
+  placeAnchored?: boolean;
 }
 
 /** Generate deterministic fantasy POIs near a GPS coordinate. */
@@ -67,23 +72,40 @@ export function generateNearbyPOIs(
   lng: number,
   options: GenerateNearbyPOIsOptions = {}
 ): POI[] {
-  const { count = POI_COUNT, areaContext = "generic" } = options;
+  const {
+    count = POI_COUNT,
+    areaContext = "generic",
+    placeAnchored = false,
+  } = options;
   const cell = getAreaCellKey(lat, lng);
   const { cellLat, cellLng } = cell;
-  const { lat: anchorLat, lng: anchorLng } = getAreaCellCenter(cell);
+  const { lat: cellCenterLat, lng: cellCenterLng } = getAreaCellCenter(cell);
   const categoryCode = getContextCategoryCode(areaContext);
-  const baseSeed = hashSeed(cellLat, cellLng);
+  const placeBias = placeAnchored ? 1 : 0;
+  const baseSeed = hashSeed(cellLat, cellLng, categoryCode, placeBias);
   const rand = seededRandom(baseSeed);
 
   const pois: POI[] = [];
 
   for (let i = 0; i < count; i += 1) {
     const typeRand = seededRandom(
-      hashSeed(cellLat, cellLng, i, categoryCode)
+      hashSeed(cellLat, cellLng, i, categoryCode, placeBias)
     );
     const type = pickPoiType(areaContext, typeRand);
-    const originLat = i === 0 ? lat : anchorLat;
-    const originLng = i === 0 ? lng : anchorLng;
+
+    // Place fields: every site orbits the named landmark.
+    // Player fields: first site near the player, rest around the cell center.
+    const originLat = placeAnchored
+      ? lat
+      : i === 0
+        ? lat
+        : cellCenterLat;
+    const originLng = placeAnchored
+      ? lng
+      : i === 0
+        ? lng
+        : cellCenterLng;
+
     const distance =
       i === 0
         ? GUARANTEED_FIRST_POI_MIN_METERS +
@@ -94,14 +116,16 @@ export function generateNearbyPOIs(
     const offset = metersToLatLngOffset(originLat, distance, bearing);
 
     const nameRand = seededRandom(
-      hashSeed(cellLat, cellLng, i, 1, categoryCode)
+      hashSeed(cellLat, cellLng, i, 1, categoryCode, placeBias)
     );
     const flavorRand = seededRandom(
-      hashSeed(cellLat, cellLng, i, 2, categoryCode)
+      hashSeed(cellLat, cellLng, i, 2, categoryCode, placeBias)
     );
 
     pois.push({
-      id: `poi-${cellLat.toFixed(6)}-${cellLng.toFixed(6)}-${i}`,
+      id: `poi-${cellLat.toFixed(6)}-${cellLng.toFixed(6)}-${i}${
+        placeAnchored ? "-p" : ""
+      }`,
       name: buildPoiName(type, nameRand, areaContext),
       type,
       flavor: pickPoiFlavor(type, flavorRand, areaContext),

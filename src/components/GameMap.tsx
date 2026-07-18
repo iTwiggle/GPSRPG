@@ -6,7 +6,11 @@ import FantasyGridOverlay from "@/components/FantasyGridOverlay";
 import { getApproachReadout } from "@/lib/approach";
 import { formatDistance } from "@/lib/distance";
 import { mapCategoryToBiome } from "@/lib/fantasy-grid-surface";
-import { getPoiTypeLabel } from "@/lib/poi-flavor";
+import {
+  getPoiDisplayName,
+  getPoiDisplayTypeLabel,
+  isPoiRevealed,
+} from "@/lib/poi-reveal";
 import { createPoiMarkerIcon, playerMarkerIcon } from "@/lib/poi-marker-icons";
 import type { OsmContextCategory } from "@/lib/osm-context";
 import type { POI } from "@/lib/types";
@@ -35,6 +39,7 @@ interface GameMapProps {
   selectedPoiId: string | null;
   visitedPoiIds: string[];
   areaContext: OsmContextCategory;
+  placeName?: string | null;
   fantasyGridEnabled: boolean;
   streetReferenceMode: boolean;
   onSelectPoi: (poi: POI) => void;
@@ -47,6 +52,7 @@ export default function GameMap({
   selectedPoiId,
   visitedPoiIds,
   areaContext,
+  placeName = null,
   fantasyGridEnabled,
   streetReferenceMode,
   onSelectPoi,
@@ -105,6 +111,7 @@ export default function GameMap({
 
       {pois.map((poi) => {
         const visited = visitedPoiIds.includes(poi.id);
+        const revealed = isPoiRevealed(poi.id, visitedPoiIds);
         const readout = getApproachReadout(
           { lat: playerLat, lng: playerLng },
           poi,
@@ -112,6 +119,8 @@ export default function GameMap({
         );
         const isSelected = poi.id === selectedPoiId;
         const inRange = readout.status === "in_range";
+        const displayName = getPoiDisplayName(poi, revealed, areaContext);
+        const displayType = getPoiDisplayTypeLabel(poi, revealed);
 
         return (
           <Marker
@@ -120,6 +129,7 @@ export default function GameMap({
             icon={createPoiMarkerIcon(poi.type, {
               selected: isSelected,
               visited,
+              veiled: !revealed,
               inRange: isSelected && inRange,
             })}
             eventHandlers={{
@@ -128,13 +138,19 @@ export default function GameMap({
           >
             <Popup>
               <div className="text-sm">
-                <p className="font-semibold text-slate-100">{poi.name}</p>
-                <p className="text-violet-300">{getPoiTypeLabel(poi.type)}</p>
+                <p className="font-semibold text-slate-100">{displayName}</p>
+                <p className="text-violet-300">{displayType}</p>
+                {placeName && !revealed && (
+                  <p className="text-xs text-slate-400">Near {placeName}</p>
+                )}
                 <p className="text-slate-400">
                   {formatDistance(readout.distanceMeters)} away
                 </p>
                 {visited && (
                   <p className="text-emerald-400">Already explored</p>
+                )}
+                {!revealed && (
+                  <p className="text-violet-300/80">Explore to reveal</p>
                 )}
               </div>
             </Popup>

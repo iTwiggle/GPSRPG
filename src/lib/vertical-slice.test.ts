@@ -106,6 +106,25 @@ describe("generateNearbyPOIs", () => {
     }
   });
 
+  it("orbits place-anchored fields around the landmark centroid", () => {
+    const place = { lat: 37.7694, lng: -122.4862 };
+    const pois = generateNearbyPOIs(place.lat, place.lng, {
+      areaContext: "park_or_woods",
+      placeAnchored: true,
+    });
+
+    expect(pois[0].id.endsWith("-p")).toBe(true);
+    const firstDistance = distanceMeters(place, pois[0]);
+    expect(firstDistance).toBeGreaterThanOrEqual(GUARANTEED_FIRST_POI_MIN_METERS);
+    expect(firstDistance).toBeLessThanOrEqual(GUARANTEED_FIRST_POI_MAX_METERS);
+
+    for (const poi of pois.slice(1)) {
+      const distance = distanceMeters(place, poi);
+      expect(distance).toBeGreaterThanOrEqual(120);
+      expect(distance).toBeLessThanOrEqual(450);
+    }
+  });
+
   it("returns deterministic POIs for the same anchor", () => {
     const first = generateNearbyPOIs(51.5, -0.12);
     const second = generateNearbyPOIs(51.5, -0.12);

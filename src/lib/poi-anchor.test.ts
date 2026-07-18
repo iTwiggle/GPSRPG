@@ -3,7 +3,9 @@ import { offsetPosition } from "./distance";
 import {
   POI_ANCHOR_REGENERATE_METERS,
   POI_ANCHOR_STALE_RELOCATION_METERS,
+  contextUpgradeNeedsRefresh,
   createPoiAnchor,
+  getAnchorRefreshOrigin,
   shouldRegeneratePoiAnchor,
   shouldReplaceStaleAnchorOnStartup,
   writePoiAnchor,
@@ -60,6 +62,70 @@ describe("stale anchor relocation", () => {
     const walked = offsetPosition(storedAnchor, 0, 240);
     expect(shouldReplaceStaleAnchorOnStartup(walked, storedAnchor)).toBe(true);
     expect(shouldRegeneratePoiAnchor(walked, storedAnchor)).toBe(false);
+  });
+
+  it("anchors place fields to the landmark but refreshes from the player latch", () => {
+    const player = { lat: 37.7749, lng: -122.4194 };
+    const place = {
+      name: "Golden Gate Park",
+      category: "park_or_woods" as const,
+      lat: 37.7694,
+      lng: -122.4862,
+    };
+    const anchor = createPoiAnchor(player, "park_or_woods", place);
+
+    expect(anchor.placeAnchored).toBe(true);
+    expect(anchor.placeName).toBe("Golden Gate Park");
+    expect(anchor.lat).toBeCloseTo(place.lat, 5);
+    expect(getAnchorRefreshOrigin(anchor)).toEqual({
+      lat: player.lat,
+      lng: player.lng,
+    });
+    expect(shouldRegeneratePoiAnchor(player, anchor)).toBe(false);
+  });
+});
+
+describe("contextUpgradeNeedsRefresh", () => {
+  const genericAnchor = createPoiAnchor(
+    { lat: 37.7749, lng: -122.4194 },
+    "generic"
+  );
+
+  it("refreshes when mood upgrades from generic", () => {
+    expect(
+      contextUpgradeNeedsRefresh(genericAnchor, "park_or_woods", null)
+    ).toBe(true);
+  });
+
+  it("refreshes when a named place appears for the current mood", () => {
+    const moodAnchor = createPoiAnchor(
+      { lat: 37.7749, lng: -122.4194 },
+      "park_or_woods"
+    );
+    expect(
+      contextUpgradeNeedsRefresh(moodAnchor, "park_or_woods", {
+        name: "Alamo Square",
+        category: "park_or_woods",
+        lat: 37.7763,
+        lng: -122.4328,
+      })
+    ).toBe(true);
+  });
+
+  it("does not downgrade a rich field when Overpass fails to generic", () => {
+    const placeAnchor = createPoiAnchor(
+      { lat: 37.7749, lng: -122.4194 },
+      "park_or_woods",
+      {
+        name: "Alamo Square",
+        category: "park_or_woods",
+        lat: 37.7763,
+        lng: -122.4328,
+      }
+    );
+    expect(contextUpgradeNeedsRefresh(placeAnchor, "generic", null)).toBe(
+      false
+    );
   });
 });
 

@@ -1,5 +1,5 @@
 import { distanceMeters } from "./distance";
-import type { OsmContextCategory } from "./osm-context";
+import type { NamedOsmPlace, OsmContextCategory } from "./osm-context";
 import { POI_CELL_SIZE_METERS } from "./poi-generator";
 import type { Position } from "./types";
 
@@ -22,9 +22,17 @@ export const POI_ANCHOR_STALE_RELOCATION_METERS = Math.round(
 );
 
 export interface PoiAnchorState {
+  /** Field origin — named place centroid when placeAnchored, else player. */
   lat: number;
   lng: number;
   areaContext: OsmContextCategory;
+  /** Real OSM place name when the field is keyed to a landmark. */
+  placeName?: string | null;
+  /** True when lat/lng is a named place centroid (not the player spawn point). */
+  placeAnchored?: boolean;
+  /** Player position when the field was locked — walk-refresh distance uses this. */
+  playerLat?: number;
+  playerLng?: number;
 }
 
 function parsePoiAnchor(raw: string): PoiAnchorState | null {
@@ -41,10 +49,28 @@ function parsePoiAnchor(raw: string): PoiAnchorState | null {
       lat: parsed.lat,
       lng: parsed.lng,
       areaContext: parsed.areaContext as OsmContextCategory,
+      placeName:
+        typeof parsed.placeName === "string" ? parsed.placeName : null,
+      placeAnchored: Boolean(parsed.placeAnchored),
+      playerLat:
+        typeof parsed.playerLat === "number" ? parsed.playerLat : undefined,
+      playerLng:
+        typeof parsed.playerLng === "number" ? parsed.playerLng : undefined,
     };
   } catch {
     return null;
   }
+}
+
+/** Origin used for walk-distance refresh (player latch, not place centroid). */
+export function getAnchorRefreshOrigin(anchor: PoiAnchorState): Position {
+  if (
+    typeof anchor.playerLat === "number" &&
+    typeof anchor.playerLng === "number"
+  ) {
+    return { lat: anchor.playerLat, lng: anchor.playerLng };
+  }
+  return { lat: anchor.lat, lng: anchor.lng };
 }
 
 export function readPoiAnchor(): PoiAnchorState | null {
@@ -86,7 +112,8 @@ export function shouldRegeneratePoiAnchor(
 ): boolean {
   if (!anchor) return true;
   return (
-    distanceMeters(player, anchor) >= POI_ANCHOR_REGENERATE_METERS
+    distanceMeters(player, getAnchorRefreshOrigin(anchor)) >=
+    POI_ANCHOR_REGENERATE_METERS
   );
 }
 
@@ -96,25 +123,75 @@ export function shouldReplaceStaleAnchorOnStartup(
   anchor: PoiAnchorState
 ): boolean {
   return (
-    distanceMeters(player, anchor) >= POI_ANCHOR_STALE_RELOCATION_METERS
+    distanceMeters(player, getAnchorRefreshOrigin(anchor)) >=
+    POI_ANCHOR_STALE_RELOCATION_METERS
   );
 }
 
 export function createPoiAnchor(
   player: Position,
-  areaContext: OsmContextCategory
+  areaContext: OsmContextCategory,
+  place?: NamedOsmPlace | null
 ): PoiAnchorState {
+  if (place) {
+    return {
+      lat: place.lat,
+      lng: place.lng,
+      areaContext,
+      placeName: place.name,
+      placeAnchored: true,
+      playerLat: player.lat,
+      playerLng: player.lng,
+    };
+  }
+
   return {
     lat: player.lat,
     lng: player.lng,
     areaContext,
+    placeName: null,
+    placeAnchored: false,
+    playerLat: player.lat,
+    playerLng: player.lng,
   };
+}
+
+/**
+ * When Overpass upgrades mood/place and the player has not explored this field,
+ * regenerate so the aura chip and sites stay in sync.
+ */
+export function contextUpgradeNeedsRefresh(
+  anchor: PoiAnchorState,
+  nextCategory: OsmContextCategory,
+  nextPlace: NamedOsmPlace | null
+): boolean {
+  // Keep a richer field if Overpass later fails soft into generic.
+  if (anchor.areaContext !== "generic" && nextCategory === "generic") {
+    return false;
+  }
+
+  if (anchor.areaContext !== nextCategory) {
+    return true;
+  }
+
+  const nextName = nextPlace?.name ?? null;
+  const prevName = anchor.placeName ?? null;
+  if (nextName && nextName !== prevName) {
+    return true;
+  }
+
+  // Named place centroid became available for an unanchored generic/mood field.
+  if (nextPlace && !anchor.placeAnchored) {
+    return true;
+  }
+
+  return false;
 }
 
 export function metersUntilPoiRefresh(
   player: Position,
   anchor: PoiAnchorState
 ): number {
-  const traveled = distanceMeters(player, anchor);
+  const traveled = distanceMeters(player, getAnchorRefreshOrigin(anchor));
   return Math.max(0, POI_ANCHOR_REGENERATE_METERS - traveled);
 }

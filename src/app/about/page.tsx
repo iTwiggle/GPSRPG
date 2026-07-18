@@ -37,9 +37,10 @@ export default function AboutPage() {
             extraction RPG, a production mobile app, or a full standalone game.
           </p>
           <p>
-            The core loop: your GPS position → procedural nearby fantasy sites
-            → explore when in range → encounter rewards → XP and loot stored
-            locally on this device.
+            The core loop: your GPS position → a nearby real place (when mapped)
+            hides a fantasy field → approach veiled sites → Explore to reveal
+            them → encounter rewards → XP and loot stored locally on this
+            device.
           </p>
         </section>
 
@@ -99,11 +100,10 @@ export default function AboutPage() {
 
         <section className="rpg-panel space-y-3 p-5 text-sm leading-relaxed text-slate-300">
           <h2 className="text-base font-semibold text-slate-100">
-            OpenStreetMap context (experimental)
+            OpenStreetMap places (experimental)
           </h2>
           <p>
-            To lightly theme nearby procedural sites, the app may query the
-            public{" "}
+            To key fantasy fields to real places, the app may query the public{" "}
             <a
               href="https://wiki.openstreetmap.org/wiki/Overpass_API"
               className="text-violet-300 underline decoration-violet-500/40 underline-offset-2 hover:text-violet-200"
@@ -117,16 +117,18 @@ export default function AboutPage() {
           </p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
-              Only a coarse area mood (e.g. Grove, Water, Cemetery) is cached
-              locally — not raw map features or a location history.
+              Area mood (e.g. Grove, Water, Cemetery) and, when available, a
+              named landmark (park, cemetery, chapel, etc.) plus a coarse
+              centroid are cached locally — not a GPS trail or full map dump.
             </li>
             <li>
-              POI names and encounters remain procedural fantasy; they are not
-              tied to specific real-world landmarks.
+              When a named place is found, the nearby fantasy field is anchored
+              to that place. Site names and encounter text stay procedural
+              fantasy until you Explore; unexplored sites stay veiled.
             </li>
             <li>
-              If Overpass is unavailable, the app falls back to generic flavor
-              with no loss of gameplay.
+              If Overpass is unavailable, the app falls back to a generic field
+              around your position with no loss of gameplay.
             </li>
           </ul>
         </section>

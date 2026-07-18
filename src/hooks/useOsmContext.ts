@@ -5,8 +5,9 @@ import {
   cellKeyToString,
   getAreaCellKey,
   getAreaFlavorLabel,
-  getCachedOsmCategory,
+  getCachedOsmResult,
   resolveOsmContext,
+  type NamedOsmPlace,
   type OsmContextCategory,
 } from "@/lib/osm-context";
 
@@ -16,7 +17,12 @@ export interface UseOsmContextResult {
   category: OsmContextCategory;
   status: OsmContextStatus;
   areaFlavorLabel: string | null;
+  /** Named OSM landmark for the dominant category, when Overpass found one. */
+  place: NamedOsmPlace | null;
+  placeName: string | null;
   cellKey: ReturnType<typeof getAreaCellKey> | null;
+  /** True once Overpass resolved, failed, or a cache hit — safe to finalize the field. */
+  isSettled: boolean;
 }
 
 export function useOsmContext(
@@ -32,17 +38,20 @@ export function useOsmContext(
 
   const [status, setStatus] = useState<OsmContextStatus>("idle");
   const [category, setCategory] = useState<OsmContextCategory>("generic");
+  const [place, setPlace] = useState<NamedOsmPlace | null>(null);
 
   useEffect(() => {
     if (!cellKey || !cellKeyString) {
       setStatus("idle");
       setCategory("generic");
+      setPlace(null);
       return;
     }
 
-    const cachedCategory = getCachedOsmCategory(cellKey);
-    if (cachedCategory) {
-      setCategory(cachedCategory);
+    const cached = getCachedOsmResult(cellKey);
+    if (cached) {
+      setCategory(cached.category);
+      setPlace(cached.place ?? null);
       setStatus("ready");
       return;
     }
@@ -50,16 +59,19 @@ export function useOsmContext(
     let cancelled = false;
     setStatus("loading");
     setCategory("generic");
+    setPlace(null);
 
     resolveOsmContext(cellKey)
       .then((result) => {
         if (cancelled) return;
         setCategory(result.category);
+        setPlace(result.place ?? null);
         setStatus("ready");
       })
       .catch(() => {
         if (cancelled) return;
         setCategory("generic");
+        setPlace(null);
         setStatus("error");
       });
 
@@ -75,10 +87,15 @@ export function useOsmContext(
     return getAreaFlavorLabel(category);
   }, [category, status]);
 
+  const isSettled = status === "ready" || status === "error";
+
   return {
     category,
     status,
     areaFlavorLabel,
+    place,
+    placeName: place?.name ?? null,
     cellKey,
+    isSettled,
   };
 }

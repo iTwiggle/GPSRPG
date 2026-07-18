@@ -5,6 +5,8 @@ interface PoiMarkerOptions {
   selected?: boolean;
   visited?: boolean;
   inRange?: boolean;
+  /** Unexplored sites render as fogged silhouettes. */
+  veiled?: boolean;
 }
 
 const MARKER_SIZE = 28;
@@ -14,13 +16,19 @@ export function createPoiMarkerIcon(
   type: POIType,
   options: PoiMarkerOptions = {}
 ): L.DivIcon {
-  const { selected = false, visited = false, inRange = false } = options;
+  const {
+    selected = false,
+    visited = false,
+    inRange = false,
+    veiled = false,
+  } = options;
   const classes = [
     "poi-marker",
     `poi-marker--${type}`,
     selected ? "poi-marker--selected" : "",
     selected && inRange ? "poi-marker--in-range" : "",
     visited ? "poi-marker--visited" : "",
+    veiled && !visited ? "poi-marker--veiled" : "",
   ]
     .filter(Boolean)
     .join(" ");

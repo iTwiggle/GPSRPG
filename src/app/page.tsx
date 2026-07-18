@@ -54,8 +54,10 @@ export default function HomePage() {
   const playerPosition = geo.position;
   const osmContext = useOsmContext(playerPosition?.lat, playerPosition?.lng);
 
-  const areaContext =
-    osmContext.status === "ready" ? osmContext.category : "generic";
+  const areaContext = osmContext.isSettled
+    ? osmContext.category
+    : "generic";
+  const placeName = osmContext.placeName;
   const devToolsEnabled = DEV_TOOLS_ENABLED;
 
   useEffect(() => {
@@ -95,10 +97,18 @@ export default function HomePage() {
     sessionStorage.setItem(STREET_REF_SESSION_KEY, enabled ? "1" : "0");
   }, []);
 
-  const { pois, metersUntilRefresh } = useStickyPois(
-    playerPosition,
-    areaContext
-  );
+  const { pois, metersUntilRefresh, awaitingPlaceContext, anchor } =
+    useStickyPois(
+      playerPosition,
+      {
+        category: areaContext,
+        place: osmContext.place,
+        isSettled: osmContext.isSettled,
+      },
+      gameState?.visitedPOIIds ?? []
+    );
+
+  const fieldPlaceName = anchor?.placeName ?? placeName;
 
   useEffect(() => {
     if (!selectedPoi) return;
@@ -231,9 +241,16 @@ export default function HomePage() {
             Overworld companion — explore nearby fantasy sites from your
             real-world position, roll encounters, and track loot locally.
           </p>
+          {playerPosition && awaitingPlaceContext && (
+            <p className="text-xs text-violet-300/80" role="status">
+              Scanning nearby places…
+            </p>
+          )}
           {playerPosition && metersUntilRefresh !== null && (
             <p className="text-xs text-slate-500" role="status">
-              Sites locked to field anchor · refresh in{" "}
+              {fieldPlaceName
+                ? `Field of ${fieldPlaceName} · refresh in `
+                : "Sites locked to field anchor · refresh in "}
               {formatDistance(metersUntilRefresh)} (or after{" "}
               {POI_ANCHOR_REGENERATE_METERS} m walked)
             </p>
@@ -312,7 +329,9 @@ export default function HomePage() {
               <span className="rpg-scanner-corner rpg-scanner-corner--bl" />
               <span className="rpg-scanner-corner rpg-scanner-corner--br" />
             </div>
-            {osmContext.areaFlavorLabel && (
+            {(osmContext.areaFlavorLabel ||
+              osmContext.status === "loading" ||
+              fieldPlaceName) && (
               <div
                 className="pointer-events-none absolute left-3 top-3 z-[500]"
                 role="status"
@@ -320,10 +339,18 @@ export default function HomePage() {
               >
                 <div className="rpg-aura-readout">
                   <span className="rpg-aura-readout__label">Scanner readout</span>
-                  <span className="rpg-chip rpg-aura-chip">
-                    <span className="rpg-chip-dot" aria-hidden="true" />
-                    Local Aura · {osmContext.areaFlavorLabel}
-                  </span>
+                  {osmContext.status === "loading" && !osmContext.areaFlavorLabel ? (
+                    <span className="rpg-chip rpg-aura-chip">
+                      <span className="rpg-chip-dot" aria-hidden="true" />
+                      Scanning places…
+                    </span>
+                  ) : (
+                    <span className="rpg-chip rpg-aura-chip">
+                      <span className="rpg-chip-dot" aria-hidden="true" />
+                      Local Aura · {osmContext.areaFlavorLabel ?? "Unknown"}
+                      {fieldPlaceName ? ` · ${fieldPlaceName}` : ""}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -333,7 +360,8 @@ export default function HomePage() {
               pois={pois}
               selectedPoiId={selectedPoi?.id ?? null}
               visitedPoiIds={gameState.visitedPOIIds}
-              areaContext={areaContext}
+              areaContext={anchor?.areaContext ?? areaContext}
+              placeName={fieldPlaceName}
               fantasyGridEnabled={fantasyGridEnabled}
               streetReferenceMode={streetReferenceMode}
               onSelectPoi={setSelectedPoi}
@@ -364,6 +392,8 @@ export default function HomePage() {
                   pois={pois}
                   playerPosition={playerPosition}
                   visited={selectedPoi ? isVisited(selectedPoi.id) : false}
+                  areaContext={anchor?.areaContext ?? areaContext}
+                  placeName={fieldPlaceName}
                   onExplore={handleExplore}
                   onSelectPoi={setSelectedPoi}
                   onSimulateVisit={
@@ -426,6 +456,8 @@ export default function HomePage() {
                 pois={pois}
                 playerPosition={playerPosition}
                 visited={selectedPoi ? isVisited(selectedPoi.id) : false}
+                areaContext={anchor?.areaContext ?? areaContext}
+                placeName={fieldPlaceName}
                 onExplore={handleExplore}
                 onSelectPoi={setSelectedPoi}
                 onSimulateVisit={

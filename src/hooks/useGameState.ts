@@ -66,6 +66,11 @@ export function useGameState() {
 
       const rollSeed = options?.simulate ? Date.now() : undefined;
       let encounter = rollEncounter(poi, rollSeed);
+      // Explore is the reveal ceremony — name the site as the veil lifts.
+      encounter = {
+        ...encounter,
+        description: `The veil lifts on ${poi.name}. ${encounter.description}`,
+      };
 
       const perkResult = applyActivePerksToEncounter(
         encounter,

@@ -423,6 +423,21 @@ body {
   filter: grayscale(0.35) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
 }
 
+/* Unexplored sites: silhouette only — name/flavor unlock on Explore. */
+.poi-marker--veiled .poi-marker-glyph {
+  opacity: 0.55;
+  filter: brightness(0.55) saturate(0.35) blur(0.35px)
+    drop-shadow(0 0 8px rgba(167, 139, 250, 0.35))
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.poi-marker--veiled.poi-marker--selected .poi-marker-glyph {
+  opacity: 0.85;
+  filter: brightness(0.7) saturate(0.5)
+    drop-shadow(0 0 10px rgba(251, 191, 36, 0.45))
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
 .poi-marker--visited:not(.poi-marker--quarry) .poi-marker-glyph::after {
   content: "";
   position: absolute;
