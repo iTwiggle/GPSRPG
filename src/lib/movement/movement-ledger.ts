@@ -4,10 +4,20 @@ import type { MovementLedger, Position } from "@/lib/types";
 
 export const METERS_PER_LEAGUE = 1000;
 export const MOTION_SPEED_THRESHOLD_MPS = 0.5;
-export const MAX_SAMPLE_GAP_MS = 60_000;
+export const MAX_WALKING_SPEED_MPS = 4.5;
+export const MAX_SAMPLE_GAP_MS = 120_000;
+export const MAX_SAMPLE_ACCURACY_METERS = 35;
+export const MIN_MOVEMENT_SEGMENT_METERS = 12;
+export const MAX_MOVEMENT_SEGMENT_METERS = 120;
 
-export function createEmptyMovementLedger(): MovementLedger {
-  const today = getLocalDateString();
+export interface MovementSampleOptions {
+  accuracyMeters: number;
+  source: "live" | "demo";
+}
+
+export function createEmptyMovementLedger(
+  today: string = getLocalDateString()
+): MovementLedger {
   return {
     totalMeters: 0,
     todayMeters: 0,
@@ -20,12 +30,12 @@ export function createEmptyMovementLedger(): MovementLedger {
 }
 
 export function normalizeMovementLedger(
-  ledger: Partial<MovementLedger> | undefined
+  ledger: Partial<MovementLedger> | undefined,
+  today: string = getLocalDateString()
 ): MovementLedger {
-  const empty = createEmptyMovementLedger();
+  const empty = createEmptyMovementLedger(today);
   if (!ledger) return empty;
 
-  const today = getLocalDateString();
   const todayDate = ledger.todayDate ?? today;
   const isToday = todayDate === today;
 
@@ -37,8 +47,9 @@ export function normalizeMovementLedger(
     todayMinutesInMotion: isToday ? (ledger.todayMinutesInMotion ?? 0) : 0,
     outingsCompleted: ledger.outingsCompleted ?? 0,
     lastOutdoorSessionAt: ledger.lastOutdoorSessionAt ?? null,
-    lastPosition: ledger.lastPosition,
-    lastSampleAt: ledger.lastSampleAt,
+    lastPosition: isToday ? ledger.lastPosition : undefined,
+    lastSampleAt: isToday ? ledger.lastSampleAt : undefined,
+    lastAccuracyMeters: isToday ? ledger.lastAccuracyMeters : undefined,
   };
 }
 
@@ -49,8 +60,12 @@ export function normalizeMovementLedger(
 export function stripTransientMovementSample(
   ledger: MovementLedger
 ): MovementLedger {
-  const { lastPosition: _lastPosition, lastSampleAt: _lastSampleAt, ...rest } =
-    ledger;
+  const {
+    lastPosition: _lastPosition,
+    lastSampleAt: _lastSampleAt,
+    lastAccuracyMeters: _lastAccuracyMeters,
+    ...rest
+  } = ledger;
   return rest;
 }
 
@@ -61,18 +76,19 @@ export function metersToLeagues(meters: number): number {
 export function sampleMovementLedger(
   ledger: MovementLedger,
   position: Position,
-  sampledAt: string = new Date().toISOString()
+  sampledAt: string = new Date().toISOString(),
+  options: MovementSampleOptions
 ): MovementLedger {
   const today = getLocalDateString(new Date(sampledAt));
-  let next = normalizeMovementLedger(ledger);
+  const next = normalizeMovementLedger(ledger, today);
 
-  if (next.todayDate !== today) {
-    next = {
-      ...next,
-      todayDate: today,
-      todayMeters: 0,
-      todayMinutesInMotion: 0,
-    };
+  if (
+    options.source !== "live" ||
+    !Number.isFinite(options.accuracyMeters) ||
+    options.accuracyMeters <= 0 ||
+    options.accuracyMeters > MAX_SAMPLE_ACCURACY_METERS
+  ) {
+    return next;
   }
 
   if (!next.lastPosition || !next.lastSampleAt) {
@@ -80,6 +96,7 @@ export function sampleMovementLedger(
       ...next,
       lastPosition: position,
       lastSampleAt: sampledAt,
+      lastAccuracyMeters: options.accuracyMeters,
       lastOutdoorSessionAt: sampledAt,
     };
   }
@@ -93,17 +110,39 @@ export function sampleMovementLedger(
       ...next,
       lastPosition: position,
       lastSampleAt: sampledAt,
+      lastAccuracyMeters: options.accuracyMeters,
       lastOutdoorSessionAt: sampledAt,
     };
   }
 
   const deltaMeters = distanceMeters(next.lastPosition, position);
-  const speedMps = deltaMeters / (gapMs / 1000);
-  if (speedMps < MOTION_SPEED_THRESHOLD_MPS) {
+  const minimumDisplacement = Math.max(
+    MIN_MOVEMENT_SEGMENT_METERS,
+    ((next.lastAccuracyMeters ?? options.accuracyMeters) +
+      options.accuracyMeters) *
+      0.75
+  );
+  if (deltaMeters < minimumDisplacement) return next;
+  if (deltaMeters > MAX_MOVEMENT_SEGMENT_METERS) {
     return {
       ...next,
       lastPosition: position,
       lastSampleAt: sampledAt,
+      lastAccuracyMeters: options.accuracyMeters,
+      lastOutdoorSessionAt: sampledAt,
+    };
+  }
+
+  const speedMps = deltaMeters / (gapMs / 1000);
+  if (
+    speedMps < MOTION_SPEED_THRESHOLD_MPS ||
+    speedMps > MAX_WALKING_SPEED_MPS
+  ) {
+    return {
+      ...next,
+      lastPosition: position,
+      lastSampleAt: sampledAt,
+      lastAccuracyMeters: options.accuracyMeters,
     };
   }
 
@@ -118,6 +157,7 @@ export function sampleMovementLedger(
     lastOutdoorSessionAt: sampledAt,
     lastPosition: position,
     lastSampleAt: sampledAt,
+    lastAccuracyMeters: options.accuracyMeters,
   };
 }
 
