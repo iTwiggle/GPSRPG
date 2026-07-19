@@ -9,6 +9,7 @@ import CharacterHUD from "@/components/CharacterHUD";
 import TravelerSynopsisCard from "@/components/TravelerSynopsisCard";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
+import DemoMovementCompass from "@/components/DemoMovementCompass";
 import EncounterModal from "@/components/EncounterModal";
 import ExpeditionPanel from "@/components/ExpeditionPanel";
 import InventoryPanel from "@/components/InventoryPanel";
@@ -431,6 +432,12 @@ export default function HomePage() {
           liveRevealRadiusMeters={liveRevealRadiusMeters}
           onInteractPoi={handleMapPoiInteract}
         />
+        {geo.isDemo && !activePanel && !synopsisOpen && (
+          <DemoMovementCompass
+            onNudge={geo.nudgePosition}
+            onResetPosition={geo.enableDemoMode}
+          />
+        )}
       </div>
 
       <div className="rpg-viewfinder__hud-row">
