@@ -189,8 +189,14 @@ export interface MovementLedger {
   todayMinutesInMotion: number;
   outingsCompleted: number;
   lastOutdoorSessionAt: string | null;
+  /** Aggregate-only rolling effort window; contains no coordinates. */
+  trailSurgeWindowStartedAt: string | null;
+  trailSurgeWindowMeters: number;
+  trailSurgeUnlockedToday: boolean;
   lastPosition?: Position;
   lastSampleAt?: string;
+  /** Transient only; stripped before persistence with the precise anchor. */
+  lastAccuracyMeters?: number;
 }
 
 /** Cross-session companion metadata (sync, daily gates, UE5 handoff). */

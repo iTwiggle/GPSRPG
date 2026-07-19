@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   appendExploreEvents,
   appendSetCompleteEvents,
@@ -30,6 +30,10 @@ import {
   updateMovementLedger,
 } from "@/lib/storage";
 import { sampleMovementLedger, recordOutingCompleted } from "@/lib/movement/movement-ledger";
+import {
+  applyTrailSurgeXp,
+  getTrailMomentumStatus,
+} from "@/lib/movement/trail-momentum";
 import { getPoiVisitUiStatus } from "@/lib/temporal/poi-cooldowns";
 import type {
   EncounterResult,
@@ -63,6 +67,7 @@ function bestRarity(loot: Item[]): ItemRarity {
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const gameStateRef = useRef<GameState | null>(null);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [lastEncounter, setLastEncounter] = useState<EncounterResult | null>(
     null
@@ -70,11 +75,13 @@ export function useGameState() {
 
   useEffect(() => {
     const result = loadGameState();
+    gameStateRef.current = result.state;
     setGameState(result.state);
     setSaveWarning(result.warning);
   }, []);
 
   const persist = useCallback((next: GameState) => {
+    gameStateRef.current = next;
     setGameState(next);
     const result = saveGameState(next);
     setSaveWarning(result.warning);
@@ -84,14 +91,21 @@ export function useGameState() {
     (
       poi: POI,
       playerPosition: Position,
-      options?: { simulate?: boolean; areaContext?: OsmContextCategory }
+      options?: {
+        simulate?: boolean;
+        areaContext?: OsmContextCategory;
+        trailSurgePreview?: boolean;
+      }
     ) => {
-      if (!gameState) return null;
+      // Read the synchronously updated ref so two taps arriving before React's
+      // next render cannot both resolve against the same pre-visit snapshot.
+      const current = gameStateRef.current;
+      if (!current) return null;
 
       const validation = canExplorePoi(
         playerPosition,
         poi,
-        gameState.visitedPois,
+        current.visitedPois,
         options
       );
       if (!validation.ok) return null;
@@ -106,24 +120,30 @@ export function useGameState() {
       const perkResult = applyActivePerksToEncounter(
         encounter,
         poi,
-        gameState.baseCamp,
+        current.baseCamp,
         rollSeed ?? poi.id
       );
       encounter = perkResult.encounter;
       const baseCamp = perkResult.baseCamp;
+      const trailSurgeResult = applyTrailSurgeXp(
+        encounter,
+        current.movementLedger,
+        options?.trailSurgePreview
+      );
+      encounter = trailSurgeResult.encounter;
 
       const newCodexItemKeys = encounter.loot
-        .filter((item) => !gameState.codex.items[codexItemKey(item)])
+        .filter((item) => !current.codex.items[codexItemKey(item)])
         .map((item) => codexItemKey(item));
 
-      const prevLevel = gameState.player.level;
+      const prevLevel = current.player.level;
       const playerAfterEncounter = applyXp(
-        gameState.player,
+        current.player,
         encounter.xpGained
       );
       let player = addLootToPlayer(playerAfterEncounter, encounter.loot);
 
-      let withCodex = recordExplore(gameState.codex, poi, encounter);
+      let withCodex = recordExplore(current.codex, poi, encounter);
       const newSetIds = getNewlyCompletedSetIds(
         withCodex,
         withCodex.completedSetIds
@@ -143,14 +163,21 @@ export function useGameState() {
         completedSetIds: newSetIds,
         setBonusXp: setBonusXp > 0 ? setBonusXp : undefined,
         perkBonusXp:
-          perkResult.perkBonusXp > 0 ? perkResult.perkBonusXp : undefined,
+          perkResult.perkBonusXp + trailSurgeResult.bonusXp > 0
+            ? perkResult.perkBonusXp + trailSurgeResult.bonusXp
+            : undefined,
         perkMessages:
-          perkResult.perkMessages.length > 0
-            ? perkResult.perkMessages
+          perkResult.perkMessages.length > 0 || trailSurgeResult.message
+            ? [
+                ...perkResult.perkMessages,
+                ...(trailSurgeResult.message
+                  ? [trailSurgeResult.message]
+                  : []),
+              ]
             : undefined,
       };
 
-      let activityLog = appendExploreEvents(gameState.activityLog, {
+      let activityLog = appendExploreEvents(current.activityLog, {
         poi,
         encounter: encounterWithDiscoveries,
         prevLevel,
@@ -176,7 +203,7 @@ export function useGameState() {
       }
 
       const { tasks: withTasks, completions } = applyExploreToTasks(
-        gameState.fieldTasks,
+        current.fieldTasks,
         { poi, encounter: encounterWithDiscoveries }
       );
 
@@ -196,7 +223,7 @@ export function useGameState() {
         );
       }
 
-      const withFieldReport = updateFieldReportOnExplore(gameState.fieldReport, {
+      const withFieldReport = updateFieldReportOnExplore(current.fieldReport, {
         poi,
         encounter: encounterWithDiscoveries,
         taskRewardXp,
@@ -205,7 +232,7 @@ export function useGameState() {
 
       const nextState = recordPoiExplore(
         {
-          ...gameState,
+          ...current,
           player,
           codex: withCodex,
           baseCamp,
@@ -235,7 +262,7 @@ export function useGameState() {
 
       return encounterWithDiscoveries;
     },
-    [gameState, persist]
+    [persist]
   );
 
   const refreshFieldTasks = useCallback(
@@ -382,24 +409,34 @@ export function useGameState() {
   }, [gameState, persist]);
 
   const samplePlayerMovement = useCallback(
-    (position: Position) => {
-      if (!gameState) return;
-      const nextLedger = sampleMovementLedger(
-        gameState.movementLedger,
-        position
-      );
-      const next = updateMovementLedger(gameState, nextLedger);
-      if (nextLedger.totalMeters > gameState.movementLedger.totalMeters) {
+    (position: Position, accuracyMeters: number, source: "live" | "demo") => {
+      const current = gameStateRef.current;
+      if (!current) return;
+      const nextLedger = sampleMovementLedger(current.movementLedger, position, new Date().toISOString(), { accuracyMeters, source });
+      const next = updateMovementLedger(current, nextLedger);
+      gameStateRef.current = next;
+      if (nextLedger.totalMeters > current.movementLedger.totalMeters) {
+        const wasActive = getTrailMomentumStatus(current.movementLedger).scoutsEyeActive;
+        const previousStatus = getTrailMomentumStatus(current.movementLedger);
+        const nextStatus = getTrailMomentumStatus(nextLedger);
+        const isActive = nextStatus.scoutsEyeActive;
         persist(next);
+        if (!wasActive && isActive) {
+          feedback.emitToast({ title: "Scout's Eye awakened", subtitle: "+20% live sight until local midnight", rarity: "uncommon", glyph: "◉" });
+        }
+        if (!previousStatus.trailSurgeActive && nextStatus.trailSurgeActive) {
+          feedback.emitToast({ title: "Trail Surge awakened", subtitle: "+10% encounter XP until local midnight", rarity: "uncommon", glyph: "⚡" });
+        }
         return;
       }
       setGameState(next);
     },
-    [gameState, persist]
+    [persist]
   );
 
   const reset = useCallback(() => {
     const fresh = resetGameState();
+    gameStateRef.current = fresh;
     setGameState(fresh);
     setLastEncounter(null);
     setSaveWarning(null);

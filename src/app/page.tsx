@@ -10,6 +10,7 @@ import FirstFootfallCard from "@/components/FirstFootfallCard";
 import TravelerSynopsisCard from "@/components/TravelerSynopsisCard";
 import CodexPanel from "@/components/CodexPanel";
 import DevControls from "@/components/DevControls";
+import DemoMovementCompass from "@/components/DemoMovementCompass";
 import EncounterModal from "@/components/EncounterModal";
 import ExpeditionPanel from "@/components/ExpeditionPanel";
 import InventoryPanel from "@/components/InventoryPanel";
@@ -41,7 +42,10 @@ import {
   type CellArrivalBrief,
 } from "@/lib/world/cell-arrival";
 import { metersToLeagues } from "@/lib/movement/movement-ledger";
+import { getTrailMomentumStatus, SCOUTS_EYE_REVEAL_MULTIPLIER } from "@/lib/movement/trail-momentum";
+import { EXPLORATION_REVEAL_RADIUS_METERS } from "@/lib/exploration-memory";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
+import { feedback } from "@/lib/feedback/manager";
 import {
   canRefreshFieldTasks,
   isExpeditionComplete,
@@ -81,6 +85,8 @@ export default function HomePage() {
   const lastFootfallCellRef = useRef<string | null>(null);
   const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
+  const [scoutsEyePreview, setScoutsEyePreview] = useState(false);
+  const [, setLocalDayTick] = useState(0);
 
   const playerPosition = geo.position;
   const playerLat = playerPosition?.lat;
@@ -131,6 +137,11 @@ export default function HomePage() {
 
   const { pois } = useStickyPois(playerPosition, areaContext);
   const fogOfWarEnabled = fantasyGridEnabled && !streetReferenceMode;
+  const trailMomentum = gameState ? getTrailMomentumStatus(gameState.movementLedger) : null;
+  const scoutsEyeActive = Boolean(trailMomentum?.scoutsEyeActive || (geo.isDemo && scoutsEyePreview));
+  const liveRevealRadiusMeters = scoutsEyeActive
+    ? EXPLORATION_REVEAL_RADIUS_METERS * SCOUTS_EYE_REVEAL_MULTIPLIER
+    : EXPLORATION_REVEAL_RADIUS_METERS;
   const discoverablePois = useMemo(
     () =>
       playerLat !== undefined && playerLng !== undefined
@@ -139,6 +150,7 @@ export default function HomePage() {
             playerPosition: { lat: playerLat, lng: playerLng },
             revealedCellKeys: explorationMemory.revealedCellKeys,
             fogOfWarEnabled,
+            liveRevealRadiusMeters,
           })
         : [],
     [
@@ -147,6 +159,7 @@ export default function HomePage() {
       playerLat,
       playerLng,
       pois,
+      liveRevealRadiusMeters,
     ]
   );
 
@@ -210,6 +223,23 @@ export default function HomePage() {
     setFootfallOpen(false);
   }, [footfallBrief, markFootfallSeen]);
 
+  useEffect(() => {
+    if (!playerPosition || geo.status !== "active" || geo.accuracy == null) return;
+    samplePlayerMovement(playerPosition, geo.accuracy, "live");
+  }, [geo.accuracy, geo.status, playerPosition, samplePlayerMovement]);
+
+  useEffect(() => {
+    if (!geo.isDemo) setScoutsEyePreview(false);
+  }, [geo.isDemo]);
+
+  useEffect(() => {
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+    const timer = window.setTimeout(() => setLocalDayTick((value) => value + 1), Math.max(1_000, nextMidnight.getTime() - now.getTime()));
+    return () => window.clearTimeout(timer);
+  }, [gameState?.movementLedger.todayDate]);
+
   const openLoopNudge = useMemo(
     () =>
       gameState
@@ -257,6 +287,19 @@ export default function HomePage() {
     refreshFieldTasks({ bypassDailyLimit: devToolsEnabled });
   }, [devToolsEnabled, refreshFieldTasks]);
 
+  const handlePreviewMovementBoons = useCallback(() => {
+    const nextActive = !scoutsEyePreview;
+    setScoutsEyePreview(nextActive);
+    feedback.emitToast({
+      title: `Movement boons ${nextActive ? "enabled" : "disabled"}`,
+      subtitle: nextActive
+        ? "Scout's Eye + Trail Surge are active for Demo testing"
+        : "Demo-only boon overrides cleared",
+      rarity: nextActive ? "uncommon" : "common",
+      glyph: nextActive ? "⚡" : "○",
+    });
+  }, [scoutsEyePreview]);
+
   const handleMapPoiInteract = useCallback(
     (poi: POI) => {
       if (!gameState || !playerPosition) return;
@@ -278,21 +321,31 @@ export default function HomePage() {
       }
 
       if (action === "explore") {
-        explorePoi(poi, playerPosition, { areaContext });
+        explorePoi(poi, playerPosition, {
+          areaContext,
+          trailSurgePreview: geo.isDemo && scoutsEyePreview,
+        });
       }
     },
-    [explorePoi, gameState, playerPosition, selectedPoi, areaContext]
+    [areaContext, explorePoi, gameState, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]
   );
 
   const handleExplore = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition, { areaContext });
-  }, [areaContext, explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, {
+      areaContext,
+      trailSurgePreview: geo.isDemo && scoutsEyePreview,
+    });
+  }, [areaContext, explorePoi, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]);
 
   const handleSimulateVisit = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition, { simulate: true, areaContext });
-  }, [areaContext, explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, {
+      simulate: true,
+      areaContext,
+      trailSurgePreview: geo.isDemo && scoutsEyePreview,
+    });
+  }, [areaContext, explorePoi, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]);
 
   const handlePanelChange = useCallback((section: MobilePanelSection) => {
     setSynopsisOpen(false);
@@ -312,11 +365,6 @@ export default function HomePage() {
       setSelectedPoi(null);
     }
   }, []);
-
-  useEffect(() => {
-    if (!playerPosition || !gameState) return;
-    samplePlayerMovement(playerPosition);
-  }, [gameState, playerPosition, samplePlayerMovement]);
 
   useEffect(() => {
     if (!activePanel) return;
@@ -437,8 +485,15 @@ export default function HomePage() {
           revealedCellKeys={explorationMemory.revealedCellKeys}
           fantasyGridEnabled={fantasyGridEnabled}
           streetReferenceMode={streetReferenceMode}
+          liveRevealRadiusMeters={liveRevealRadiusMeters}
           onInteractPoi={handleMapPoiInteract}
         />
+        {geo.isDemo && !activePanel && !synopsisOpen && (
+          <DemoMovementCompass
+            onNudge={geo.nudgePosition}
+            onResetPosition={geo.enableDemoMode}
+          />
+        )}
       </div>
 
       <div className="rpg-viewfinder__hud-row">
@@ -519,7 +574,9 @@ export default function HomePage() {
       {activePanel && (
         <aside
           id="viewfinder-panel"
-          className="rpg-viewfinder__sheet"
+          className={`rpg-viewfinder__sheet ${
+            activePanel === "dev" ? "rpg-viewfinder__sheet--dev" : ""
+          }`}
           aria-labelledby="viewfinder-panel-title"
         >
           <header className="rpg-viewfinder__sheet-header">
@@ -567,6 +624,19 @@ export default function HomePage() {
                 }
                 contractRefreshDisabled={contractRefreshDisabled}
                 contractRefreshHint={contractRefreshHint}
+                trailMomentum={{
+                  ...(trailMomentum ?? getTrailMomentumStatus(gameState.movementLedger)),
+                  scoutsEyeActive,
+                  trailSurgeActive:
+                    Boolean(trailMomentum?.trailSurgeActive) ||
+                    (geo.isDemo && scoutsEyePreview),
+                  trailSurgeProgressPercent:
+                    geo.isDemo && scoutsEyePreview
+                      ? 100
+                      : (trailMomentum?.trailSurgeProgressPercent ?? 0),
+                  liveRevealRadiusMeters,
+                  demoPreviewActive: geo.isDemo && scoutsEyePreview,
+                }}
               />
             )}
             {activePanel === "bag" && (
@@ -600,6 +670,12 @@ export default function HomePage() {
                 onReset={reset}
                 onRefreshTasks={() =>
                   refreshFieldTasks({ bypassDailyLimit: true })
+                }
+                onPreviewScoutsEye={
+                  geo.isDemo ? handlePreviewMovementBoons : undefined
+                }
+                movementBoonsPreviewActive={
+                  geo.isDemo && scoutsEyePreview
                 }
               />
             )}

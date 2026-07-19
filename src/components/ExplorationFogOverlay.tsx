@@ -19,19 +19,24 @@ const PANE_Z_INDEX = "550";
 const KNOWN_TERRITORY_CLEAR_ALPHA = 0.72;
 // Leave painted fog beyond every viewport edge so Leaflet's animated pane
 // transform cannot expose base tiles between move events and our next redraw.
-const FOG_CANVAS_OVERSCAN_PX = 96;
+// The boosted Scout's Eye cutout is wider than the original 96 px skirt at
+// common mobile zooms. 160 px keeps the opaque canvas ahead of Leaflet's pane
+// transform during horizontal swipes without doubling its memory footprint.
+const FOG_CANVAS_OVERSCAN_PX = 160;
 
 interface ExplorationFogOverlayProps {
   enabled: boolean;
   playerLat: number;
   playerLng: number;
   revealedCellKeys: string[];
+  liveRevealRadiusMeters?: number;
 }
 
 interface FogRenderState {
   playerLat: number;
   playerLng: number;
   revealedCellKeys: string[];
+  liveRevealRadiusMeters: number;
 }
 
 interface FogCanvasViewport {
@@ -99,7 +104,8 @@ function drawExplorationFog(
   dpr: number,
   playerLat: number,
   playerLng: number,
-  revealedCellKeys: string[]
+  revealedCellKeys: string[],
+  liveRevealRadiusMeters: number
 ) {
   const { size, topLeft } = getFogCanvasViewport(map);
   const bounds = map.getBounds().pad(0.35);
@@ -149,7 +155,7 @@ function drawExplorationFog(
     topLeft,
     playerLat,
     playerLng,
-    EXPLORATION_REVEAL_RADIUS_METERS * 1.15
+    liveRevealRadiusMeters * 1.15
   );
   clearSoftCircle(ctx, player.x, player.y, currentRadius, 1);
 
@@ -161,6 +167,7 @@ export default function ExplorationFogOverlay({
   playerLat,
   playerLng,
   revealedCellKeys,
+  liveRevealRadiusMeters = EXPLORATION_REVEAL_RADIUS_METERS,
 }: ExplorationFogOverlayProps) {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -170,12 +177,13 @@ export default function ExplorationFogOverlay({
     playerLat,
     playerLng,
     revealedCellKeys,
+    liveRevealRadiusMeters,
   });
   const positionSchedulerRef = useRef<ReturnType<
     typeof createOverlayRedrawScheduler
   > | null>(null);
 
-  renderStateRef.current = { playerLat, playerLng, revealedCellKeys };
+  renderStateRef.current = { playerLat, playerLng, revealedCellKeys, liveRevealRadiusMeters };
 
   useLayoutEffect(() => {
     if (!enabled) {
@@ -218,7 +226,8 @@ export default function ExplorationFogOverlay({
         dpr,
         state.playerLat,
         state.playerLng,
-        state.revealedCellKeys
+        state.revealedCellKeys,
+        state.liveRevealRadiusMeters
       );
     };
 
@@ -232,6 +241,11 @@ export default function ExplorationFogOverlay({
     drawNow();
     pane.replaceChildren(canvas);
 
+    // Follow Leaflet while its map pane is being translated. Waiting for
+    // moveend lets a sufficiently long drag outrun any finite canvas skirt and
+    // briefly expose the street tiles at the viewport edge. The scheduler
+    // coalesces move events to at most one paint per animation frame.
+    map.on("move", redraw);
     map.on("moveend", redraw);
     map.on("zoomend", redraw);
     map.on("viewreset", redraw);
@@ -240,6 +254,7 @@ export default function ExplorationFogOverlay({
     return () => {
       active = false;
       scheduler.cancel();
+      map.off("move", redraw);
       map.off("moveend", redraw);
       map.off("zoomend", redraw);
       map.off("viewreset", redraw);
@@ -258,7 +273,7 @@ export default function ExplorationFogOverlay({
 
   useLayoutEffect(() => {
     if (enabled) redrawRef.current?.();
-  }, [enabled, revealedCellKeys]);
+  }, [enabled, revealedCellKeys, liveRevealRadiusMeters]);
 
   useLayoutEffect(() => {
     if (!enabled) return;
