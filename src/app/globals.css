@@ -641,6 +641,15 @@ body {
   backdrop-filter: none;
 }
 
+/* Dev tools should leave most of the viewfinder visible while testing motion. */
+.rpg-viewfinder__sheet.rpg-viewfinder__sheet--dev {
+  max-height: min(36dvh, 22rem);
+}
+
+.rpg-viewfinder__sheet--dev .rpg-viewfinder__sheet-scroll {
+  max-height: calc(min(36dvh, 22rem) - 2.8rem);
+}
+
 /* ── Unified expedition surface ───────────────────────── */
 
 .rpg-expedition {

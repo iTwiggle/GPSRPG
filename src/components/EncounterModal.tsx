@@ -109,7 +109,7 @@ export default function EncounterModal({
           ) : null}
           {encounter.perkBonusXp ? (
             <span className="text-violet-200/80">
-              +{encounter.perkBonusXp} perk
+              includes +{encounter.perkBonusXp} boon
             </span>
           ) : null}
           {encounter.loot.length === 0 ? (

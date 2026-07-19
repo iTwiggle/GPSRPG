@@ -37,6 +37,7 @@ import { metersToLeagues } from "@/lib/movement/movement-ledger";
 import { getTrailMomentumStatus, SCOUTS_EYE_REVEAL_MULTIPLIER } from "@/lib/movement/trail-momentum";
 import { EXPLORATION_REVEAL_RADIUS_METERS } from "@/lib/exploration-memory";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
+import { feedback } from "@/lib/feedback/manager";
 import {
   canRefreshFieldTasks,
   isExpeditionComplete,
@@ -233,6 +234,19 @@ export default function HomePage() {
     refreshFieldTasks({ bypassDailyLimit: devToolsEnabled });
   }, [devToolsEnabled, refreshFieldTasks]);
 
+  const handlePreviewMovementBoons = useCallback(() => {
+    const nextActive = !scoutsEyePreview;
+    setScoutsEyePreview(nextActive);
+    feedback.emitToast({
+      title: `Movement boons ${nextActive ? "enabled" : "disabled"}`,
+      subtitle: nextActive
+        ? "Scout's Eye + Trail Surge are active for Demo testing"
+        : "Demo-only boon overrides cleared",
+      rarity: nextActive ? "uncommon" : "common",
+      glyph: nextActive ? "⚡" : "○",
+    });
+  }, [scoutsEyePreview]);
+
   const handleMapPoiInteract = useCallback(
     (poi: POI) => {
       if (!gameState || !playerPosition) return;
@@ -254,21 +268,28 @@ export default function HomePage() {
       }
 
       if (action === "explore") {
-        explorePoi(poi, playerPosition);
+        explorePoi(poi, playerPosition, {
+          trailSurgePreview: geo.isDemo && scoutsEyePreview,
+        });
       }
     },
-    [explorePoi, gameState, playerPosition, selectedPoi]
+    [explorePoi, gameState, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]
   );
 
   const handleExplore = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition);
-  }, [explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, {
+      trailSurgePreview: geo.isDemo && scoutsEyePreview,
+    });
+  }, [explorePoi, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]);
 
   const handleSimulateVisit = useCallback(() => {
     if (!selectedPoi || !playerPosition) return;
-    explorePoi(selectedPoi, playerPosition, { simulate: true });
-  }, [explorePoi, playerPosition, selectedPoi]);
+    explorePoi(selectedPoi, playerPosition, {
+      simulate: true,
+      trailSurgePreview: geo.isDemo && scoutsEyePreview,
+    });
+  }, [explorePoi, geo.isDemo, playerPosition, scoutsEyePreview, selectedPoi]);
 
   const handlePanelChange = useCallback((section: MobilePanelSection) => {
     setSynopsisOpen(false);
@@ -482,7 +503,9 @@ export default function HomePage() {
       {activePanel && (
         <aside
           id="viewfinder-panel"
-          className="rpg-viewfinder__sheet"
+          className={`rpg-viewfinder__sheet ${
+            activePanel === "dev" ? "rpg-viewfinder__sheet--dev" : ""
+          }`}
           aria-labelledby="viewfinder-panel-title"
         >
           <header className="rpg-viewfinder__sheet-header">
@@ -533,6 +556,13 @@ export default function HomePage() {
                 trailMomentum={{
                   ...(trailMomentum ?? getTrailMomentumStatus(gameState.movementLedger)),
                   scoutsEyeActive,
+                  trailSurgeActive:
+                    Boolean(trailMomentum?.trailSurgeActive) ||
+                    (geo.isDemo && scoutsEyePreview),
+                  trailSurgeProgressPercent:
+                    geo.isDemo && scoutsEyePreview
+                      ? 100
+                      : (trailMomentum?.trailSurgeProgressPercent ?? 0),
                   liveRevealRadiusMeters,
                   demoPreviewActive: geo.isDemo && scoutsEyePreview,
                 }}
@@ -569,7 +599,12 @@ export default function HomePage() {
                 onRefreshTasks={() =>
                   refreshFieldTasks({ bypassDailyLimit: true })
                 }
-                onPreviewScoutsEye={geo.isDemo ? () => setScoutsEyePreview((active) => !active) : undefined}
+                onPreviewScoutsEye={
+                  geo.isDemo ? handlePreviewMovementBoons : undefined
+                }
+                movementBoonsPreviewActive={
+                  geo.isDemo && scoutsEyePreview
+                }
               />
             )}
           </div>

@@ -9,6 +9,8 @@ export const MAX_SAMPLE_GAP_MS = 120_000;
 export const MAX_SAMPLE_ACCURACY_METERS = 35;
 export const MIN_MOVEMENT_SEGMENT_METERS = 12;
 export const MAX_MOVEMENT_SEGMENT_METERS = 120;
+export const TRAIL_SURGE_WINDOW_MS = 60 * 60 * 1000;
+export const TRAIL_SURGE_TARGET_METERS = 800;
 
 export interface MovementSampleOptions {
   accuracyMeters: number;
@@ -26,6 +28,9 @@ export function createEmptyMovementLedger(
     todayMinutesInMotion: 0,
     outingsCompleted: 0,
     lastOutdoorSessionAt: null,
+    trailSurgeWindowStartedAt: null,
+    trailSurgeWindowMeters: 0,
+    trailSurgeUnlockedToday: false,
   };
 }
 
@@ -47,6 +52,15 @@ export function normalizeMovementLedger(
     todayMinutesInMotion: isToday ? (ledger.todayMinutesInMotion ?? 0) : 0,
     outingsCompleted: ledger.outingsCompleted ?? 0,
     lastOutdoorSessionAt: ledger.lastOutdoorSessionAt ?? null,
+    trailSurgeWindowStartedAt: isToday
+      ? (ledger.trailSurgeWindowStartedAt ?? null)
+      : null,
+    trailSurgeWindowMeters: isToday
+      ? (ledger.trailSurgeWindowMeters ?? 0)
+      : 0,
+    trailSurgeUnlockedToday: isToday
+      ? (ledger.trailSurgeUnlockedToday ?? false)
+      : false,
     lastPosition: isToday ? ledger.lastPosition : undefined,
     lastSampleAt: isToday ? ledger.lastSampleAt : undefined,
     lastAccuracyMeters: isToday ? ledger.lastAccuracyMeters : undefined,
@@ -147,6 +161,23 @@ export function sampleMovementLedger(
   }
 
   const minutes = gapMs / 60_000;
+  const existingWindowStart = next.trailSurgeWindowStartedAt
+    ? Date.parse(next.trailSurgeWindowStartedAt)
+    : Number.NaN;
+  const windowExpired =
+    !Number.isFinite(existingWindowStart) ||
+    Date.parse(sampledAt) - existingWindowStart > TRAIL_SURGE_WINDOW_MS;
+  const trailSurgeWindowStartedAt = next.trailSurgeUnlockedToday
+    ? next.trailSurgeWindowStartedAt
+    : windowExpired
+      ? sampledAt
+      : next.trailSurgeWindowStartedAt;
+  const trailSurgeWindowMeters = next.trailSurgeUnlockedToday
+    ? next.trailSurgeWindowMeters
+    : (windowExpired ? 0 : next.trailSurgeWindowMeters) + deltaMeters;
+  const trailSurgeUnlockedToday =
+    next.trailSurgeUnlockedToday ||
+    trailSurgeWindowMeters >= TRAIL_SURGE_TARGET_METERS;
 
   return {
     ...next,
@@ -154,6 +185,9 @@ export function sampleMovementLedger(
     todayMeters: next.todayMeters + deltaMeters,
     totalMinutesInMotion: next.totalMinutesInMotion + minutes,
     todayMinutesInMotion: next.todayMinutesInMotion + minutes,
+    trailSurgeWindowStartedAt,
+    trailSurgeWindowMeters,
+    trailSurgeUnlockedToday,
     lastOutdoorSessionAt: sampledAt,
     lastPosition: position,
     lastSampleAt: sampledAt,

@@ -109,6 +109,60 @@ describe("movement ledger", () => {
     expect(nextDay.todayMeters).toBe(0);
   });
 
+  it("unlocks Trail Surge after 800 validated meters inside one hour", () => {
+    let ledger = sampleMovementLedger(
+      createEmptyMovementLedger(DATE),
+      ORIGIN,
+      T0,
+      LIVE
+    );
+
+    for (let step = 1; step <= 21; step += 1) {
+      ledger = sampleMovementLedger(
+        ledger,
+        offsetPosition(ORIGIN, step * 40, 0),
+        `${DATE}T12:${String(step).padStart(2, "0")}:00.000Z`,
+        LIVE
+      );
+    }
+
+    expect(ledger.trailSurgeWindowMeters).toBeGreaterThanOrEqual(800);
+    expect(ledger.trailSurgeUnlockedToday).toBe(true);
+  });
+
+  it("restarts an unfinished Trail Surge window after one hour", () => {
+    const seeded = sampleMovementLedger(
+      createEmptyMovementLedger(DATE),
+      ORIGIN,
+      T0,
+      LIVE
+    );
+    const partial = sampleMovementLedger(
+      seeded,
+      offsetPosition(ORIGIN, 40, 0),
+      `${DATE}T12:01:00.000Z`,
+      LIVE
+    );
+    const reanchored = sampleMovementLedger(
+      partial,
+      offsetPosition(ORIGIN, 80, 0),
+      `${DATE}T13:02:00.000Z`,
+      LIVE
+    );
+    const restarted = sampleMovementLedger(
+      reanchored,
+      offsetPosition(ORIGIN, 120, 0),
+      `${DATE}T13:03:00.000Z`,
+      LIVE
+    );
+
+    expect(restarted.trailSurgeWindowStartedAt).toBe(
+      `${DATE}T13:03:00.000Z`
+    );
+    expect(restarted.trailSurgeWindowMeters).toBeCloseTo(40, 0);
+    expect(restarted.trailSurgeUnlockedToday).toBe(false);
+  });
+
   it("removes the precise runtime sample before persistence", () => {
     const persisted = stripTransientMovementSample({
       ...createEmptyMovementLedger(DATE),

@@ -110,6 +110,26 @@ export default function ExpeditionPanel({
           <span>{formatDistance(Math.min(trailMomentum.distanceMeters, trailMomentum.targetMeters))} / {formatDistance(trailMomentum.targetMeters)}</span>
           <span>Live GPS only · no route history</span>
         </div>
+        <div className="mt-4 border-t border-sky-400/15 pt-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-sky-100">
+              {trailMomentum.trailSurgeActive
+                ? "Trail Surge active"
+                : "Quick-foot challenge"}
+            </p>
+            <span className="text-[0.65rem] font-semibold text-sky-200/70">
+              {trailMomentum.trailSurgeActive ? "+10% XP" : "800 m · 60 min"}
+            </span>
+          </div>
+          <p className="rpg-trail-momentum__copy">
+            {trailMomentum.trailSurgeActive
+              ? "+10% encounter XP until local midnight."
+              : `${formatDistance(trailMomentum.trailSurgeRemainingMeters)} more validated walking inside the current hour.`}
+          </p>
+          <div className="rpg-trail-momentum__progress" role="progressbar" aria-label={`Trail Surge: ${trailMomentum.trailSurgeProgressPercent}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={trailMomentum.trailSurgeProgressPercent}>
+            <div style={{ width: `${trailMomentum.trailSurgeProgressPercent}%` }} />
+          </div>
+        </div>
       </section>
 
       <FieldTasksPanel

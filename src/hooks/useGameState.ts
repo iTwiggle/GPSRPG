@@ -30,7 +30,10 @@ import {
   updateMovementLedger,
 } from "@/lib/storage";
 import { sampleMovementLedger, recordOutingCompleted } from "@/lib/movement/movement-ledger";
-import { getTrailMomentumStatus } from "@/lib/movement/trail-momentum";
+import {
+  applyTrailSurgeXp,
+  getTrailMomentumStatus,
+} from "@/lib/movement/trail-momentum";
 import { getPoiVisitUiStatus } from "@/lib/temporal/poi-cooldowns";
 import type {
   EncounterResult,
@@ -82,7 +85,11 @@ export function useGameState() {
   }, []);
 
   const explorePoi = useCallback(
-    (poi: POI, playerPosition: Position, options?: { simulate?: boolean }) => {
+    (
+      poi: POI,
+      playerPosition: Position,
+      options?: { simulate?: boolean; trailSurgePreview?: boolean }
+    ) => {
       // Read the synchronously updated ref so two taps arriving before React's
       // next render cannot both resolve against the same pre-visit snapshot.
       const current = gameStateRef.current;
@@ -107,6 +114,12 @@ export function useGameState() {
       );
       encounter = perkResult.encounter;
       const baseCamp = perkResult.baseCamp;
+      const trailSurgeResult = applyTrailSurgeXp(
+        encounter,
+        current.movementLedger,
+        options?.trailSurgePreview
+      );
+      encounter = trailSurgeResult.encounter;
 
       const newCodexItemKeys = encounter.loot
         .filter((item) => !current.codex.items[codexItemKey(item)])
@@ -139,10 +152,17 @@ export function useGameState() {
         completedSetIds: newSetIds,
         setBonusXp: setBonusXp > 0 ? setBonusXp : undefined,
         perkBonusXp:
-          perkResult.perkBonusXp > 0 ? perkResult.perkBonusXp : undefined,
+          perkResult.perkBonusXp + trailSurgeResult.bonusXp > 0
+            ? perkResult.perkBonusXp + trailSurgeResult.bonusXp
+            : undefined,
         perkMessages:
-          perkResult.perkMessages.length > 0
-            ? perkResult.perkMessages
+          perkResult.perkMessages.length > 0 || trailSurgeResult.message
+            ? [
+                ...perkResult.perkMessages,
+                ...(trailSurgeResult.message
+                  ? [trailSurgeResult.message]
+                  : []),
+              ]
             : undefined,
       };
 
@@ -386,10 +406,15 @@ export function useGameState() {
       gameStateRef.current = next;
       if (nextLedger.totalMeters > current.movementLedger.totalMeters) {
         const wasActive = getTrailMomentumStatus(current.movementLedger).scoutsEyeActive;
-        const isActive = getTrailMomentumStatus(nextLedger).scoutsEyeActive;
+        const previousStatus = getTrailMomentumStatus(current.movementLedger);
+        const nextStatus = getTrailMomentumStatus(nextLedger);
+        const isActive = nextStatus.scoutsEyeActive;
         persist(next);
         if (!wasActive && isActive) {
           feedback.emitToast({ title: "Scout's Eye awakened", subtitle: "+20% live sight until local midnight", rarity: "uncommon", glyph: "◉" });
+        }
+        if (!previousStatus.trailSurgeActive && nextStatus.trailSurgeActive) {
+          feedback.emitToast({ title: "Trail Surge awakened", subtitle: "+10% encounter XP until local midnight", rarity: "uncommon", glyph: "⚡" });
         }
         return;
       }
