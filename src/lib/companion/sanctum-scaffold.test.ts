@@ -29,8 +29,8 @@ describe("sanctum scaffold", () => {
 
   it("nudges when a sanctum recipe is close to craftable", () => {
     const state = createInitialState();
-    state.codex.items["herb-bundle"] = {
-      name: "Herb Bundle",
+    state.codex.items["marsh-bloom"] = {
+      name: "Marsh Bloom",
       type: "consumable",
       rarity: "common",
       countFound: 2,
@@ -53,7 +53,7 @@ describe("sanctum scaffold", () => {
     expect(healing?.readyInSanctum).toBe(false);
     expect(healing?.missing).toEqual([
       expect.objectContaining({
-        label: "Herb Bundle",
+        label: "Marsh Bloom",
         shortfall: 1,
       }),
     ]);

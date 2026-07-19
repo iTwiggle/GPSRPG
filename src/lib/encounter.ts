@@ -81,7 +81,8 @@ function pickEncounter(rand: () => number): EncounterTemplate {
 /** Roll an encounter when exploring a POI. Deterministic per POI id for testing. */
 export function rollEncounter(
   poi: POI,
-  rollSeed?: number
+  rollSeed?: number,
+  areaContext?: import("./osm-context").OsmContextCategory
 ): EncounterResult {
   const seed = rollSeed ?? hashSeed(poi.id);
   const rand = seededRandom(seed);
@@ -90,7 +91,7 @@ export function rollEncounter(
 
   const loot = Array.from(
     { length: template.lootRolls + bonus.lootRolls },
-    (_, i) => rollLoot(rand, `${poi.id}-${i}`, poi.type)
+    (_, i) => rollLoot(rand, `${poi.id}-${i}`, poi.type, areaContext)
   );
 
   const flavored = applyEncounterFlavor(poi.type, template.kind, {

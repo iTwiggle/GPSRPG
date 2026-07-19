@@ -2,12 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { distanceMeters } from "@/lib/distance";
-import { cellKeyToString, getAreaCellCenter, getAreaCellKey, type OsmContextCategory } from "@/lib/osm-context";
+import {
+  cellKeyToString,
+  getAreaCellKey,
+  prefetchOsmCells,
+  type OsmContextCategory,
+} from "@/lib/osm-context";
 import { generateNearbyPOIs } from "@/lib/poi-generator";
 import type { POI, Position } from "@/lib/types";
 import {
   filterActiveWorldPois,
   generateWorldFieldPois,
+  getWorldFieldCells,
   WORLD_POI_ACTIVE_RADIUS_METERS,
 } from "@/lib/world-poi-field";
 import { getStorageAdapter } from "@/lib/platform/storage-adapter";
@@ -79,6 +85,7 @@ export function useStickyPois(
   const [onboardingPoi, setOnboardingPoi] = useState<POI | null>(
     readOnboardingPoi
   );
+  const [fieldRevision, setFieldRevision] = useState(0);
 
   useEffect(() => {
     if (!playerPosition || onboardingPoi) return;
@@ -95,13 +102,33 @@ export function useStickyPois(
     return cellKeyToString(getAreaCellKey(playerLat, playerLng));
   }, [playerLat, playerLng]);
 
+  useEffect(() => {
+    if (playerLat === undefined || playerLng === undefined) return;
+
+    let cancelled = false;
+    const cells = getWorldFieldCells({ lat: playerLat, lng: playerLng });
+
+    prefetchOsmCells(cells).then(() => {
+      if (!cancelled) {
+        setFieldRevision((revision) => revision + 1);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [areaCellKeyString, playerLat, playerLng]);
+
   const generatedWorldPois = useMemo(() => {
+    void fieldRevision;
     if (!areaCellKeyString || playerLat === undefined || playerLng === undefined) {
       return [];
     }
-    const areaCell = getAreaCellKey(playerLat, playerLng);
-    return generateWorldFieldPois(getAreaCellCenter(areaCell), areaContext);
-  }, [areaCellKeyString, areaContext, playerLat, playerLng]);
+    return generateWorldFieldPois(
+      { lat: playerLat, lng: playerLng },
+      areaContext
+    );
+  }, [areaCellKeyString, areaContext, fieldRevision, playerLat, playerLng]);
 
   const pois = useMemo(() => {
     if (!playerPosition) return [];

@@ -63,8 +63,15 @@ function backupCorruptSave(raw: string): string | null {
 function normalizeCompanionMeta(
   meta: Partial<CompanionMeta> | undefined
 ): CompanionMeta {
+  const footfallCellKeys = Array.isArray(meta?.footfallCellKeys)
+    ? meta.footfallCellKeys.filter(
+        (key): key is string => typeof key === "string" && key.length > 0
+      )
+    : undefined;
+
   return {
     lastContractRefreshDate: meta?.lastContractRefreshDate,
+    footfallCellKeys,
   };
 }
 

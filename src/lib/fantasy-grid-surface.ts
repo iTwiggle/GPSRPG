@@ -81,6 +81,8 @@ export function mapCategoryToBiome(
   switch (category) {
     case "park_or_woods":
       return "grove";
+    case "marsh":
+      return "grove";
     case "water":
       return "water";
     case "industrial":

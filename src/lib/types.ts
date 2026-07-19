@@ -203,6 +203,8 @@ export interface MovementLedger {
 export interface CompanionMeta {
   /** Local calendar date (YYYY-MM-DD) of the last manual contract refresh. */
   lastContractRefreshDate?: string;
+  /** Area cell keys where the first-footfall arrival card was dismissed. */
+  footfallCellKeys?: string[];
 }
 
 export interface GameState {

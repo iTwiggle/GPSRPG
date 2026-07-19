@@ -4,8 +4,9 @@ import {
   buildWorldPoiField,
   generateWorldCellPois,
   getWorldFieldCells,
+  resolveCellAreaContext,
 } from "./world-poi-field";
-import { getAreaCellKey } from "./osm-context";
+import { cellKeyToString, getAreaCellKey } from "./osm-context";
 
 function moveNorth(position: Position, meters: number): Position {
   return {
@@ -30,22 +31,11 @@ describe("rolling deterministic POI world field", () => {
     const generic = generateWorldCellPois(cell, "generic");
     const grove = generateWorldCellPois(cell, "park_or_woods");
 
-    expect(
-      generic.map(({ id, name, type, lat, lng }) => ({
-        id,
-        name,
-        type,
-        lat,
-        lng,
-      }))
-    ).toEqual(
-      grove.map(({ id, name, type, lat, lng }) => ({
-        id,
-        name,
-        type,
-        lat,
-        lng,
-      }))
+    expect(generic.map(({ id, lat, lng }) => ({ id, lat, lng }))).toEqual(
+      grove.map(({ id, lat, lng }) => ({ id, lat, lng }))
+    );
+    expect(generic.map((poi) => poi.name)).not.toEqual(
+      grove.map((poi) => poi.name)
     );
   });
 
@@ -98,5 +88,15 @@ describe("rolling deterministic POI world field", () => {
   it("enumerates enough surrounding cells for distance-based edge streaming", () => {
     const cells = getWorldFieldCells(origin);
     expect(cells.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it("uses live area context for the player's current cell", () => {
+    const cell = getAreaCellKey(origin.lat, origin.lng);
+    const currentCellKey = cellKeyToString(cell);
+
+    expect(resolveCellAreaContext(cell, currentCellKey, "marsh")).toBe("marsh");
+    expect(resolveCellAreaContext(cell, currentCellKey, "generic")).toBe(
+      "generic"
+    );
   });
 });

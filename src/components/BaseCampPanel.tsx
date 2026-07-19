@@ -9,6 +9,7 @@ import {
 } from "@/lib/base-camp";
 import type { BaseCampState, Codex, GameState } from "@/lib/types";
 import CompanionExportPanel from "@/components/CompanionExportPanel";
+import CitadelCraftPanel from "@/components/CitadelCraftPanel";
 
 interface BaseCampPanelProps {
   codex: Codex;
@@ -16,6 +17,7 @@ interface BaseCampPanelProps {
   fieldReportSites: number;
   gameState: GameState;
   onClaimDoor: (doorId: string) => boolean;
+  onCraft?: (recipeId: string) => boolean;
   onMarkVisit?: () => void;
 }
 
@@ -37,6 +39,7 @@ export default function BaseCampPanel({
   fieldReportSites,
   gameState,
   onClaimDoor,
+  onCraft,
   onMarkVisit,
 }: BaseCampPanelProps) {
   const activePerks = getActivePerkDetails(baseCamp);
@@ -153,6 +156,10 @@ export default function BaseCampPanel({
           </ul>
         )}
       </section>
+
+      {onCraft && (
+        <CitadelCraftPanel gameState={gameState} onCraft={onCraft} />
+      )}
 
       <CompanionExportPanel gameState={gameState} embedded />
     </div>

@@ -47,6 +47,9 @@ import { rollEncounter } from "@/lib/encounter";
 import { canExplorePoi } from "@/lib/explore-validation";
 import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
 import { feedback } from "@/lib/feedback/manager";
+import { tryCraftSanctumRecipe } from "@/lib/companion/sanctum-craft";
+import { markFootfallSeen as markFootfallSeenInState } from "@/lib/world/cell-arrival";
+import type { OsmContextCategory } from "@/lib/osm-context";
 
 const RARITY_RANK: Record<ItemRarity, number> = {
   common: 0,
@@ -88,7 +91,11 @@ export function useGameState() {
     (
       poi: POI,
       playerPosition: Position,
-      options?: { simulate?: boolean; trailSurgePreview?: boolean }
+      options?: {
+        simulate?: boolean;
+        areaContext?: OsmContextCategory;
+        trailSurgePreview?: boolean;
+      }
     ) => {
       // Read the synchronously updated ref so two taps arriving before React's
       // next render cannot both resolve against the same pre-visit snapshot.
@@ -104,7 +111,11 @@ export function useGameState() {
       if (!validation.ok) return null;
 
       const rollSeed = options?.simulate ? Date.now() : undefined;
-      let encounter = rollEncounter(poi, rollSeed);
+      let encounter = rollEncounter(
+        poi,
+        rollSeed,
+        options?.areaContext ?? "generic"
+      );
 
       const perkResult = applyActivePerksToEncounter(
         encounter,
@@ -431,6 +442,43 @@ export function useGameState() {
     setSaveWarning(null);
   }, []);
 
+  const markFootfallSeen = useCallback(
+    (cellKey: string) => {
+      if (!gameState) return;
+      const next = markFootfallSeenInState(gameState, cellKey);
+      if (next === gameState) return;
+      persist(next);
+    },
+    [gameState, persist]
+  );
+
+  const craftAtSanctum = useCallback(
+    (recipeId: string) => {
+      if (!gameState) return false;
+
+      const result = tryCraftSanctumRecipe(gameState, recipeId);
+      if (!result.ok) {
+        feedback.emitToast({
+          title: "Cannot craft",
+          subtitle: result.message ?? "Missing materials.",
+          rarity: "common",
+          glyph: "⚗",
+        });
+        return false;
+      }
+
+      persist(result.state);
+      feedback.emitToast({
+        title: result.message ?? "Crafted",
+        subtitle: "Added to your bag",
+        rarity: "uncommon",
+        glyph: "⚗",
+      });
+      return true;
+    },
+    [gameState, persist]
+  );
+
   const clearSaveWarning = useCallback(() => {
     setSaveWarning(null);
   }, []);
@@ -444,6 +492,8 @@ export function useGameState() {
     salvageCommonTriplet,
     claimDepotDoor,
     markBaseCampVisit,
+    markFootfallSeen,
+    craftAtSanctum,
     resetFieldReport,
     clearEncounter,
     clearSaveWarning,

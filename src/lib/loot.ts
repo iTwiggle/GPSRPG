@@ -4,6 +4,7 @@ import {
   type ItemCatalogEntry,
 } from "./item-catalog";
 import type { Item, POIType } from "./types";
+import type { OsmContextCategory } from "./osm-context";
 
 function pickWeighted(
   table: ItemCatalogEntry[],
@@ -33,9 +34,13 @@ function createItem(template: ItemCatalogEntry, suffix: string): Item {
 export function rollLoot(
   rand: () => number,
   suffix: string,
-  poiType?: POIType
+  poiType?: POIType,
+  areaContext?: OsmContextCategory
 ): Item {
-  const template = pickWeighted(getLootWeightTable(poiType), rand);
+  const template = pickWeighted(
+    getLootWeightTable(poiType, areaContext),
+    rand
+  );
   return createItem(template, suffix);
 }
 
