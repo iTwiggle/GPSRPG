@@ -21,11 +21,7 @@ class WebStorageAdapter implements StorageAdapter {
 
   setItem(key: string, value: string): void {
     if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      // Caller surfaces write failures where gameplay depends on persistence.
-    }
+    localStorage.setItem(key, value);
   }
 
   removeItem(key: string): void {
