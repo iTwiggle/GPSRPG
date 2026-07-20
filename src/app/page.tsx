@@ -534,10 +534,17 @@ export default function HomePage() {
           liveRevealRadiusMeters={liveRevealRadiusMeters}
           onInteractPoi={handleMapPoiInteract}
         />
-        {geo.isDemo && !activePanel && !synopsisOpen && (
+        {geo.isDemo && !activePanel && !synopsisOpen && !footfallOpen && (
           <DemoMovementCompass
             onNudge={geo.nudgePosition}
             onResetPosition={geo.enableDemoMode}
+          />
+        )}
+        {footfallOpen && footfallBrief && (
+          <FirstFootfallCard
+            brief={footfallBrief}
+            open={footfallOpen}
+            onDismiss={handleFootfallDismiss}
           />
         )}
       </div>
@@ -606,14 +613,6 @@ export default function HomePage() {
           synopsis={travelerSynopsis}
           open={synopsisOpen}
           onClose={() => setSynopsisOpen(false)}
-        />
-      )}
-
-      {footfallOpen && footfallBrief && (
-        <FirstFootfallCard
-          brief={footfallBrief}
-          open={footfallOpen}
-          onDismiss={handleFootfallDismiss}
         />
       )}
 
