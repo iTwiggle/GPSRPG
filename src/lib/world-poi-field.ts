@@ -78,7 +78,8 @@ export function getWorldFieldCells(player: Position): AreaCellKey[] {
 /**
  * Generate the stable POIs owned by one world cell.
  * Position, type, name, and ID depend only on cell coordinates + POI index.
- * Area context may tint flavor copy, but cannot move or replace the site.
+ * Area context may tint flavor copy (and loot at explore time), but cannot
+ * remorph type/name when OSM prefetch resolves later.
  */
 export function generateWorldCellPois(
   cell: AreaCellKey,
@@ -102,10 +103,12 @@ export function generateWorldCellPois(
       eastMeters
     );
 
+    // Identity is cell-seeded with a fixed generic table so OSM cache fills
+    // never replace a grove with a quarry under the same poi id.
     const typeRand = seededRandom(
       hashSeedNumeric(cell.cellLat, cell.cellLng, index, 17)
     );
-    const type = pickPoiType(areaContext, typeRand);
+    const type = pickPoiType("generic", typeRand);
     const nameRand = seededRandom(
       hashSeedNumeric(cell.cellLat, cell.cellLng, index, 31)
     );
@@ -115,7 +118,7 @@ export function generateWorldCellPois(
 
     pois.push({
       id: `poi-${cell.cellLat.toFixed(6)}-${cell.cellLng.toFixed(6)}-${index}`,
-      name: buildPoiName(type, nameRand, areaContext),
+      name: buildPoiName(type, nameRand, "generic"),
       type,
       flavor: pickPoiFlavor(type, flavorRand, areaContext),
       lat: center.lat + offset.lat,

@@ -189,14 +189,25 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!playerPosition || !gameState || !areaCellKey) return;
-    if (lastFootfallCellRef.current === areaCellKey) return;
-    lastFootfallCellRef.current = areaCellKey;
 
     if (hasSeenFootfall(gameState, areaCellKey)) {
+      lastFootfallCellRef.current = areaCellKey;
       setFootfallOpen(false);
       setFootfallBrief(null);
       return;
     }
+
+    // Wait for OSM so marsh/park identity isn't locked in as "Unknown wilds".
+    if (osmContext.status !== "ready") {
+      if (lastFootfallCellRef.current !== areaCellKey) {
+        setFootfallOpen(false);
+        setFootfallBrief(null);
+      }
+      return;
+    }
+
+    if (lastFootfallCellRef.current === areaCellKey) return;
+    lastFootfallCellRef.current = areaCellKey;
 
     setFootfallBrief(
       buildCellArrivalBrief({
@@ -213,6 +224,7 @@ export default function HomePage() {
     areaContext,
     discoverablePois,
     gameState,
+    osmContext.status,
     playerPosition,
   ]);
 
@@ -249,9 +261,11 @@ export default function HomePage() {
             pois: discoverablePois,
             playerPosition,
             visitedPois: gameState.visitedPois,
+            gameState,
+            areaContext,
           })
         : null,
-    [discoverablePois, gameState, playerPosition]
+    [areaContext, discoverablePois, gameState, playerPosition]
   );
   const travelerSynopsis = useMemo(
     () => (gameState ? buildTravelerSynopsis(gameState) : null),

@@ -26,16 +26,27 @@ function overlapCount(a: Set<string>, b: Set<string>): number {
 describe("rolling deterministic POI world field", () => {
   const origin = { lat: 37.7749, lng: -122.4194 };
 
-  it("owns stable POI identity and placement by world cell", () => {
+  it("owns stable POI identity, type, name, and placement by world cell", () => {
     const cell = getAreaCellKey(origin.lat, origin.lng);
     const generic = generateWorldCellPois(cell, "generic");
-    const grove = generateWorldCellPois(cell, "park_or_woods");
+    const marsh = generateWorldCellPois(cell, "marsh");
 
-    expect(generic.map(({ id, lat, lng }) => ({ id, lat, lng }))).toEqual(
-      grove.map(({ id, lat, lng }) => ({ id, lat, lng }))
-    );
-    expect(generic.map((poi) => poi.name)).not.toEqual(
-      grove.map((poi) => poi.name)
+    expect(
+      generic.map(({ id, name, type, lat, lng }) => ({
+        id,
+        name,
+        type,
+        lat,
+        lng,
+      }))
+    ).toEqual(
+      marsh.map(({ id, name, type, lat, lng }) => ({
+        id,
+        name,
+        type,
+        lat,
+        lng,
+      }))
     );
   });
 
