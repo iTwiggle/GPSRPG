@@ -34,6 +34,9 @@ export const hapticsSink: FeedbackSink = {
       case "toast":
         vibrate(getRarityFeedback(event.rarity).haptic);
         break;
+      case "milestoneBurst":
+        vibrate([18, 36, 22, 36, 28]);
+        break;
       case "levelUp":
         vibrate(LEVEL_UP.haptic);
         break;
