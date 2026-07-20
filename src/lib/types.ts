@@ -205,6 +205,8 @@ export interface CompanionMeta {
   lastContractRefreshDate?: string;
   /** Area cell keys where the first-footfall arrival card was dismissed. */
   footfallCellKeys?: string[];
+  /** ISO timestamp when potion-granted Clear Sight expires. */
+  clearSightExpiresAt?: string;
 }
 
 export interface GameState {

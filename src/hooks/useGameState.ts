@@ -33,6 +33,7 @@ import { sampleMovementLedger, recordOutingCompleted } from "@/lib/movement/move
 import {
   applyTrailSurgeXp,
   getTrailMomentumStatus,
+  SCOUTS_EYE_REVEAL_BONUS_METERS,
 } from "@/lib/movement/trail-momentum";
 import { getPoiVisitUiStatus } from "@/lib/temporal/poi-cooldowns";
 import type {
@@ -47,6 +48,7 @@ import { rollEncounter } from "@/lib/encounter";
 import { canExplorePoi } from "@/lib/explore-validation";
 import { salvageCommonTriplet as salvageCommonTripletFromLib } from "@/lib/duplicate-salvage";
 import { feedback } from "@/lib/feedback/manager";
+import { tryDrinkHealingDraught } from "@/lib/companion/clear-sight";
 import { tryCraftSanctumRecipe } from "@/lib/companion/sanctum-craft";
 import { markFootfallSeen as markFootfallSeenInState } from "@/lib/world/cell-arrival";
 import type { OsmContextCategory } from "@/lib/osm-context";
@@ -422,7 +424,12 @@ export function useGameState() {
         const isActive = nextStatus.scoutsEyeActive;
         persist(next);
         if (!wasActive && isActive) {
-          feedback.emitToast({ title: "Scout's Eye awakened", subtitle: "+20% live sight until local midnight", rarity: "uncommon", glyph: "◉" });
+          feedback.emitToast({
+            title: "Scout's Eye awakened",
+            subtitle: `+${SCOUTS_EYE_REVEAL_BONUS_METERS} m live sight until local midnight`,
+            rarity: "uncommon",
+            glyph: "◉",
+          });
         }
         if (!previousStatus.trailSurgeActive && nextStatus.trailSurgeActive) {
           feedback.emitToast({ title: "Trail Surge awakened", subtitle: "+10% encounter XP until local midnight", rarity: "uncommon", glyph: "⚡" });
@@ -470,7 +477,7 @@ export function useGameState() {
       persist(result.state);
       feedback.emitToast({
         title: result.message ?? "Crafted",
-        subtitle: "Added to your bag",
+        subtitle: "Drink it for Clear Sight",
         rarity: "uncommon",
         glyph: "⚗",
       });
@@ -478,6 +485,30 @@ export function useGameState() {
     },
     [gameState, persist]
   );
+
+  const drinkHealingPotion = useCallback(() => {
+    if (!gameState) return false;
+
+    const result = tryDrinkHealingDraught(gameState);
+    if (!result.ok) {
+      feedback.emitToast({
+        title: "Cannot drink",
+        subtitle: result.message ?? "No potion in bag.",
+        rarity: "common",
+        glyph: "⚗",
+      });
+      return false;
+    }
+
+    persist(result.state);
+    feedback.emitToast({
+      title: "Clear Sight",
+      subtitle: result.message ?? `+${SCOUTS_EYE_REVEAL_BONUS_METERS} m live sight`,
+      rarity: "uncommon",
+      glyph: "◉",
+    });
+    return true;
+  }, [gameState, persist]);
 
   const clearSaveWarning = useCallback(() => {
     setSaveWarning(null);
@@ -494,6 +525,7 @@ export function useGameState() {
     markBaseCampVisit,
     markFootfallSeen,
     craftAtSanctum,
+    drinkHealingPotion,
     resetFieldReport,
     clearEncounter,
     clearSaveWarning,

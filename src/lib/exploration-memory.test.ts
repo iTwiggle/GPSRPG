@@ -76,4 +76,14 @@ describe("exploration memory", () => {
     expect(readExplorationMemory().revealedCellKeys).toEqual([]);
     expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
   });
+
+  it("reveals an extra fog-cell ring at Scout's Eye radius", () => {
+    const origin = { lat: 37.7749, lng: -122.4194 };
+    const baseKeys = new Set(getRevealCellKeys(origin, 120));
+    const boostedKeys = getRevealCellKeys(origin, 200);
+    const gained = boostedKeys.filter((key) => !baseKeys.has(key));
+
+    expect(boostedKeys.length).toBeGreaterThan(baseKeys.size);
+    expect(gained.length).toBeGreaterThan(0);
+  });
 });

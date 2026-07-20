@@ -59,13 +59,14 @@ export function getExplorationCellCenter(
   };
 }
 
-export function getRevealCellKeys(position: Position): string[] {
+export function getRevealCellKeys(
+  position: Position,
+  revealRadiusMeters: number = EXPLORATION_REVEAL_RADIUS_METERS
+): string[] {
   const origin = getExplorationCell(position);
   const originCenter = getExplorationCellCenter(origin);
   const latStep = EXPLORATION_CELL_METERS / 111_320;
-  const cellRadius = Math.ceil(
-    EXPLORATION_REVEAL_RADIUS_METERS / EXPLORATION_CELL_METERS
-  );
+  const cellRadius = Math.ceil(revealRadiusMeters / EXPLORATION_CELL_METERS);
   const keys = new Set<string>();
 
   for (let row = -cellRadius; row <= cellRadius; row++) {
@@ -81,10 +82,7 @@ export function getRevealCellKeys(position: Position): string[] {
       };
       const cell = getExplorationCell(targetPosition);
       const center = getExplorationCellCenter(cell);
-      if (
-        distanceMeters(position, center) <=
-        EXPLORATION_REVEAL_RADIUS_METERS
-      ) {
+      if (distanceMeters(position, center) <= revealRadiusMeters) {
         keys.add(explorationCellKey(cell));
       }
     }
@@ -95,12 +93,13 @@ export function getRevealCellKeys(position: Position): string[] {
 
 export function revealExplorationPosition(
   memory: ExplorationMemory,
-  position: Position
+  position: Position,
+  revealRadiusMeters: number = EXPLORATION_REVEAL_RADIUS_METERS
 ): ExplorationMemory {
   const existing = new Set(memory.revealedCellKeys);
   let changed = false;
 
-  for (const key of getRevealCellKeys(position)) {
+  for (const key of getRevealCellKeys(position, revealRadiusMeters)) {
     if (existing.has(key)) continue;
     existing.add(key);
     changed = true;

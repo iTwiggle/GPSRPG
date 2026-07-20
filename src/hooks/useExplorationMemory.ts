@@ -12,7 +12,8 @@ import {
 import type { Position } from "@/lib/types";
 
 export function useExplorationMemory(
-  playerPosition: Position | null
+  playerPosition: Position | null,
+  liveRevealRadiusMeters?: number
 ): ExplorationMemory {
   const [memory, setMemory] = useState<ExplorationMemory>(
     readExplorationMemory
@@ -25,12 +26,16 @@ export function useExplorationMemory(
 
     const position = { lat: playerLat, lng: playerLng };
     setMemory((previous) => {
-      const next = revealExplorationPosition(previous, position);
+      const next = revealExplorationPosition(
+        previous,
+        position,
+        liveRevealRadiusMeters
+      );
       if (next === previous) return previous;
       writeExplorationMemory(next);
       return next;
     });
-  }, [playerLat, playerLng]);
+  }, [liveRevealRadiusMeters, playerLat, playerLng]);
 
   useEffect(() => {
     const handleReset = () => setMemory(createEmptyExplorationMemory());

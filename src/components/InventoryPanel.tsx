@@ -5,6 +5,7 @@ import {
   SALVAGE_XP_REWARD,
   canSalvageCommon,
 } from "@/lib/duplicate-salvage";
+import { HEALING_DRAUGHT_CATALOG_ID } from "@/lib/companion/clear-sight";
 import {
   aggregateInventory,
   ITEM_TYPE_LABEL,
@@ -17,11 +18,13 @@ import type { Item } from "@/lib/types";
 interface InventoryPanelProps {
   inventory: Item[];
   onSalvageCommon?: (catalogKey: string) => boolean;
+  onDrinkHealingPotion?: () => boolean;
 }
 
 export default function InventoryPanel({
   inventory,
   onSalvageCommon,
+  onDrinkHealingPotion,
 }: InventoryPanelProps) {
   const items = aggregateInventory(inventory);
   const totalPieces = inventory.length;
@@ -76,6 +79,17 @@ export default function InventoryPanel({
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
+                  {item.key === HEALING_DRAUGHT_CATALOG_ID &&
+                    onDrinkHealingPotion && (
+                      <button
+                        type="button"
+                        onClick={() => onDrinkHealingPotion()}
+                        className="rounded border border-emerald-500/45 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-100 hover:bg-emerald-500/25"
+                        title="Drink for +80 m Clear Sight (45 min)"
+                      >
+                        Drink
+                      </button>
+                    )}
                   {salvageable && (
                     <button
                       type="button"
