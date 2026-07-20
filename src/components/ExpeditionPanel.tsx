@@ -3,7 +3,11 @@ import FieldReportPanel from "@/components/FieldReportPanel";
 import FieldTasksPanel from "@/components/FieldTasksPanel";
 import { getExpeditionProgress } from "@/lib/expedition";
 import { formatDistance } from "@/lib/distance";
-import type { TrailMomentumStatus } from "@/lib/movement/trail-momentum";
+import { EXPLORATION_REVEAL_RADIUS_METERS } from "@/lib/exploration-memory";
+import {
+  SCOUTS_EYE_REVEAL_BONUS_METERS,
+  type TrailMomentumStatus,
+} from "@/lib/movement/trail-momentum";
 import type { ActivityEvent, FieldReport, FieldTask } from "@/lib/types";
 
 interface ExpeditionPanelProps {
@@ -98,10 +102,10 @@ export default function ExpeditionPanel({
         </div>
         <p className="rpg-trail-momentum__copy">
           {trailMomentum.demoPreviewActive
-            ? "Demo preview: live sight reaches 20% farther. No movement progress was saved."
+            ? `Demo preview: live sight reaches +${formatDistance(SCOUTS_EYE_REVEAL_BONUS_METERS)} farther (${formatDistance(trailMomentum.liveRevealRadiusMeters)} total). No movement progress was saved.`
             : trailMomentum.scoutsEyeActive
-              ? "+20% live sight until local midnight. Explore range remains 150 m."
-              : `${formatDistance(trailMomentum.remainingMeters)} more validated walking unlocks +20% live sight for today.`}
+              ? `+${SCOUTS_EYE_REVEAL_BONUS_METERS} m live sight (${formatDistance(trailMomentum.liveRevealRadiusMeters)} total; base ${formatDistance(EXPLORATION_REVEAL_RADIUS_METERS)}). Explore range remains 150 m.`
+              : `${formatDistance(trailMomentum.remainingMeters)} more validated walking unlocks +${SCOUTS_EYE_REVEAL_BONUS_METERS} m live sight for today.`}
         </p>
         <div className="rpg-trail-momentum__progress" role="progressbar" aria-label={`Daily Trail Momentum: ${trailMomentum.progressPercent}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={trailMomentum.progressPercent}>
           <div style={{ width: `${trailMomentum.progressPercent}%` }} />

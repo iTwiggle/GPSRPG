@@ -72,6 +72,10 @@ function normalizeCompanionMeta(
   return {
     lastContractRefreshDate: meta?.lastContractRefreshDate,
     footfallCellKeys,
+    clearSightExpiresAt:
+      typeof meta?.clearSightExpiresAt === "string"
+        ? meta.clearSightExpiresAt
+        : undefined,
   };
 }
 

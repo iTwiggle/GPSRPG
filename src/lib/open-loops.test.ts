@@ -60,6 +60,32 @@ describe("open-loop bloom quest nudges", () => {
     expect(nudge?.message).toContain("Well Coin 1/2");
   });
 
+  it("nudges drinking a crafted potion for Clear Sight", () => {
+    const state = createInitialState();
+    state.player.inventory = [
+      {
+        id: "potion-1",
+        catalogId: "healing-draught",
+        name: "Healing Draught",
+        type: "consumable",
+        rarity: "uncommon",
+      },
+    ];
+
+    const nudge = getTopOpenLoopNudge({
+      codex: state.codex,
+      baseCamp: state.baseCamp,
+      pois: [],
+      playerPosition: null,
+      visitedPois: state.visitedPois,
+      gameState: state,
+      areaContext: "generic",
+    });
+
+    expect(nudge?.id).toBe("drink-healing-clear-sight");
+    expect(nudge?.message).toContain("+80 m");
+  });
+
   it("surfaces ready craft when all healing potion materials are in bag", () => {
     const state = createInitialState();
     state.player.inventory = [

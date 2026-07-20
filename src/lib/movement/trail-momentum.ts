@@ -1,4 +1,6 @@
-import { EXPLORATION_REVEAL_RADIUS_METERS } from "@/lib/exploration-memory";
+import {
+  EXPLORATION_REVEAL_RADIUS_METERS,
+} from "@/lib/exploration-memory";
 import { getLocalDateString } from "@/lib/tasks";
 import type { MovementLedger } from "@/lib/types";
 import type { EncounterResult } from "@/lib/types";
@@ -8,7 +10,16 @@ import {
 } from "./movement-ledger";
 
 export const TRAIL_MOMENTUM_TARGET_METERS = 1_200;
-export const SCOUTS_EYE_REVEAL_MULTIPLIER = 1.2;
+/**
+ * One exploration-cell ring beyond the base 120 m sight.
+ * +20% (144 m) was invisible on the 80 m fog grid — ceil(144/80) === ceil(120/80).
+ */
+export const SCOUTS_EYE_REVEAL_BONUS_METERS = 80;
+export const SCOUTS_EYE_REVEAL_RADIUS_METERS =
+  EXPLORATION_REVEAL_RADIUS_METERS + SCOUTS_EYE_REVEAL_BONUS_METERS;
+/** @deprecated Prefer SCOUTS_EYE_REVEAL_RADIUS_METERS — kept for call-site clarity. */
+export const SCOUTS_EYE_REVEAL_MULTIPLIER =
+  SCOUTS_EYE_REVEAL_RADIUS_METERS / EXPLORATION_REVEAL_RADIUS_METERS;
 export const TRAIL_SURGE_XP_MULTIPLIER = 0.1;
 
 export interface TrailMomentumStatus {
@@ -51,7 +62,9 @@ export function getTrailMomentumStatus(
     remainingMeters: Math.max(0, TRAIL_MOMENTUM_TARGET_METERS - distanceMeters),
     progressPercent: scoutsEyeActive ? 100 : Math.min(99, rawProgress),
     scoutsEyeActive,
-    liveRevealRadiusMeters: scoutsEyeActive ? EXPLORATION_REVEAL_RADIUS_METERS * SCOUTS_EYE_REVEAL_MULTIPLIER : EXPLORATION_REVEAL_RADIUS_METERS,
+    liveRevealRadiusMeters: scoutsEyeActive
+      ? SCOUTS_EYE_REVEAL_RADIUS_METERS
+      : EXPLORATION_REVEAL_RADIUS_METERS,
     trailSurgeActive,
     trailSurgeDistanceMeters,
     trailSurgeRemainingMeters: Math.max(

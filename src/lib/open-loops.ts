@@ -1,7 +1,12 @@
 import { countReadyDepotDoors } from "@/lib/base-camp";
+import {
+  HEALING_DRAUGHT_CATALOG_ID,
+  isClearSightActive,
+} from "@/lib/companion/clear-sight";
 import { getCraftRecipeStatus } from "@/lib/companion/sanctum-craft";
 import { getAlmostCompleteSets } from "@/lib/item-catalog";
 import { findNearestPoi } from "@/lib/approach";
+import { SCOUTS_EYE_REVEAL_BONUS_METERS } from "@/lib/movement/trail-momentum";
 import { canReExplorePoi } from "@/lib/temporal/poi-cooldowns";
 import type { OsmContextCategory } from "@/lib/osm-context";
 import type { Codex, GameState, POI, Position } from "@/lib/types";
@@ -12,10 +17,24 @@ export interface OpenLoopNudge {
   tone: "amber" | "violet" | "emerald";
 }
 
+function countCatalogInBag(state: GameState, catalogId: string): number {
+  return state.player.inventory.filter((item) => item.catalogId === catalogId)
+    .length;
+}
+
 function getHealingPotionNudge(
   state: GameState,
   areaContext: OsmContextCategory
 ): OpenLoopNudge | null {
+  const hasPotion = countCatalogInBag(state, HEALING_DRAUGHT_CATALOG_ID) > 0;
+  if (hasPotion && !isClearSightActive(state)) {
+    return {
+      id: "drink-healing-clear-sight",
+      message: `Drink Healing Potion for +${SCOUTS_EYE_REVEAL_BONUS_METERS} m Clear Sight`,
+      tone: "violet",
+    };
+  }
+
   const status = getCraftRecipeStatus(state, "healing-potion");
   if (!status) return null;
 
@@ -33,8 +52,7 @@ function getHealingPotionNudge(
   const coin = status.ingredients.find(
     (ingredient) => ingredient.catalogId === "well-coin"
   );
-  const gathered =
-    (bloom?.have ?? 0) + (coin?.have ?? 0) > 0;
+  const gathered = (bloom?.have ?? 0) + (coin?.have ?? 0) > 0;
 
   if (gathered) {
     const parts = status.ingredients

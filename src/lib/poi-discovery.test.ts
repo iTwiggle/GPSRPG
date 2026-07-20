@@ -50,9 +50,20 @@ describe("fog-gated POI discovery", () => {
   });
 
   it("lets Scout's Eye expand only the live discovery footprint", () => {
-    const edgePoi = makePoi("edge", moveNorth(ORIGIN, 135));
-    const base = getDiscoverablePois({ pois: [edgePoi], playerPosition: ORIGIN, revealedCellKeys: [], fogOfWarEnabled: true });
-    const boosted = getDiscoverablePois({ pois: [edgePoi], playerPosition: ORIGIN, revealedCellKeys: [], fogOfWarEnabled: true, liveRevealRadiusMeters: 144 });
+    const edgePoi = makePoi("edge", moveNorth(ORIGIN, 180));
+    const base = getDiscoverablePois({
+      pois: [edgePoi],
+      playerPosition: ORIGIN,
+      revealedCellKeys: [],
+      fogOfWarEnabled: true,
+    });
+    const boosted = getDiscoverablePois({
+      pois: [edgePoi],
+      playerPosition: ORIGIN,
+      revealedCellKeys: [],
+      fogOfWarEnabled: true,
+      liveRevealRadiusMeters: 200,
+    });
     expect(base).toHaveLength(0);
     expect(boosted.map((poi) => poi.id)).toEqual(["edge"]);
   });

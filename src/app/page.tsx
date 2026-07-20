@@ -42,7 +42,12 @@ import {
   type CellArrivalBrief,
 } from "@/lib/world/cell-arrival";
 import { metersToLeagues } from "@/lib/movement/movement-ledger";
-import { getTrailMomentumStatus, SCOUTS_EYE_REVEAL_MULTIPLIER } from "@/lib/movement/trail-momentum";
+import { isClearSightActive } from "@/lib/companion/clear-sight";
+import {
+  getTrailMomentumStatus,
+  SCOUTS_EYE_REVEAL_BONUS_METERS,
+  SCOUTS_EYE_REVEAL_RADIUS_METERS,
+} from "@/lib/movement/trail-momentum";
 import { EXPLORATION_REVEAL_RADIUS_METERS } from "@/lib/exploration-memory";
 import { DEV_TOOLS_ENABLED } from "@/lib/runtime-flags";
 import { feedback } from "@/lib/feedback/manager";
@@ -72,7 +77,7 @@ const PANEL_TITLES: Record<MobilePanelSection, string> = {
 
 export default function HomePage() {
   const geo = useGeolocation();
-  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, markFootfallSeen, craftAtSanctum, resetFieldReport, clearEncounter, clearSaveWarning, reset, getPoiVisitStatus, samplePlayerMovement } =
+  const { gameState, saveWarning, lastEncounter, explorePoi, refreshFieldTasks, salvageCommonTriplet, claimDepotDoor, markBaseCampVisit, markFootfallSeen, craftAtSanctum, drinkHealingPotion, resetFieldReport, clearEncounter, clearSaveWarning, reset, getPoiVisitStatus, samplePlayerMovement } =
     useGameState();
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
   const [activePanel, setActivePanel] =
@@ -91,7 +96,6 @@ export default function HomePage() {
   const playerPosition = geo.position;
   const playerLat = playerPosition?.lat;
   const playerLng = playerPosition?.lng;
-  const explorationMemory = useExplorationMemory(playerPosition);
   const osmContext = useOsmContext(playerLat, playerLng);
 
   const areaContext =
@@ -138,10 +142,19 @@ export default function HomePage() {
   const { pois } = useStickyPois(playerPosition, areaContext);
   const fogOfWarEnabled = fantasyGridEnabled && !streetReferenceMode;
   const trailMomentum = gameState ? getTrailMomentumStatus(gameState.movementLedger) : null;
-  const scoutsEyeActive = Boolean(trailMomentum?.scoutsEyeActive || (geo.isDemo && scoutsEyePreview));
+  const clearSightActive = Boolean(gameState && isClearSightActive(gameState));
+  const scoutsEyeActive = Boolean(
+    trailMomentum?.scoutsEyeActive ||
+      clearSightActive ||
+      (geo.isDemo && scoutsEyePreview)
+  );
   const liveRevealRadiusMeters = scoutsEyeActive
-    ? EXPLORATION_REVEAL_RADIUS_METERS * SCOUTS_EYE_REVEAL_MULTIPLIER
+    ? SCOUTS_EYE_REVEAL_RADIUS_METERS
     : EXPLORATION_REVEAL_RADIUS_METERS;
+  const explorationMemory = useExplorationMemory(
+    playerPosition,
+    liveRevealRadiusMeters
+  );
   const discoverablePois = useMemo(
     () =>
       playerLat !== undefined && playerLng !== undefined
@@ -307,7 +320,7 @@ export default function HomePage() {
     feedback.emitToast({
       title: `Movement boons ${nextActive ? "enabled" : "disabled"}`,
       subtitle: nextActive
-        ? "Scout's Eye + Trail Surge are active for Demo testing"
+        ? `+${SCOUTS_EYE_REVEAL_BONUS_METERS} m live sight + Trail Surge (demo only)`
         : "Demo-only boon overrides cleared",
       rarity: nextActive ? "uncommon" : "common",
       glyph: nextActive ? "⚡" : "○",
@@ -657,6 +670,7 @@ export default function HomePage() {
               <InventoryPanel
                 inventory={gameState.player.inventory}
                 onSalvageCommon={salvageCommonTriplet}
+                onDrinkHealingPotion={drinkHealingPotion}
               />
             )}
             {activePanel === "codex" && <CodexPanel codex={gameState.codex} />}
