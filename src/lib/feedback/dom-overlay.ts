@@ -8,7 +8,7 @@ import {
 import { feedback } from "./manager";
 import { prefersReducedMotion } from "./motion";
 import { ITEM_TYPE_GLYPH } from "@/lib/item-visual";
-import type { FeedbackEvent } from "./types";
+import type { FeedbackEvent, MilestoneBurstVariant } from "./types";
 
 /**
  * Imperative DOM renderer for transient feedback effects.
@@ -185,6 +185,63 @@ function spawnParticles(
   }
 }
 
+function spawnMilestoneBurst(variant: MilestoneBurstVariant): void {
+  const r = ensureRegions();
+  if (!r) return;
+  const reduced = prefersReducedMotion();
+  const palette =
+    variant === "scoutsEye"
+      ? {
+          particle: "rgba(34, 211, 238, 0.95)",
+          accent: "rgba(14, 165, 233, 1)",
+        }
+      : {
+          particle: "rgba(251, 191, 36, 0.98)",
+          accent: "rgba(245, 158, 11, 1)",
+        };
+
+  positionAtPlayer(r.pickupAnchor, "pickup");
+
+  if (reduced) {
+    const flash = document.createElement("span");
+    flash.className = "rpg-pickup-flash";
+    flash.style.background = palette.accent;
+    r.pickupAnchor.appendChild(flash);
+    removeAfter(flash, 480);
+    return;
+  }
+
+  const burst = document.createElement("div");
+  burst.className = "rpg-particle-burst rpg-particle-burst--milestone";
+  const total = 20;
+  for (let i = 0; i < total; i += 1) {
+    const angle = (i / total) * Math.PI * 2 + Math.random() * 0.5;
+    const travel =
+      PARTICLES.minTravelPx +
+      12 +
+      Math.random() * (PARTICLES.maxTravelPx - PARTICLES.minTravelPx);
+    const size = 5 + Math.random() * 6;
+    const p = document.createElement("span");
+    p.className = "rpg-particle";
+    p.style.setProperty("--px", `${Math.cos(angle) * travel}px`);
+    p.style.setProperty("--py", `${Math.sin(angle) * travel}px`);
+    p.style.width = `${size}px`;
+    p.style.height = `${size}px`;
+    p.style.background = palette.particle;
+    p.style.boxShadow = `0 0 10px ${palette.accent}`;
+    p.style.animationDelay = `${Math.random() * 80}ms`;
+    p.style.animationDuration = `${PARTICLES.durationMs + 180}ms`;
+    burst.appendChild(p);
+  }
+  r.pickupAnchor.appendChild(burst);
+  removeAfter(burst, PARTICLES.durationMs + 320);
+
+  const sheen = document.createElement("div");
+  sheen.className = `rpg-screen-sheen rpg-screen-sheen--${variant}`;
+  r.layer.appendChild(sheen);
+  removeAfter(sheen, 700);
+}
+
 function spawnToast(event: Extract<FeedbackEvent, { kind: "toast" }>): void {
   const r = ensureRegions();
   if (!r) return;
@@ -193,7 +250,11 @@ function spawnToast(event: Extract<FeedbackEvent, { kind: "toast" }>): void {
   const hold = feel.showstopper ? TOAST.showstopperHoldMs : TOAST.holdMs;
 
   const toast = document.createElement("div");
-  toast.className = `rpg-toast ${reduced ? "rpg-toast--reduced" : "rpg-toast--enter"}${feel.showstopper ? " rpg-toast--showstopper" : ""}`;
+  const variantClass =
+    event.variant && event.variant !== "default"
+      ? ` rpg-toast--${event.variant}`
+      : "";
+  toast.className = `rpg-toast ${reduced ? "rpg-toast--reduced" : "rpg-toast--enter"}${feel.showstopper ? " rpg-toast--showstopper" : ""}${variantClass}`;
   toast.setAttribute("role", "status");
   toast.style.setProperty("--toast-accent", feel.accent);
   toast.style.setProperty("--toast-enter-ms", `${TOAST.enterMs}ms`);
@@ -292,6 +353,9 @@ function handle(event: FeedbackEvent): void {
       break;
     case "toast":
       spawnToast(event);
+      break;
+    case "milestoneBurst":
+      spawnMilestoneBurst(event.variant);
       break;
     case "levelUp":
       spawnLevelUp(event.level);

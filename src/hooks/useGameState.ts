@@ -17,7 +17,7 @@ import {
   getSetRewardXp,
 } from "@/lib/item-catalog";
 import { recordExplore, codexItemKey } from "@/lib/codex";
-import { applyExploreToTasks, applyFieldTaskRefresh } from "@/lib/tasks";
+import { applyExploreToTasks, applyFieldTaskRefresh, isExpeditionComplete } from "@/lib/tasks";
 import { updateFieldReportOnExplore } from "@/lib/field-report";
 import { applyXp } from "@/lib/xp";
 import {
@@ -258,6 +258,27 @@ export function useGameState() {
       feedback.emitXp(encounter.xpGained, "encounter");
       if (setBonusXp > 0) feedback.emitXp(setBonusXp, "set");
       if (taskRewardXp > 0) feedback.emitXp(taskRewardXp, "contract");
+      for (const task of completions) {
+        feedback.emitToast({
+          title: "Contract fulfilled",
+          subtitle: task.title,
+          rarity: "uncommon",
+          glyph: "✓",
+          variant: "contract",
+        });
+      }
+      if (
+        completions.length > 0 &&
+        isExpeditionComplete(withTasks)
+      ) {
+        feedback.emitToast({
+          title: "Expedition complete",
+          subtitle: "Every field contract fulfilled on this outing",
+          rarity: "uncommon",
+          glyph: "🏁",
+          variant: "expedition",
+        });
+      }
       if (player.level > prevLevel) feedback.emitLevelUp(player.level);
 
       return encounterWithDiscoveries;
@@ -422,10 +443,24 @@ export function useGameState() {
         const isActive = nextStatus.scoutsEyeActive;
         persist(next);
         if (!wasActive && isActive) {
-          feedback.emitToast({ title: "Scout's Eye awakened", subtitle: "+20% live sight until local midnight", rarity: "uncommon", glyph: "◉" });
+          feedback.emitToast({
+            title: "Scout's Eye awakened",
+            subtitle: "+20% live sight until local midnight",
+            rarity: "uncommon",
+            glyph: "◉",
+            variant: "milestone",
+          });
+          feedback.emitMilestoneBurst("scoutsEye");
         }
         if (!previousStatus.trailSurgeActive && nextStatus.trailSurgeActive) {
-          feedback.emitToast({ title: "Trail Surge awakened", subtitle: "+10% encounter XP until local midnight", rarity: "uncommon", glyph: "⚡" });
+          feedback.emitToast({
+            title: "Trail Surge awakened",
+            subtitle: "+10% encounter XP until local midnight",
+            rarity: "uncommon",
+            glyph: "⚡",
+            variant: "milestone",
+          });
+          feedback.emitMilestoneBurst("trailSurge");
         }
         return;
       }

@@ -10,6 +10,7 @@ export type FeedbackEvent =
   | XpFeedbackEvent
   | PickupFeedbackEvent
   | ToastFeedbackEvent
+  | MilestoneBurstFeedbackEvent
   | LevelUpFeedbackEvent;
 
 export type XpSource = "encounter" | "set" | "contract" | "salvage";
@@ -35,6 +36,8 @@ export interface PickupFeedbackEvent {
 }
 
 /** A self-contained loot/reward card for contexts with no modal (salvage, unlocks). */
+export type ToastVariant = "default" | "contract" | "expedition" | "milestone";
+
 export interface ToastFeedbackEvent {
   kind: "toast";
   title: string;
@@ -43,6 +46,14 @@ export interface ToastFeedbackEvent {
   itemType?: Item["type"];
   /** Optional glyph override; falls back to the item-type glyph. */
   glyph?: string;
+  variant?: ToastVariant;
+}
+
+export type MilestoneBurstVariant = "scoutsEye" | "trailSurge";
+
+export interface MilestoneBurstFeedbackEvent {
+  kind: "milestoneBurst";
+  variant: MilestoneBurstVariant;
 }
 
 export interface LevelUpFeedbackEvent {

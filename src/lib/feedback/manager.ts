@@ -3,6 +3,7 @@ import { soundSink } from "./sound";
 import type {
   FeedbackEvent,
   LevelUpFeedbackEvent,
+  MilestoneBurstFeedbackEvent,
   PickupFeedbackEvent,
   ToastFeedbackEvent,
   XpFeedbackEvent,
@@ -60,6 +61,10 @@ class FeedbackManager {
 
   emitToast(toast: Omit<ToastFeedbackEvent, "kind">): void {
     this.emit({ kind: "toast", ...toast });
+  }
+
+  emitMilestoneBurst(variant: MilestoneBurstFeedbackEvent["variant"]): void {
+    this.emit({ kind: "milestoneBurst", variant });
   }
 
   emitLevelUp(level: LevelUpFeedbackEvent["level"]): void {

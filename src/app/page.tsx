@@ -27,6 +27,7 @@ import { useOsmContext } from "@/hooks/useOsmContext";
 import { useStickyPois } from "@/hooks/useStickyPois";
 import { countReadyDepotDoors } from "@/lib/base-camp";
 import { canExplorePoi } from "@/lib/explore-validation";
+import { getApproachReadout } from "@/lib/approach";
 import {
   FANTASY_GRID_SESSION_KEY,
   STREET_REF_SESSION_KEY,
@@ -50,7 +51,7 @@ import {
   canRefreshFieldTasks,
   isExpeditionComplete,
 } from "@/lib/tasks";
-import { DEMO_LOCATION_LABEL, type POI } from "@/lib/types";
+import { DEMO_LOCATION_LABEL, EXPLORE_RADIUS_METERS, type POI } from "@/lib/types";
 
 const GameMap = dynamic(() => import("@/components/GameMap"), {
   ssr: false,
@@ -86,6 +87,8 @@ export default function HomePage() {
   const [fantasyGridEnabled, setFantasyGridEnabled] = useState(true);
   const [streetReferenceMode, setStreetReferenceMode] = useState(false);
   const [scoutsEyePreview, setScoutsEyePreview] = useState(false);
+  const [siteInRangePulse, setSiteInRangePulse] = useState(false);
+  const wasSiteInRangeRef = useRef(false);
   const [, setLocalDayTick] = useState(0);
 
   const playerPosition = geo.position;
@@ -169,6 +172,31 @@ export default function HomePage() {
       setSelectedPoi(null);
     }
   }, [discoverablePois, selectedPoi]);
+
+  useEffect(() => {
+    if (!selectedPoi || playerLat === undefined || playerLng === undefined) {
+      wasSiteInRangeRef.current = false;
+      return;
+    }
+
+    const readout = getApproachReadout(
+      { lat: playerLat, lng: playerLng },
+      selectedPoi,
+      EXPLORE_RADIUS_METERS
+    );
+    const inRange = readout.status === "in_range";
+
+    if (inRange && !wasSiteInRangeRef.current) {
+      wasSiteInRangeRef.current = true;
+      setSiteInRangePulse(true);
+      const timer = window.setTimeout(() => setSiteInRangePulse(false), 900);
+      return () => window.clearTimeout(timer);
+    }
+
+    if (!inRange) {
+      wasSiteInRangeRef.current = false;
+    }
+  }, [playerLat, playerLng, selectedPoi]);
 
   const gpsLabel = useMemo(() => {
     switch (geo.status) {
@@ -463,9 +491,13 @@ export default function HomePage() {
     );
   }
 
-  const mapFrameClass = selectedPoi
-    ? "rpg-map-frame rpg-map-frame--focused"
-    : "rpg-map-frame";
+  const mapFrameClass = [
+    "rpg-map-frame",
+    selectedPoi ? "rpg-map-frame--focused" : null,
+    siteInRangePulse ? "rpg-map-frame--in-range-pulse" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <main
